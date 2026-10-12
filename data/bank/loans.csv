@@ -1,0 +1,13 @@
+loan_id,customer_ref,product_id,status,rate_type,emi_amount,outstanding_balance,rate_reset_due,borrower_notified,has_fixed_rate_option,has_emi_tenor_choice,statement_available
+LN-1001,CUST-001,product:personal-loan-floating,ACTIVE,FLOATING,12250,286400,2026-10-31,false,true,true,false
+LN-1002,CUST-002,product:personal-loan-floating,ACTIVE,FLOATING,9650,194200,2026-10-31,true,true,true,true
+LN-1003,CUST-003,product:home-loan-floating,ACTIVE,FLOATING,28600,2840000,2026-11-15,false,true,true,true
+LN-1004,CUST-004,product:home-loan-floating,ACTIVE,FLOATING,31200,3450000,2026-11-15,true,true,true,true
+LN-1005,CUST-005,product:auto-loan-floating,ACTIVE,FLOATING,14900,578000,2026-10-31,false,false,true,true
+LN-1006,CUST-006,product:auto-loan-floating,ACTIVE,FLOATING,13200,465000,2026-10-31,true,false,true,true
+LN-1007,CUST-007,product:personal-loan-floating,ACTIVE,FLOATING,18200,415000,2026-11-30,false,true,true,true
+LN-1008,CUST-008,product:personal-loan-fixed,ACTIVE,FIXED,11400,221000,2026-12-15,false,false,false,false
+LN-1009,CUST-009,product:home-loan-floating,CLOSED,FLOATING,25500,0,2026-10-31,true,true,true,true
+LN-1010,CUST-010,product:home-loan-floating,ACTIVE,FLOATING,19800,1750000,2026-11-15,false,true,true,false
+LN-1011,CUST-011,product:auto-loan-floating,ACTIVE,FLOATING,10900,329000,2026-10-31,false,false,true,false
+LN-1012,CUST-012,product:personal-loan-floating,ACTIVE,FLOATING,7600,144000,2026-11-30,true,true,true,true

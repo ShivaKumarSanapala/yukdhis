@@ -1,0 +1,36 @@
+{
+  "nodes": [
+    {"id": "product:personal-loan-floating", "type": "Product", "name": "Flexi Personal Loan", "attributes": {"keywords": ["personal", "loan", "floating", "emi"], "rate_type": "FLOATING", "instalment_based": true, "owner": "Retail Lending"}},
+    {"id": "product:home-loan-floating", "type": "Product", "name": "EasyHome Floating Loan", "attributes": {"keywords": ["home", "loan", "floating", "emi"], "rate_type": "FLOATING", "instalment_based": true, "owner": "Retail Lending"}},
+    {"id": "product:auto-loan-floating", "type": "Product", "name": "DriveNow Floating Loan", "attributes": {"keywords": ["auto", "loan", "floating", "emi"], "rate_type": "FLOATING", "instalment_based": true, "owner": "Vehicle Finance"}},
+    {"id": "product:personal-loan-fixed", "type": "Product", "name": "Flexi Personal Loan Fixed", "attributes": {"keywords": ["personal", "loan", "fixed", "emi"], "rate_type": "FIXED", "instalment_based": true, "owner": "Retail Lending"}},
+    {"id": "process:rate-reset", "type": "Process", "name": "Benchmark Rate Reset", "attributes": {"owner": "Lending Operations"}},
+    {"id": "process:borrower-notification", "type": "Process", "name": "Borrower Reset Notification", "attributes": {"owner": "Customer Communications"}},
+    {"id": "control:emi-tenor-choice", "type": "Control", "name": "EMI or Tenor Choice", "attributes": {}},
+    {"id": "control:fixed-rate-option", "type": "Control", "name": "Fixed Rate Conversion Option", "attributes": {}},
+    {"id": "control:reset-statement", "type": "Control", "name": "Reset Statement Disclosure", "attributes": {}},
+    {"id": "segment:retail-borrower", "type": "CustomerSegment", "name": "Retail EMI Borrower", "attributes": {}},
+    {"id": "policy:loan-rate-reset", "type": "InternalPolicy", "name": "Retail Loan Rate Reset Policy", "attributes": {"owner": "Compliance"}}
+  ],
+  "edges": [
+    {"source": "product:personal-loan-floating", "target": "process:rate-reset", "type": "USES", "attributes": {}},
+    {"source": "product:personal-loan-floating", "target": "process:borrower-notification", "type": "USES", "attributes": {}},
+    {"source": "product:personal-loan-floating", "target": "control:emi-tenor-choice", "type": "PROVIDES", "attributes": {}},
+    {"source": "product:personal-loan-floating", "target": "control:fixed-rate-option", "type": "PROVIDES", "attributes": {}},
+    {"source": "product:home-loan-floating", "target": "process:rate-reset", "type": "USES", "attributes": {}},
+    {"source": "product:home-loan-floating", "target": "process:borrower-notification", "type": "USES", "attributes": {}},
+    {"source": "product:home-loan-floating", "target": "control:emi-tenor-choice", "type": "PROVIDES", "attributes": {}},
+    {"source": "product:home-loan-floating", "target": "control:fixed-rate-option", "type": "PROVIDES", "attributes": {}},
+    {"source": "product:home-loan-floating", "target": "control:reset-statement", "type": "PROVIDES", "attributes": {}},
+    {"source": "product:auto-loan-floating", "target": "process:rate-reset", "type": "USES", "attributes": {}},
+    {"source": "product:auto-loan-floating", "target": "process:borrower-notification", "type": "USES", "attributes": {}},
+    {"source": "product:auto-loan-floating", "target": "control:emi-tenor-choice", "type": "PROVIDES", "attributes": {}},
+    {"source": "product:auto-loan-floating", "target": "control:reset-statement", "type": "PROVIDES", "attributes": {}},
+    {"source": "policy:loan-rate-reset", "target": "product:personal-loan-floating", "type": "GOVERNS", "attributes": {}},
+    {"source": "policy:loan-rate-reset", "target": "product:home-loan-floating", "type": "GOVERNS", "attributes": {}},
+    {"source": "policy:loan-rate-reset", "target": "product:auto-loan-floating", "type": "GOVERNS", "attributes": {}},
+    {"source": "segment:retail-borrower", "target": "product:personal-loan-floating", "type": "ELIGIBLE_FOR", "attributes": {}},
+    {"source": "segment:retail-borrower", "target": "product:home-loan-floating", "type": "ELIGIBLE_FOR", "attributes": {}},
+    {"source": "segment:retail-borrower", "target": "product:auto-loan-floating", "type": "ELIGIBLE_FOR", "attributes": {}}
+  ]
+}
