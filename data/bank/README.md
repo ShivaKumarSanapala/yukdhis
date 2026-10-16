@@ -1,10 +1,11 @@
 # Synthetic banking demo data
 
-All rows in this folder are fictional and use opaque customer references. They
-exist only to demonstrate the policy-impact flow; they are not customer data,
-do not use real names, and must not be treated as a production data model.
+Everything here is fictional and regenerated deterministically by `python scripts/generate_synthetic_bank.py`
+(seed 2026, reference date 2026-10-17).
 
-`loans.csv` is the operational system-of-record fixture. `architecture.json`
-is the bank topology fixture. They are deliberately separate: the graph tells
-the mapper **where to look**; the read-only loan repository tells the analyser
-**which records are actually affected**.
+- `architecture.json`: BIAN topology for the knowledge graph (products, processes, controls, teams, segments,
+  branches) with bitemporal edges. It contains no customers.
+- `operational/*.csv`: the core-banking extract loaded into Cloud SQL / SQLite. `customers.csv` and `branches.csv`
+  hold **synthetic PII** (names, `example.com` emails, `+91-90000…` phones, fake PANs) so the privacy controls have
+  something to protect. Agents only ever see the `vw_*` views, which exclude these columns.
+- `manifest.json`: row counts and the planted scenario (12 document-release violations, 7 at Koramangala).

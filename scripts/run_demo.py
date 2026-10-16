@@ -1,4 +1,4 @@
-"""Run the exact parser -> mapper -> analyser flow used in the demo."""
+"""Run the deterministic pipeline (same stages as the ADK agents) and print the impact report summary."""
 
 from __future__ import annotations
 
@@ -8,39 +8,27 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT))
 
-from agents.compliance_coordinator.sub_agents.analyzer.service import ImpactAnalyser
-from agents.compliance_coordinator.sub_agents.mapper.service import PolicyMapper
-from ingestion.circular_parser import parse_floating_rate_reset_circular
-from knowledge_graph.store import BankKnowledgeGraph
+from core.app_store import get_app_store  # noqa: E402
+from pipeline.deterministic import run_pipeline  # noqa: E402
 
-
-DEFAULT_CIRCULAR = ROOT / "data" / "circulars" / "rbi_2023_08_18_floating_rate_reset_emi_loans.md"
-
-
-def run(circular: Path, reset_graph: bool = True) -> dict:
-    graph = BankKnowledgeGraph.from_environment()
-    if isinstance(graph, BankKnowledgeGraph) and (reset_graph or not Path(graph.database).exists()):
-        graph.initialise()
-    rules = parse_floating_rate_reset_circular(circular)
-    mappings = [PolicyMapper(graph).map_rule(rule) for rule in rules]
-    report = ImpactAnalyser(graph=graph).analyse(mappings)
-    return {"parsed_rules": [rule.to_dict() for rule in rules], "mappings": [mapping.to_dict() for mapping in mappings], "impact_report": report.to_dict()}
+DEFAULT = ROOT / "data" / "circulars" / "rbi_2023_09_13_release_of_property_documents.md"
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the synthetic bank policy impact demo.")
-    parser.add_argument("--circular", type=Path, default=DEFAULT_CIRCULAR)
-    parser.add_argument("--output", type=Path, help="Optional JSON report path")
+    parser = argparse.ArgumentParser(description="Synthetic bank compliance impact demo (no LLM).")
+    parser.add_argument("--circular", type=Path, default=DEFAULT)
+    parser.add_argument("--as-of", help="ISO analysis date (default: data manifest reference date)")
+    parser.add_argument("--output", type=Path, help="Write the full report JSON here")
     args = parser.parse_args()
-    result = run(args.circular)
-    rendered = json.dumps(result, indent=2)
+    state = run_pipeline({"path": str(args.circular.resolve()), "filename": args.circular.name}, args.as_of,
+                         lambda stage, kind, payload: kind == "stage_started" and print(f"[{stage}] {payload['label']}"))
+    report = get_app_store().get_report(state["report_id"])
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(rendered + "\n")
-    print(rendered)
+        args.output.write_text(json.dumps(report, indent=2, default=str) + "\n")
+    print(json.dumps(report["summary"], indent=2))
 
 
 if __name__ == "__main__":

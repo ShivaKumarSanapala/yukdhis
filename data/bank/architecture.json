@@ -1,36 +1,850 @@
 {
-  "nodes": [
-    {"id": "product:personal-loan-floating", "type": "Product", "name": "Flexi Personal Loan", "attributes": {"keywords": ["personal", "loan", "floating", "emi"], "rate_type": "FLOATING", "instalment_based": true, "owner": "Retail Lending"}},
-    {"id": "product:home-loan-floating", "type": "Product", "name": "EasyHome Floating Loan", "attributes": {"keywords": ["home", "loan", "floating", "emi"], "rate_type": "FLOATING", "instalment_based": true, "owner": "Retail Lending"}},
-    {"id": "product:auto-loan-floating", "type": "Product", "name": "DriveNow Floating Loan", "attributes": {"keywords": ["auto", "loan", "floating", "emi"], "rate_type": "FLOATING", "instalment_based": true, "owner": "Vehicle Finance"}},
-    {"id": "product:personal-loan-fixed", "type": "Product", "name": "Flexi Personal Loan Fixed", "attributes": {"keywords": ["personal", "loan", "fixed", "emi"], "rate_type": "FIXED", "instalment_based": true, "owner": "Retail Lending"}},
-    {"id": "process:rate-reset", "type": "Process", "name": "Benchmark Rate Reset", "attributes": {"owner": "Lending Operations"}},
-    {"id": "process:borrower-notification", "type": "Process", "name": "Borrower Reset Notification", "attributes": {"owner": "Customer Communications"}},
-    {"id": "control:emi-tenor-choice", "type": "Control", "name": "EMI or Tenor Choice", "attributes": {}},
-    {"id": "control:fixed-rate-option", "type": "Control", "name": "Fixed Rate Conversion Option", "attributes": {}},
-    {"id": "control:reset-statement", "type": "Control", "name": "Reset Statement Disclosure", "attributes": {}},
-    {"id": "segment:retail-borrower", "type": "CustomerSegment", "name": "Retail EMI Borrower", "attributes": {}},
-    {"id": "policy:loan-rate-reset", "type": "InternalPolicy", "name": "Retail Loan Rate Reset Policy", "attributes": {"owner": "Compliance"}}
-  ],
-  "edges": [
-    {"source": "product:personal-loan-floating", "target": "process:rate-reset", "type": "USES", "attributes": {}},
-    {"source": "product:personal-loan-floating", "target": "process:borrower-notification", "type": "USES", "attributes": {}},
-    {"source": "product:personal-loan-floating", "target": "control:emi-tenor-choice", "type": "PROVIDES", "attributes": {}},
-    {"source": "product:personal-loan-floating", "target": "control:fixed-rate-option", "type": "PROVIDES", "attributes": {}},
-    {"source": "product:home-loan-floating", "target": "process:rate-reset", "type": "USES", "attributes": {}},
-    {"source": "product:home-loan-floating", "target": "process:borrower-notification", "type": "USES", "attributes": {}},
-    {"source": "product:home-loan-floating", "target": "control:emi-tenor-choice", "type": "PROVIDES", "attributes": {}},
-    {"source": "product:home-loan-floating", "target": "control:fixed-rate-option", "type": "PROVIDES", "attributes": {}},
-    {"source": "product:home-loan-floating", "target": "control:reset-statement", "type": "PROVIDES", "attributes": {}},
-    {"source": "product:auto-loan-floating", "target": "process:rate-reset", "type": "USES", "attributes": {}},
-    {"source": "product:auto-loan-floating", "target": "process:borrower-notification", "type": "USES", "attributes": {}},
-    {"source": "product:auto-loan-floating", "target": "control:emi-tenor-choice", "type": "PROVIDES", "attributes": {}},
-    {"source": "product:auto-loan-floating", "target": "control:reset-statement", "type": "PROVIDES", "attributes": {}},
-    {"source": "policy:loan-rate-reset", "target": "product:personal-loan-floating", "type": "GOVERNS", "attributes": {}},
-    {"source": "policy:loan-rate-reset", "target": "product:home-loan-floating", "type": "GOVERNS", "attributes": {}},
-    {"source": "policy:loan-rate-reset", "target": "product:auto-loan-floating", "type": "GOVERNS", "attributes": {}},
-    {"source": "segment:retail-borrower", "target": "product:personal-loan-floating", "type": "ELIGIBLE_FOR", "attributes": {}},
-    {"source": "segment:retail-borrower", "target": "product:home-loan-floating", "type": "ELIGIBLE_FOR", "attributes": {}},
-    {"source": "segment:retail-borrower", "target": "product:auto-loan-floating", "type": "ELIGIBLE_FOR", "attributes": {}}
-  ]
+ "tenant_id": "demo-bank",
+ "nodes": [
+  {
+   "id": "product:personal-loan-floating",
+   "type": "Product",
+   "name": "Flexi Personal Loan",
+   "attributes": {
+    "synonyms": [
+     "personal loan",
+     "consumer loan",
+     "floating rate personal loan",
+     "emi loan"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FLOATING",
+    "instalment_based": true,
+    "secured": false,
+    "collateral_type": "NONE",
+    "category": "RETAIL_LOAN"
+   }
+  },
+  {
+   "id": "product:home-loan-floating",
+   "type": "Product",
+   "name": "EasyHome Floating Loan",
+   "attributes": {
+    "synonyms": [
+     "home loan",
+     "housing loan",
+     "mortgage",
+     "emi loan"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FLOATING",
+    "instalment_based": true,
+    "secured": true,
+    "collateral_type": "IMMOVABLE",
+    "category": "RETAIL_LOAN"
+   }
+  },
+  {
+   "id": "product:auto-loan-floating",
+   "type": "Product",
+   "name": "DriveNow Floating Loan",
+   "attributes": {
+    "synonyms": [
+     "auto loan",
+     "car loan",
+     "vehicle loan",
+     "four-wheeler advances",
+     "two-wheeler loan",
+     "emi loan"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FLOATING",
+    "instalment_based": true,
+    "secured": true,
+    "collateral_type": "MOVABLE",
+    "category": "RETAIL_LOAN"
+   }
+  },
+  {
+   "id": "product:personal-loan-fixed",
+   "type": "Product",
+   "name": "Flexi Personal Loan Fixed",
+   "attributes": {
+    "synonyms": [
+     "personal loan",
+     "fixed rate personal loan",
+     "emi loan"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FIXED",
+    "instalment_based": true,
+    "secured": false,
+    "collateral_type": "NONE",
+    "category": "RETAIL_LOAN"
+   }
+  },
+  {
+   "id": "product:loan-against-property",
+   "type": "Product",
+   "name": "PropertyPlus LAP",
+   "attributes": {
+    "synonyms": [
+     "loan against property",
+     "lap",
+     "mortgage loan",
+     "property loan"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FIXED",
+    "instalment_based": true,
+    "secured": true,
+    "collateral_type": "IMMOVABLE",
+    "category": "RETAIL_LOAN"
+   }
+  },
+  {
+   "id": "product:gold-loan",
+   "type": "Product",
+   "name": "GoldEase Loan",
+   "attributes": {
+    "synonyms": [
+     "gold loan",
+     "loan against gold jewellery",
+     "jewel loan"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FIXED",
+    "instalment_based": false,
+    "secured": true,
+    "collateral_type": "MOVABLE",
+    "category": "RETAIL_LOAN"
+   }
+  },
+  {
+   "id": "product:msme-term-loan",
+   "type": "Product",
+   "name": "MSME Growth Term Loan",
+   "attributes": {
+    "synonyms": [
+     "msme loan",
+     "business term loan",
+     "sme loan"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FLOATING",
+    "instalment_based": true,
+    "secured": true,
+    "collateral_type": "IMMOVABLE",
+    "category": "MSME_LOAN"
+   }
+  },
+  {
+   "id": "process:rate-reset",
+   "type": "Process",
+   "name": "Benchmark Rate Reset",
+   "attributes": {
+    "bian_domain": "Consumer Loan"
+   }
+  },
+  {
+   "id": "process:borrower-notification",
+   "type": "Process",
+   "name": "Borrower Correspondence",
+   "attributes": {
+    "bian_domain": "Correspondence"
+   }
+  },
+  {
+   "id": "process:loan-closure",
+   "type": "Process",
+   "name": "Loan Closure and Settlement",
+   "attributes": {
+    "bian_domain": "Consumer Loan"
+   }
+  },
+  {
+   "id": "process:collateral-release",
+   "type": "Process",
+   "name": "Collateral Release",
+   "attributes": {
+    "bian_domain": "Collateral Asset Administration"
+   }
+  },
+  {
+   "id": "process:document-custody",
+   "type": "Process",
+   "name": "Original Document Custody",
+   "attributes": {
+    "bian_domain": "Document Services"
+   }
+  },
+  {
+   "id": "control:borrower-notification",
+   "type": "Control",
+   "name": "Reset Impact Notification",
+   "attributes": {}
+  },
+  {
+   "id": "control:emi-tenor-choice",
+   "type": "Control",
+   "name": "EMI or Tenor Choice",
+   "attributes": {}
+  },
+  {
+   "id": "control:fixed-rate-option",
+   "type": "Control",
+   "name": "Fixed Rate Conversion Option",
+   "attributes": {}
+  },
+  {
+   "id": "control:reset-statement",
+   "type": "Control",
+   "name": "Quarterly Reset Statement with APR",
+   "attributes": {}
+  },
+  {
+   "id": "control:document-release-sla",
+   "type": "Control",
+   "name": "30-day Document Release Tracker",
+   "attributes": {}
+  },
+  {
+   "id": "control:delay-compensation",
+   "type": "Control",
+   "name": "Automatic Delay Compensation",
+   "attributes": {}
+  },
+  {
+   "id": "control:document-collection-choice",
+   "type": "Control",
+   "name": "Document Collection Location Choice",
+   "attributes": {}
+  },
+  {
+   "id": "team:retail-lending",
+   "type": "Team",
+   "name": "Retail Lending",
+   "attributes": {}
+  },
+  {
+   "id": "team:vehicle-finance",
+   "type": "Team",
+   "name": "Vehicle Finance",
+   "attributes": {}
+  },
+  {
+   "id": "team:msme-banking",
+   "type": "Team",
+   "name": "MSME Banking",
+   "attributes": {}
+  },
+  {
+   "id": "team:lending-ops",
+   "type": "Team",
+   "name": "Lending Operations",
+   "attributes": {}
+  },
+  {
+   "id": "team:customer-comms",
+   "type": "Team",
+   "name": "Customer Communications",
+   "attributes": {}
+  },
+  {
+   "id": "team:collateral-ops",
+   "type": "Team",
+   "name": "Collateral Operations",
+   "attributes": {}
+  },
+  {
+   "id": "segment:retail-individual",
+   "type": "CustomerSegment",
+   "name": "Retail Individual Borrower",
+   "attributes": {
+    "synonyms": [
+     "individual",
+     "retail",
+     "personal",
+     "borrower"
+    ]
+   }
+  },
+  {
+   "id": "segment:msme",
+   "type": "CustomerSegment",
+   "name": "MSME Borrower",
+   "attributes": {
+    "synonyms": [
+     "msme",
+     "business",
+     "enterprise"
+    ]
+   }
+  },
+  {
+   "id": "branch:blr-koramangala",
+   "type": "Branch",
+   "name": "Koramangala, Bengaluru",
+   "attributes": {
+    "city": "Bengaluru",
+    "region": "South"
+   }
+  },
+  {
+   "id": "branch:mum-andheri",
+   "type": "Branch",
+   "name": "Andheri East, Mumbai",
+   "attributes": {
+    "city": "Mumbai",
+    "region": "West"
+   }
+  },
+  {
+   "id": "branch:del-cp",
+   "type": "Branch",
+   "name": "Connaught Place, New Delhi",
+   "attributes": {
+    "city": "New Delhi",
+    "region": "North"
+   }
+  },
+  {
+   "id": "branch:chn-tnagar",
+   "type": "Branch",
+   "name": "T Nagar, Chennai",
+   "attributes": {
+    "city": "Chennai",
+    "region": "South"
+   }
+  },
+  {
+   "id": "branch:hyd-banjara",
+   "type": "Branch",
+   "name": "Banjara Hills, Hyderabad",
+   "attributes": {
+    "city": "Hyderabad",
+    "region": "South"
+   }
+  },
+  {
+   "id": "branch:kol-saltlake",
+   "type": "Branch",
+   "name": "Salt Lake, Kolkata",
+   "attributes": {
+    "city": "Kolkata",
+    "region": "East"
+   }
+  }
+ ],
+ "edges": [
+  {
+   "source": "product:personal-loan-floating",
+   "target": "team:retail-lending",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "process:rate-reset",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "process:borrower-notification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:borrower-notification",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:emi-tenor-choice",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:fixed-rate-option",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "team:retail-lending",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "process:rate-reset",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "process:borrower-notification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "process:collateral-release",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "process:document-custody",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:borrower-notification",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:emi-tenor-choice",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:fixed-rate-option",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:reset-statement",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:document-release-sla",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:delay-compensation",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:document-collection-choice",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "team:vehicle-finance",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "process:rate-reset",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "process:borrower-notification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "process:collateral-release",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "process:document-custody",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:borrower-notification",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:emi-tenor-choice",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:reset-statement",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:document-release-sla",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "team:retail-lending",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "team:retail-lending",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "process:collateral-release",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "process:document-custody",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:document-release-sla",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:delay-compensation",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "team:retail-lending",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "process:collateral-release",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "process:document-custody",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:document-collection-choice",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "team:msme-banking",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "process:rate-reset",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "process:borrower-notification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "process:collateral-release",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "process:document-custody",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:borrower-notification",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:emi-tenor-choice",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:fixed-rate-option",
+   "type": "PROVIDES",
+   "valid_from": "2021-01-01",
+   "valid_to": "2024-07-01",
+   "attributes": {
+    "change_ticket": "CHG-2024-0612"
+   }
+  },
+  {
+   "source": "process:rate-reset",
+   "target": "team:lending-ops",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:borrower-notification",
+   "target": "team:customer-comms",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:loan-closure",
+   "target": "team:lending-ops",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:collateral-release",
+   "target": "team:collateral-ops",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:document-custody",
+   "target": "team:collateral-ops",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:retail-individual",
+   "target": "product:personal-loan-floating",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:retail-individual",
+   "target": "product:home-loan-floating",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:retail-individual",
+   "target": "product:auto-loan-floating",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:retail-individual",
+   "target": "product:personal-loan-fixed",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:retail-individual",
+   "target": "product:loan-against-property",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:retail-individual",
+   "target": "product:gold-loan",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:msme",
+   "target": "product:msme-term-loan",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  }
+ ]
 }
