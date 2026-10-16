@@ -1,0 +1,7 @@
+branch_id,branch_name,city,region,manager_name,manager_email
+branch:blr-koramangala,Koramangala,Bengaluru,South,Ananya Nair,mgr.blr-koramangala@bank.example.com
+branch:mum-andheri,Andheri East,Mumbai,West,Karthik Menon,mgr.mum-andheri@bank.example.com
+branch:del-cp,Connaught Place,New Delhi,North,Ananya Banerjee,mgr.del-cp@bank.example.com
+branch:chn-tnagar,T Nagar,Chennai,South,Zoya Das,mgr.chn-tnagar@bank.example.com
+branch:hyd-banjara,Banjara Hills,Hyderabad,South,Lakshmi Khan,mgr.hyd-banjara@bank.example.com
+branch:kol-saltlake,Salt Lake,Kolkata,East,Farhan Menon,mgr.kol-saltlake@bank.example.com

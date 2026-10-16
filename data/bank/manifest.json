@@ -1,0 +1,15 @@
+{
+  "reference_date": "2026-10-17",
+  "seed": 2026,
+  "synthetic": true,
+  "rows": {
+    "branches": 6,
+    "customers": 120,
+    "loans": 161,
+    "loan_events": 401
+  },
+  "planted": {
+    "rbi_2023_24_60_document_release_violations": 12,
+    "of_which_koramangala": 7
+  }
+}

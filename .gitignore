@@ -8,3 +8,9 @@ __pycache__/
 .adk/
 .DS_Store
 *.log
+data/bank/*.db
+.data/
+artifacts/
+infrastructure/gcp/config.env
+infrastructure/gcp/.state.env
+.claude/

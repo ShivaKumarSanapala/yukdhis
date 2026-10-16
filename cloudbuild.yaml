@@ -1,0 +1,18 @@
+# CI: test, build, push to Artifact Registry. Deployment: infrastructure/gcp/deploy.sh run
+steps:
+  - id: test
+    name: python:3.11-slim
+    entrypoint: sh
+    args: ["-c", "pip install -q -r requirements.txt && python -m pytest -q"]
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_IMAGE}:${SHORT_SHA}", "-t", "${_IMAGE}:latest", "."]
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ["push", "--all-tags", "${_IMAGE}"]
+substitutions:
+  _IMAGE: us-central1-docker.pkg.dev/${PROJECT_ID}/yukdhis/api
+options:
+  logging: CLOUD_LOGGING_ONLY
+  dynamicSubstitutions: true
+images: ["${_IMAGE}:${SHORT_SHA}"]
