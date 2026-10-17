@@ -5,21 +5,26 @@ Worklists hold opaque loan/customer references only; they let the LLM refer
 to "the 12 loans" by ``worklist_id`` without ever seeing the rows.
 Assistant conversations and messages (with each answer's thinking/tool trace)
 are always read and written with the owning tenant + user in the predicate.
-New tables are created by ``metadata.create_all`` on existing databases.
+New tables are created by ``metadata.create_all`` on existing databases. On Postgres only the creating
+identity can use a new table, so the creator grants it to ``APP_DB_GRANTEES`` (the API and action-engine users).
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import threading
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import (Column, Index, Integer, MetaData, String, Table, Text, create_engine, delete, func, insert, select,
-                        update)
+                        text, update)
+from sqlalchemy.engine import Engine
 
 from core.config import Settings, get_settings
+
+log = logging.getLogger("yukdhis.app_store")
 
 metadata = MetaData()
 runs = Table("runs", metadata,
@@ -87,6 +92,38 @@ def new_id(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:12]}"
 
 
+def _quote(identifier: str) -> str:
+    return '"' + identifier.replace('"', '""') + '"'
+
+
+def share_owned_objects(engine: Engine, grantees: tuple[str, ...]) -> list[str]:
+    """Postgres: grant tables/sequences this identity owns in ``public`` to the other app users. Idempotent.
+
+    Whichever service starts first creates new tables and owns them; without this the other one gets
+    "permission denied". Failures are logged, not raised, so a missing role never blocks startup.
+    """
+    if engine.dialect.name != "postgresql" or not grantees:
+        return []
+    with engine.connect() as conn:
+        me = conn.execute(text("SELECT current_user")).scalar_one()
+        owned = conn.execute(text(
+            "SELECT c.relname, c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+            "WHERE n.nspname = 'public' AND c.relkind IN ('r', 'S') AND pg_get_userbyid(c.relowner) = current_user")).all()
+    granted = []
+    for grantee in (g for g in grantees if g != me):
+        for name, kind in owned:
+            statement = f"GRANT ALL ON {'SEQUENCE' if kind == 'S' else 'TABLE'} {_quote(name)} TO {_quote(grantee)}"
+            try:
+                with engine.begin() as conn:
+                    conn.execute(text(statement))
+                granted.append(f"{name}->{grantee}")
+            except Exception as error:  # noqa: BLE001 - startup must not fail on a missing role
+                log.warning("Could not grant %s to %s: %s", name, grantee, type(error).__name__)
+    if granted:
+        log.info("Shared %d app DB objects with %s", len(granted), ", ".join(g for g in grantees if g != me))
+    return granted
+
+
 class AppStore:
     def __init__(self, settings: Settings | None = None, url: str | None = None) -> None:
         settings = settings or get_settings()
@@ -101,6 +138,7 @@ class AppStore:
             self.engine = create_engine(f"sqlite:///{settings.runtime_dir / 'app.db'}",
                                         connect_args={"check_same_thread": False})
         metadata.create_all(self.engine)
+        share_owned_objects(self.engine, settings.app_db_grantees)
         self.tenant_id = settings.tenant_id
         self._seq_lock = threading.Lock()
         self._seq: dict[str, int] = {}

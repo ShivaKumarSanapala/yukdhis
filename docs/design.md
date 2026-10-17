@@ -37,7 +37,7 @@ the synthetic customer PII. The two are never joined inside the graph.
 | 1 | **Bank topology and policy graph** (products, processes, controls, teams, branches, segments, policies, rules) | **Spanner Graph** (Enterprise, 100 PU) | instance `yukdhis-graph`, database `bank-graph`, tables `Nodes` and `Edges`, property graph `BankArchitecture` | Nodes 56 (33 seed + 23 created by runs), Edges 203 (64 seed + runtime edges; superseded versions are kept) | **No** | Seed script (`scripts/seed_spanner_graph.py`) and the mapper at run time | GraphRAG agent (GQL), evaluator (control gaps), chat assistant |
 | 2 | **Operational bank records**: branches, customers, loans, loan events | **Cloud SQL Postgres 16**, database `bank_ops` (private IP, IAM auth) | tables `branches` (6), `customers` (120), `loans` (161), `loan_events` (401) | as shown | **Yes, synthetic.** `customers` has name, email, phone, PAN. `branches` has manager name and email. | Seed job (`scripts/seed_cloudsql.py`) | Only through the views below, and by the `pii_hydrator` role for approved actions |
 | 2a | Sanitized views over (2) | Cloud SQL `bank_ops` | `vw_compliance_impact`, `vw_loan_events`, `vw_branch_directory` | derived | **No** (opaque refs only) | DDL | Data analyst and evaluator, via the `compliance_analyst` role |
-| 3 | **App state**: ADK sessions, runs, run events, reports, actions, worklists, audit log, outbox, processed-object markers | **Cloud SQL Postgres 16**, database `yukdhis_app` | ADK session tables (created by `DatabaseSessionService`), `runs`, `run_events`, `reports`, `actions`, `worklists`, `audit_log`, `outbox`, `processed_objects` | grows with use | Worklists hold opaque loan and customer refs. The outbox holds masked recipients. | API and action engine | UI, API, assistant |
+| 3 | **App state**: ADK sessions, runs, run events, reports, actions, worklists, audit log, outbox, processed-object markers | **Cloud SQL Postgres 16**, database `yukdhis_app` | ADK session tables (created by `DatabaseSessionService`), `runs`, `run_events`, `reports`, `actions`, `worklists`, `audit_log`, `outbox`, `processed_objects`, `conversations`, `chat_messages` | grows with use | Worklists hold opaque loan and customer refs. The outbox holds masked recipients. | API and action engine | UI, API, assistant |
 | 4 | **Circulars and archives** | **Cloud Storage** `project-b3f4c857-8b43-4c3b-84c-yukdhis-circulars` | `incoming/` (Watcher input), `archive/<doc_id>/` (retained uploads) | per upload | Depends on the document | API, Eventarc | Document AI |
 | 5 | **Long-term memory** | **Vertex AI Agent Engine, Memory Bank** | engine id stored in `.state.env` | per completed session | Distilled summaries (masked) | Pipeline after each run | Precedent agent, assistant |
 | 6 | **Synthetic source files** (seed inputs) | Git repo | `data/bank/architecture.json`, `data/bank/operational/*.csv`, `data/bank/manifest.json` | fixed, seed 2026 | Synthetic PII | `scripts/generate_synthetic_bank.py` | seed jobs; local mode |
@@ -364,6 +364,9 @@ Each component is switchable with `*_BACKEND=local|gcp` (`core/config.py`). The 
 | Auth | `AUTH_MODE=none` (local user) | `AUTH_MODE=firebase` |
 
 `AGENT_MODE=agentic` runs the ADK pipeline. Without a Vertex AI project it falls back to deterministic mode.
+
+`APP_DB_GRANTEES` (set by `deploy.sh` to the API and action-engine IAM users) makes whichever service first creates
+an app-state table grant it to the other. Without it, a new table such as `conversations` is usable only by its creator.
 
 ### 9.6 Cost (approximate, INR/day)
 
