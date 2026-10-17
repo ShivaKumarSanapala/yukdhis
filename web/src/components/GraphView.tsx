@@ -20,7 +20,7 @@ function Shape({ type }: { type: string }) {
   }
 }
 
-export default function GraphView({ defaultAsOf }: { defaultAsOf: string }) {
+export default function GraphView({ defaultAsOf, onAskAssistant }: { defaultAsOf: string; onAskAssistant?: (node: { id: string; type: string; name: string }) => void }) {
   const cache = useRef(new Map<string, GraphSnapshot>());
   const [universe, setUniverse] = useState<Universe | null>(null);
   const [error, setError] = useState("");
@@ -311,7 +311,7 @@ export default function GraphView({ defaultAsOf }: { defaultAsOf: string }) {
               </svg>
             </div>
             {selectedNode && (
-              <GraphInspector node={selectedNode} universe={universe} asOf={asOf} onSelect={(id) => setSelected(id)} onFocus={focusNode} onExpand={expandNode} onClose={closeInspector} />
+              <GraphInspector node={selectedNode} universe={universe} asOf={asOf} onSelect={(id) => setSelected(id)} onFocus={focusNode} onExpand={expandNode} onClose={closeInspector} onAsk={onAskAssistant} />
             )}
           </div>
         )}

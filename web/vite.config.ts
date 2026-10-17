@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const API_TARGET = process.env.API_TARGET ?? "http://localhost:8080";
+
 // Local dev proxies the API; on Firebase Hosting /api/** is rewritten to Cloud Run.
 export default defineConfig({
   plugins: [react()],
@@ -21,8 +23,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": "http://localhost:8080",
-      "/ws": { target: "ws://localhost:8080", ws: true },
+      "/api": API_TARGET,
+      "/ws": { target: API_TARGET.replace(/^http/, "ws"), ws: true },
     },
   },
 });

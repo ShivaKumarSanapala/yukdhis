@@ -1,6 +1,7 @@
+import { useEffect, useId, useRef, useState } from "react";
 import type { RunEvent, RunInfo } from "../types";
 import AgentActivity from "./AgentActivity";
-import { STAGES, fmtDuration, runStatusMeta, stageStates, stageTimings, statusLine } from "../run-utils";
+import { STAGES, fmtDuration, isActive, runStatusMeta, stageLabel, stageStates, stageTimings, statusLine } from "../run-utils";
 
 function describe(event: RunEvent): string {
   const p = event.payload as Record<string, any>;
@@ -23,7 +24,8 @@ function describe(event: RunEvent): string {
   }
 }
 
-/** Pipeline card: status, slim progress rail, the stepper with per-stage activity, and the raw event log behind a toggle. */
+/** Pipeline card: a "thinking"-style header (pulsing dot while the agents work), then the progress rail, the stepper with
+ *  per-stage activity and the raw event log. Open while the run is active, collapsed by itself once it finishes. */
 export default function RunTimeline({ run, events }: { run: RunInfo; events: RunEvent[] }) {
   const status = run.status;
   const states = stageStates(events, status);
@@ -31,11 +33,27 @@ export default function RunTimeline({ run, events }: { run: RunInfo; events: Run
   const meta = runStatusMeta(status);
   const line = statusLine(run, events);
   const live = status === "RUNNING" || status === "CANCEL_REQUESTED";
+  const active = isActive(run) || status === "AWAITING_REVIEW";
   const done = STAGES.filter(([id]) => states.get(id) === "done").length;
+  const [manual, setManual] = useState<boolean | null>(null);
+  const was = useRef(active);
+  useEffect(() => { if (was.current && !active) setManual(null); was.current = active; }, [active]);  // finished: fall back to collapsed
+  const open = manual ?? active;
+  const body = useId();
+  const stage = stageLabel(run.current_stage);
+  const dot = live ? "info live" : status === "SUCCEEDED" ? "ok" : status === "FAILED" ? "bad" : meta.tone === "warn" ? "warn" : "neutral";
   return (
     <div className="card timeline-card">
-      <div className="card-head">
-        <h2>Agent pipeline <span className={`pill ${meta.tone}`} role="status">{meta.label}</span></h2>
+      <div className="card-head tl-head">
+        <h2>
+          <button className="tl-toggle" aria-expanded={open} aria-controls={body} onClick={() => setManual(!open)}>
+            <span className="chevron" aria-hidden="true">{open ? "▾" : "▸"}</span>
+            <span className={`dot ${dot}`} aria-hidden="true" />
+            <span>Agent pipeline</span>
+            {live && <span className="tl-working muted">{stage ? `${stage} working…` : "Working…"}</span>}
+          </button>
+          <span className={`pill ${meta.tone}`} role="status">{meta.label}</span>
+        </h2>
         <span className="muted mono">
           {done}/{STAGES.length} stages{!live && total !== null && total > 0 && <> · total {fmtDuration(total)}</>}
         </span>
@@ -44,15 +62,19 @@ export default function RunTimeline({ run, events }: { run: RunInfo; events: Run
       <div className="rail" aria-hidden="true">
         {STAGES.map(([id]) => <span key={id} className={states.get(id) ?? "pending"} />)}
       </div>
-      <AgentActivity events={events} live={live} activeStage={run.current_stage ?? null} status={status} />
-      <details className="event-log">
-        <summary>Raw event log ({events.length})</summary>
-        <ul className="log">
-          {events.map((e) => (
-            <li key={e.seq}><code>{e.stage}</code> <span className={e.kind}>{describe(e)}</span></li>
-          ))}
-        </ul>
-      </details>
+      {open && (
+        <div id={body}>
+          <AgentActivity events={events} live={live} activeStage={run.current_stage ?? null} status={status} />
+          <details className="event-log">
+            <summary>Raw event log ({events.length})</summary>
+            <ul className="log">
+              {events.map((e) => (
+                <li key={e.seq}><code>{e.stage}</code> <span className={e.kind}>{describe(e)}</span></li>
+              ))}
+            </ul>
+          </details>
+        </div>
+      )}
     </div>
   );
 }
