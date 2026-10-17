@@ -215,3 +215,14 @@ def test_non_binding_without_llm_and_event_sink():
     assert events == [("reader", "document_classified", {k: state["document_classification"][k]
                                                           for k in ("doc_type", "confidence", "reason")})]
     assert any(r["url"] == DIRECTIONS_URL for r in state["references"])
+
+
+def test_guess_mime_does_not_depend_on_system_mime_tables(monkeypatch):
+    import mimetypes
+
+    from ingestion.documents import guess_mime
+
+    monkeypatch.setattr(mimetypes, "guess_type", lambda *_a, **_k: (None, None))  # like python:3.11-slim
+    assert guess_mime("Circular.DOCX") == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    assert guess_mime("a.pdf") == "application/pdf" and guess_mime("a.md") == "text/markdown"
+    assert guess_mime("a.htm") == "text/html" and guess_mime("a.exe") == "application/octet-stream"
