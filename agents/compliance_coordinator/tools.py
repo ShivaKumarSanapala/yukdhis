@@ -41,6 +41,20 @@ def _guarded(fn: Callable[..., dict]) -> Callable[..., dict]:
     return wrapper
 
 
+HALT_KEY = "pipeline_halted"
+
+
+def _halt_on_error(tool_context: ToolContext, run: Callable[[], dict]) -> dict:
+    """Reading is a precondition for everything else: record a failure so later agents skip instead of guessing."""
+    try:
+        result = run()
+    except Exception as error:
+        tool_context.state[HALT_KEY] = str(error)[:1000] or type(error).__name__
+        raise
+    tool_context.state[HALT_KEY] = None  # a retry succeeded
+    return result
+
+
 def _need(state, key: str, hint: str) -> None:
     if key not in state:
         raise ValueError(f"'{key}' is not available yet: {hint}")
@@ -54,7 +68,7 @@ def parse_regulatory_document(tool_context: ToolContext) -> dict:
     Returns the document id, title, parser used, chunk count and section headings.
     """
     _need(tool_context.state, "source", "no document was attached to this run")
-    return stages.stage_parse(tool_context.state)
+    return _halt_on_error(tool_context, lambda: stages.stage_parse(tool_context.state))
 
 
 @_guarded
@@ -64,7 +78,7 @@ def extract_and_validate_rules(tool_context: ToolContext) -> dict:
     Returns the policy, each rule's checks and verbatim citation, and any validation issues.
     """
     _need(tool_context.state, "document", "call parse_regulatory_document first")
-    return stages.stage_extract(tool_context.state)
+    return _halt_on_error(tool_context, lambda: stages.stage_extract(tool_context.state))
 
 
 # Mapper ---------------------------------------------------------------------

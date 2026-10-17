@@ -26,3 +26,13 @@ def llm_options(reasoning: bool = False) -> dict:
         "generate_content_config": types.GenerateContentConfig(temperature=0.1, max_output_tokens=4096),
         "before_model_callback": mask_pii_before_model,
     }
+
+
+def skip_when_halted(callback_context):
+    """Later agents skip (no LLM call) once the Reader could not read the document; the run fails with that reason."""
+    from google.genai import types
+
+    reason = callback_context.state.get("pipeline_halted")
+    if not reason:
+        return None
+    return types.Content(role="model", parts=[types.Part(text=f"Skipped: the document could not be read ({reason}).")])

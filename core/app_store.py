@@ -16,7 +16,7 @@ import logging
 import threading
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy import (Column, Index, Integer, MetaData, String, Table, Text, create_engine, delete, func, insert, select,
@@ -289,6 +289,18 @@ class AppStore:
                         runs.c.status.in_(ACTIVE_RUN_STATUSES), run_meta.c.heartbeat_at >= int(time.time()) - stale_after_s))
         with self.engine.connect() as conn:
             return int(conn.execute(query).scalar() or 0)
+
+    def stale_active_runs(self, stale_after_s: int = 300) -> list[str]:
+        """Active runs nobody is executing: no heartbeat for ``stale_after_s``, or (runs from before heartbeats
+        existed) no meta row and no update for that long. Their instance was replaced by a deploy or crashed."""
+        beat_cutoff = int(time.time()) - stale_after_s
+        updated_cutoff = (datetime.now(timezone.utc) - timedelta(seconds=stale_after_s)).isoformat(timespec="seconds")
+        query = (select(runs.c.run_id).select_from(runs.outerjoin(run_meta, run_meta.c.run_id == runs.c.run_id))
+                 .where(runs.c.tenant_id == self.tenant_id, runs.c.status.in_(ACTIVE_RUN_STATUSES),
+                        ((run_meta.c.heartbeat_at < beat_cutoff)
+                         | (run_meta.c.heartbeat_at.is_(None) & (runs.c.updated_at < updated_cutoff)))))
+        with self.engine.connect() as conn:
+            return list(conn.execute(query).scalars())
 
     # document leases: serialize runs of the same document across instances ----------------
     def acquire_doc_lock(self, key: str, run_id: str, ttl_s: int) -> str | None:
