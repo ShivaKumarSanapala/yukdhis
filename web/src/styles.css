@@ -430,3 +430,5 @@ button.step-head:hover:not(:disabled) { background: var(--hover); }
 .mermaid-fallback { text-align: left; }
 .mermaid-fallback pre { margin: 6px 0 0; }
 @media print { .mermaid { break-inside: avoid; } }
+
+.activity-tools { display: flex; justify-content: flex-end; margin: 0 0 6px; }
