@@ -21,10 +21,15 @@ DOCAI_TYPES = {"application/pdf", "text/html", "application/vnd.openxmlformats-o
 MAX_CHUNK_CHARS = 1800
 
 
+# Explicit map: slim container images ship no /etc/mime.types, so ``mimetypes`` cannot be relied on for .docx.
+KNOWN_TYPES = {".md": "text/markdown", ".markdown": "text/markdown", ".txt": "text/plain", ".pdf": "application/pdf",
+               ".html": "text/html", ".htm": "text/html",
+               ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+
+
 def guess_mime(filename: str) -> str:
-    if filename.lower().endswith((".md", ".markdown")):
-        return "text/markdown"
-    return mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    known = KNOWN_TYPES.get(Path(filename).suffix.lower())
+    return known or mimetypes.guess_type(filename)[0] or "application/octet-stream"
 
 
 def document_id_for(content: bytes) -> str:
