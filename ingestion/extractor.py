@@ -18,6 +18,7 @@ import time
 
 from core.config import get_settings
 from core.models import ExtractedPolicy, ParsedDocument, ValidationIssue
+from ingestion.evaluation import score_extraction
 from ingestion.templates import match_template
 from ingestion.validator import DRAFT_MESSAGE, has_errors, non_binding_message, validate_extraction
 from knowledge_graph.ontology import CAPABILITIES, EVENT_TYPES, RECORD_FLAGS
@@ -33,10 +34,17 @@ instrument. A press release, announcement, FAQ, or any document that only descri
 NO binding rules: return an empty rules list. Set each rule's modality: MUST for an obligation, MAY for a
 permission or option available to the bank (e.g. "may", "allowing banks to choose"), MUST_NOT for a prohibition.
 Rules must be grounded: each citation.snippet is copied VERBATIM
-from the text. Use ISO dates. Express every obligation as checks:
-- control_required: capability one of {capabilities} (or a new snake_case capability if none fits)
+from the text. Use ISO dates. Express each obligation as checks when the check kinds and data below can test it:
+- control_required: capability one of {capabilities}; use a new snake_case capability only for a product or process
+  capability the bank provides that none of these covers. Always fill capability_description with one sentence on
+  what the capability does, in the circular's terms. Leave control_id empty.
 - record_flag: record_field one of {flags}; expected = compliant value
 - event_deadline: trigger_event/required_event from {events}, deadline_days, penalty_per_day_inr if stated
+Do NOT invent a check for an obligation these cannot test (for example a reserve or capital amount to compute or
+hold, a board-approved policy, a treasury or derivatives position, or data not listed above). Put each such
+obligation in `unexecutable` instead, with citation copied VERBATIM, the reason it cannot be checked, and
+missing_data naming the data that would be needed. A rule needs at least one real check; an obligation with none
+goes only in `unexecutable`.
 Use scope.product_terms for product wording exactly as written and the attribute filters only when the text
 states them. Prefix rule ids with "rule:<reference>:" and the policy id with "policy:<reference>".
 Set confidence below 0.8 for anything ambiguous.
@@ -92,8 +100,10 @@ def extract_policy(document: ParsedDocument, use_llm: bool | None = None, classi
     provenance["model"] = settings.reasoning_model
 
     if reference is not None:
-        agreement = _agreement(extraction, reference) if extraction else 0.0
-        provenance.update(method="template-of-record+gemini-crosscheck", gemini_agreement=agreement)
+        scores = score_extraction(extraction, reference) if extraction else None
+        agreement = scores["checks"]["recall"] if scores else 0.0
+        provenance.update(method="template-of-record+gemini-crosscheck", gemini_agreement=agreement,
+                          extraction_scores=scores)
         notes = [] if agreement >= 0.99 else [ValidationIssue(
             severity="WARNING", field="cross_check",
             message=f"Gemini matched {agreement:.0%} of the approved template's checks; template used as source of truth.")]
@@ -171,9 +181,5 @@ def _gemini_extract(document: ParsedDocument, feedback: str,
 
 
 def _agreement(candidate: ExtractedPolicy, reference: ExtractedPolicy) -> float:
-    def signature(policy: ExtractedPolicy) -> set[tuple]:
-        return {(c.kind, c.capability, c.record_field, c.trigger_event, c.required_event, c.deadline_days)
-                for rule in policy.rules for c in rule.checks}
-
-    expected = signature(reference)
-    return round(len(signature(candidate) & expected) / len(expected), 3) if expected else 0.0
+    """Share of the approved template's checks that Gemini reproduced (check recall in ``score_extraction``)."""
+    return score_extraction(candidate, reference)["checks"]["recall"]

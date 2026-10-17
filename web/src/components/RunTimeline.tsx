@@ -10,6 +10,7 @@ function describe(event: RunEvent): string {
     case "agent_message": return p.text as string;
     case "thinking": return `${p.agent} thinking${p.done ? "" : "…"} (${String(p.text ?? "").length} chars)`;
     case "extraction_retry": return `extraction attempt ${p.attempt} failed: ${p.error}`;
+    case "control_canonicalised": return `control ${p.term} → ${p.control_id} (${p.decision}, ${p.method})${p.needs_review ? ", needs review" : ""}`;
     case "stage_started": return `started ${p.label ?? p.agent ?? ""}`;
     case "stage_completed": return `done: ${p.label}`;
     case "stage_skipped": return `skipped: ${p.label} (${p.reason})`;

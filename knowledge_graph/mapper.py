@@ -4,11 +4,14 @@ For each rule it resolves product/process/segment wording to canonical nodes,
 then upserts bitemporal ``CONTAINS``/``GOVERNS``/``APPLIES_TO``/``TARGETS``/
 ``REQUIRES`` edges.  Which products a rule governs is decided by explicit
 attribute filters and scored entity resolution, never by free LLM inference.
+Required capabilities are canonicalised onto one Control node each
+(``knowledge_graph/canonicaliser.py``), so re-mapping is idempotent.
 """
 
 from __future__ import annotations
 
-from core.models import EntityMatch, Policy, Rule, RuleMapping
+from core.models import ControlDecision, EntityMatch, Policy, Rule, RuleMapping
+from knowledge_graph.canonicaliser import ControlCanonicaliser
 from knowledge_graph.entity_resolution import EntityResolver, lexical_score
 from knowledge_graph.ontology import (
     CAPABILITIES, CAPABILITY_PROCESSES, EVENT_PROCESSES, PRODUCT_ATTRIBUTES, REGULATORY_GLOSSARY,
@@ -19,9 +22,11 @@ GLOSSARY_THRESHOLD = 0.9
 
 
 class PolicyMapper:
-    def __init__(self, store: GraphStore, resolver: EntityResolver | None = None) -> None:
+    def __init__(self, store: GraphStore, resolver: EntityResolver | None = None,
+                 canonicaliser: ControlCanonicaliser | None = None) -> None:
         self.store = store
         self.resolver = resolver or EntityResolver()
+        self.canonicaliser = canonicaliser or ControlCanonicaliser(store, self.resolver)
 
     def upsert_policy(self, policy: Policy) -> list[dict]:
         written = []
@@ -68,6 +73,9 @@ class PolicyMapper:
             candidates = [p for p in products if not resolved_products or p["id"] in resolved_products]
             product_ids = sorted(p["id"] for p in candidates if all(p["attributes"].get(k) == v for k, v in filters.items()))
 
+        control_ids, decisions = self._controls(rule)
+        canonical_capability = {control: capability for capability, control in CAPABILITIES.items()}
+
         process_nodes = self.store.nodes("Process")
         process_ids: set[str] = set()
         for term in rule.processes:
@@ -78,8 +86,9 @@ class PolicyMapper:
             for event in (check.trigger_event, check.required_event):
                 if event in EVENT_PROCESSES:
                     process_ids.add(EVENT_PROCESSES[event])
-            if check.capability in CAPABILITY_PROCESSES:
-                process_ids.add(CAPABILITY_PROCESSES[check.capability])
+            capability = canonical_capability.get(check.control_id or "", check.capability)
+            if capability in CAPABILITY_PROCESSES:
+                process_ids.add(CAPABILITY_PROCESSES[capability])
 
         segment_nodes = self.store.nodes("CustomerSegment")
         segment_ids: set[str] = set()
@@ -91,15 +100,6 @@ class PolicyMapper:
             segment_ids = {e["node"]["id"] for e in self.store.neighbours(product_ids, ["ELIGIBLE_FOR"], rule.effective_date, "in")}
         elif not segment_ids:
             scope_notes.append(f"Unresolved segment term(s): {', '.join(repr(t) for t in rule.segments)}; no segments targeted.")
-
-        control_ids: set[str] = set()
-        for check in rule.checks:
-            if check.capability:
-                control_id = CAPABILITIES.get(check.capability, f"control:{check.capability.replace('_', '-')}")
-                if not self.store.node(control_id):
-                    self.store.upsert_node(control_id, "Control", check.capability.replace("_", " ").title(),
-                                           {"needs_review": True, "created_by": "mapper"})
-                control_ids.add(control_id)
 
         self.store.upsert_node(rule.rule_id, "Rule", rule.title, {
             "description": rule.description, "effective_date": rule.effective_date, "status": rule.status,
@@ -120,8 +120,23 @@ class PolicyMapper:
             rule_id=rule.rule_id, product_ids=product_ids, process_ids=sorted(process_ids),
             segment_ids=sorted(segment_ids), control_ids=sorted(control_ids), resolutions=resolutions,
             edges_written=written, verification_query=verification_gql(rule.rule_id),
-            scope_status=scope_status, scope_notes=scope_notes,
+            scope_status=scope_status, scope_notes=scope_notes, control_decisions=decisions,
         )
+
+    def _controls(self, rule: Rule) -> tuple[set[str], list[ControlDecision]]:
+        """Canonicalise each required capability onto one Control node and stamp ``check.control_id``."""
+        control_ids: set[str] = set()
+        decisions: list[ControlDecision] = []
+        for index, check in enumerate(rule.checks):
+            if not check.capability:
+                check.control_id = None  # only the mapper sets it
+                continue
+            description = " ".join(p for p in (check.description, check.capability_description) if p)
+            decision = self.canonicaliser.resolve(check.capability, description, rule.citation.snippet, rule.rule_id, index)
+            check.control_id = decision.control_id
+            control_ids.add(decision.control_id)
+            decisions.append(decision)
+        return control_ids, decisions
 
     @staticmethod
     def _glossary(term: str) -> dict | None:

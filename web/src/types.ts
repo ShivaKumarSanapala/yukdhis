@@ -32,7 +32,11 @@ export interface Summary {
   overall_status: string; privacy_redactions: number;
   /** Newer reports only: rule ids whose scope could not be resolved. */
   unresolved_rules?: string[];
+  /** Newer reports only: obligations that cannot be machine-checked. */
+  unexecutable_obligations?: number;
 }
+/** An obligation the engine cannot check with its check kinds or data (newer reports only). */
+export interface Unexecutable { citation: string; reason: string; missing_data: string[] }
 export interface Check {
   rule_id: string; check_index: number; kind: string; description: string; status: string;
   in_scope: number; violations: number; exposure_inr: number; penalty_inr: number;
@@ -65,6 +69,8 @@ export interface ImpactReport {
   limitations: string[]; validation_issues: { severity: string; rule_id: string | null; message: string }[];
   extraction_provenance: Record<string, unknown>;
   data_profile: { executed_sql?: string; rows?: Record<string, unknown>[] };
+  /** Newer reports only; may be absent or malformed in old ones, so read it through unexecutableOf(). */
+  unexecutable?: unknown;
 }
 
 // Assistant chat ----------------------------------------------------------------

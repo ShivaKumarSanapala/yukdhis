@@ -68,8 +68,8 @@ def test_nddc_and_ferr_rules_are_gated_inconclusive_with_no_actions():
     assert summary["not_applicable_rules"] == ["rule:gate:nddc"] and "rule:gate:ferr" in summary["rules_missing_data"]
     assert state["report"]["actions"] == []
     kinds = [(stage, kind) for stage, kind, _ in state["events"]]
-    assert kinds == [("mapper", "applicability"), ("mapper", "applicability")]
-    payload = state["events"][0][2]
+    assert kinds == [("mapper", "control_canonicalised")] * 2 + [("mapper", "applicability")] * 2
+    payload = next(p for _, kind, p in state["events"] if kind == "applicability")
     assert set(payload) == {"rule_id", "applicable", "reasons", "missing_data"}
 
 

@@ -158,6 +158,18 @@ flowchart LR
   vocabulary (`control_required`, `record_flag`, `event_deadline`). It allows one corrective retry.
 - Every extracted rule starts as `PENDING_REVIEW`. A reviewer approves it with `POST /api/rules/review`, which versions its
   graph edges.
+- **Unexecutable obligations.** An obligation that the check kinds or the onboarded data cannot test (a reserve to hold with
+  RBI, a capital computation, a board policy) is not forced into a fake check. Gemini puts it in
+  `ExtractedPolicy.unexecutable` (`citation`, `reason`, `missing_data`). The validator requires those citations to be verbatim,
+  like rule citations. The report carries them as `report.unexecutable` and `summary.unexecutable_obligations`, the UI shows a
+  "Not machine-checkable" card, and the CSV export has an `UNEXECUTABLE` row for each.
+- **Extraction eval.** `ingestion/evaluation.py` `score_extraction(candidate, gold)` gives rule and check precision, recall and
+  F1, and per-field accuracy (`modality`, `effective_date`, `capability`) over matched rules. Rules match by normalised title,
+  citation overlap or content. The template cross-check stores these scores in the provenance (`extraction_scores`);
+  `gemini_agreement` is the check recall. `scripts/eval_extraction.py` prints them for both samples: template against template
+  without an LLM (all 1.0), Gemini against the template with one.
+- `EXTRACTOR_VERSION` (`ingestion/cache.py`) is `2026-10-17.2`, so cached extractions made before unexecutable obligations and
+  `capability_description` are extracted again.
 - Known limitations are listed in §12.
 
 ---
@@ -208,7 +220,24 @@ flowchart LR
 - Entity resolution (`knowledge_graph/entity_resolution.py`) takes the higher of a lexical synonym score (threshold 0.55)
   and a Vertex AI embedding score (`text-embedding-005`, GCP only, threshold 0.75). Regulated-entity wording ("banks",
   "Authorised Dealers", "NBFCs") never resolves to a product or customer segment.
-- Unknown capabilities create `Control` nodes with `needs_review = true`.
+- **Control canonicalisation** (`knowledge_graph/canonicaliser.py`, L7). Each required capability resolves to one `Control`
+  node, and the mapper stamps it on the check as `control_id`, which the evaluator uses:
+  1. Exact or synonym (no LLM call): an ontology capability id, an existing `control:<slug>` node (following `merged_into`),
+     or words equal to a control's name or a recorded synonym.
+  2. Otherwise the top 8 candidates (ontology `CAPABILITIES` and graph controls) are scored with the resolver's lexical
+     synonym score, an acronym-aware variant (`maintain ferr` ~ `foreign exchange risk reserve maintenance`, 0.95) and, on
+     GCP, the embedding score.
+  3. In agentic mode, Gemini Flash (structured output, temperature 0, thinking off, 512 output tokens) returns
+     `MATCH | NEW | AMBIGUOUS`, a candidate id, a confidence and a rationale, given the check description and citation.
+     An id outside the candidates, `AMBIGUOUS`, or a confidence below 0.7 becomes `NEW` with `needs_review`.
+  4. With no LLM, or on any LLM error, only a unique match with lexical ≥ 0.85 or embedding ≥ 0.92 (and 0.05 clear of the
+     runner-up) applies; otherwise `NEW` with `needs_review`. The canonicaliser never fails a run.
+  On a match the extracted wording is recorded as a synonym of the canonical control, so the next run resolves it in step 1
+  and re-mapping adds no controls and no edges. Each decision is in the mapping output (`control_decisions`), in the report
+  (`control_decisions`) and in the run events (`mapper` / `control_canonicalised`).
+- `scripts/dedupe_controls.py` proposes merges of existing near-duplicate controls with the same ladder (dry run by default).
+  `--apply` ends each `REQUIRES` and `PROVIDES` edge into the duplicate at today (the old row is superseded, not deleted),
+  opens the same edge to the canonical control from today, and marks the duplicate `merged_into`.
 
 **GraphRAG traversal** (`knowledge_graph/traversal.py`): Rule → Product, Process, Segment, Control (hop 1), then
 Product → Process, Control, Team (hop 2), all filtered by `as_of`. Output is topology only.
@@ -227,8 +256,9 @@ Product → Process, Control, Team (hop 2), all filtered by `as_of`. Output is t
 - `NOT_EVALUATED`: the scope is `UNRESOLVED`, no products are governed, or the rule's modality is `MAY` (a permission, not
   an obligation).
 
-The report's `overall_status` rolls up as: any `GAP` → `NON_COMPLIANT`; else any `UPCOMING` → `UPCOMING`; else no results,
-any `NOT_EVALUATED` or any unresolved rule → `INCONCLUSIVE`; else `COMPLIANT`. `summary.unresolved_rules` lists the rules
+The report's `overall_status` rolls up as: any `GAP` → `NON_COMPLIANT`; else any unexecutable obligation → `INCONCLUSIVE`;
+else any `UPCOMING` → `UPCOMING`; else no results, any `NOT_EVALUATED` or any unresolved rule → `INCONCLUSIVE`; else
+`COMPLIANT`. A report with unexecutable obligations is therefore never `COMPLIANT`. `summary.unresolved_rules` lists the rules
 whose scope could not be resolved. No remediation action is proposed for a rule without a `GAP`.
 
 **Rule approval**: a human decision on a rule re-versions its edges (`ingestion` → `knowledge_graph/mapper.py: review_rule`).
@@ -427,9 +457,9 @@ Defects found by the evals in `docs/evals/` (both are real circulars):
 | L2 | `NOT_EVALUATED` rolled up to `COMPLIANT` | **Fixed**: `UPCOMING` and `INCONCLUSIVE` statuses |
 | L3 | No document-type classification or link following (a press release was read as a rule) | **Partly fixed**: draft or proposal wording in a citation is a validation error and the run fails with a clear message. Classifier and link following are open |
 | L4 | No rule modality | **Fixed**: `MUST` / `MAY` / `MUST_NOT`; `MAY` is not evaluated as an obligation |
-| L5 | No applicability gate (licence, entity type, business line) | Open |
+| L5 | No applicability gate (licence, entity type, business line) | Open. Helped by unexecutable obligations: obligations no check can test are reported as "Not machine-checkable" instead of fake checks, and keep the report from being `COMPLIANT` |
 | L6 | Re-mapping is not idempotent; rule ids are positional | Open |
-| L7 | Capability names are created verbatim, giving near-duplicate controls | Open |
+| L7 | Capability names are created verbatim, giving near-duplicate controls | **Partly fixed**: control canonicalisation (exact or synonym, then Gemini with guards, or a strict lexical or embedding match), synonyms recorded so re-mapping is idempotent, and `scripts/dedupe_controls.py` for bitemporal merges of existing duplicates. Open: Gemini behaviour is not yet measured on real circulars, and merges are not applied to the deployed graph |
 | L8 | Extraction is non-deterministic and not cached | **Partly fixed**: `seed=0`. No cache by `document_id` yet |
 | L9 | `control_required` counted closed loans | **Fixed** |
 | L10 | Owner routing used the product owner | **Partly fixed**: process owner first, Compliance when unresolved. Treasury needs its own domain |
@@ -438,6 +468,9 @@ Defects found by the evals in `docs/evals/` (both are real circulars):
 | L13 | Contextual PII detection is heuristic only, since Gemma is off | Open (cost decision) |
 | L14 | The graph holds rules from test runs, including unreviewed and wrong ones (CVA, FERR) | Open |
 | L15 | Orchestrator restates the mapping as fact; no critic step | Open |
+
+Extraction quality is now measured against the templates of record (`scripts/eval_extraction.py`: rule and check P/R/F1,
+modality, effective-date and capability accuracy).
 
 Also shipped with the fixes: UI badges for all four overall statuses, an unresolved-scope warning, run comparison,
 CSV export and print-to-PDF, stage timings, and responsive, dark-mode and accessibility improvements.
@@ -466,7 +499,8 @@ sign-in, CI, deployed smoke test, evals on two real circulars.
 test-run data out of the production graph (L14).
 
 **P1: reading regulation like a compliance officer.** Document-type classifier and link following (L3). Stable
-content-hash rule ids, idempotent re-mapping and control dedup (L6, L7). Extraction caching by `document_id` (L8).
+content-hash rule ids and idempotent re-mapping of rules (L6); control canonicalisation and dedup are in (L7), with an
+eval of Gemini's decisions on real circulars still to do. Extraction caching by `document_id` (L8).
 Critic agent between evaluator and orchestrator (L15). Treasury owner routing (L10).
 
 **P2: coverage.** Treasury and derivatives domain, capital adequacy domain, and FERR and CVA as working scenarios with
@@ -485,8 +519,8 @@ Private Service Connect for Vertex AI, staging and prod environments, Monitoring
 | `agents/compliance_assistant/` | Chat agent |
 | `api/` | FastAPI (`main.py`), runs (`runs.py`), auth, ADK runtime |
 | `pipeline/` | Stage functions shared by agent tools and the deterministic runner |
-| `ingestion/` | Documents, templates of record, Gemini extractor, validator, watcher |
-| `knowledge_graph/` | Ontology, bitemporal store (SQLite and Spanner), mapper, traversal, GQL guard, entity resolution |
+| `ingestion/` | Documents, templates of record, Gemini extractor, validator, extraction eval (`evaluation.py`), watcher |
+| `knowledge_graph/` | Ontology, bitemporal store (SQLite and Spanner), mapper, control canonicaliser, traversal, GQL guard, entity resolution |
 | `bank_mcp_server/` | Operational store, SQL guard, secure engine, remediation (action engine), MCP server |
 | `privacy/` | Detectors, vault, Gemma client, sanitizer, ADK callback |
 | `core/` | Config, typed contracts, app store, Gemini client |
@@ -494,7 +528,7 @@ Private Service Connect for Vertex AI, staging and prod environments, Monitoring
 | `infrastructure/gcp/` | `deploy.sh`, `config.env.example` |
 | `infrastructure/spanner_graph/` | `schema.ddl`, `deploy.sh` |
 | `infrastructure/cloudsql/` | `schema.sql` (tables, views, roles) |
-| `scripts/` | Synthetic data generator, seeders, smoke test, demo |
+| `scripts/` | Synthetic data generator, seeders, smoke test, demo, `dedupe_controls.py`, `eval_extraction.py` |
 | `data/` | Synthetic bank (`bank/`), circulars (`circulars/`) |
 | `tests/` | `test_engine.py` (11 tests) |
 | `docs/` | This file, `deployment.md`, `evals/` |

@@ -4,7 +4,8 @@ import type { Action, ImpactReport } from "../types";
 import BarList from "./BarList";
 import { CheckPill, ModalityBadge, OverallBadge } from "./StatusBadges";
 import {
-  downloadCsv, inr, isMeasured, isUnresolved, modalityOf, overallKey, overallMeta, printReport, radiusFor, ruleTitle, short, unresolvedRadii,
+  downloadCsv, inr, isMeasured, isUnresolved, modalityOf, overallKey, overallMeta, printReport, radiusFor, ruleTitle, short, unexecutableOf,
+  unresolvedRadii,
 } from "../report-utils";
 
 const SCOPE_DEFAULT = "Scope could not be resolved from the circular's wording; no products assessed.";
@@ -12,7 +13,10 @@ const SCOPE_DEFAULT = "Scope could not be resolved from the circular's wording; 
 export default function ReportView({ report, onChange }: { report: ImpactReport; onChange?: (r: ImpactReport) => void }) {
   const s = report.summary;
   const overall = overallMeta(s);
-  const unassessed = ["INCONCLUSIVE", "UPCOMING"].includes(overallKey(s));
+  const unexecutable = unexecutableOf(report);
+  // Obligations that cannot be machine-checked make the report INCONCLUSIVE even when the other checks were measured.
+  const measured = (report.results ?? []).some((r) => isMeasured(r.status));
+  const unassessed = ["INCONCLUSIVE", "UPCOMING"].includes(overallKey(s)) && !(unexecutable.length > 0 && measured);
   const unresolved = unresolvedRadii(report);
   const shownRadius = (report.blast_radius ?? []).find((r) => !isUnresolved(r));
   const kpi = (value: number | string) => (unassessed ? "—" : value);
@@ -73,6 +77,27 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
               <li key={r.rule_id}>
                 <b>{ruleTitle(report, r.rule_id)}</b>
                 {(r.scope_notes ?? []).length > 0 && <ul>{(r.scope_notes ?? []).map((n, i) => <li key={i}>{n}</li>)}</ul>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {unexecutable.length > 0 && (
+        <div className="card unexecutable" role="region" aria-label="Not machine-checkable obligations">
+          <h3>Not machine-checkable <span className="pill warn">{unexecutable.length}</span></h3>
+          <p className="muted">
+            The engine cannot test {unexecutable.length === 1 ? "this obligation" : "these obligations"} with its check kinds or the
+            data onboarded, so the report cannot be COMPLIANT. Review {unexecutable.length === 1 ? "it" : "them"} manually.
+          </p>
+          <ul>
+            {unexecutable.map((u, i) => (
+              <li key={i}>
+                {u.citation && <blockquote>“{u.citation}”</blockquote>}
+                {u.reason && <p><b>Why not:</b> {u.reason}</p>}
+                {u.missing_data.length > 0 && (
+                  <p><b>Missing data:</b> {u.missing_data.map((d, j) => <span key={d}>{j > 0 && ", "}<code>{d}</code></span>)}</p>
+                )}
               </li>
             ))}
           </ul>

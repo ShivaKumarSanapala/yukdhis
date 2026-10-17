@@ -352,7 +352,7 @@ def _approved_extraction(extraction: dict, edited: list[Rule] | None) -> tuple[d
         merged.append(base.model_copy(update=updates))
     if not merged:
         raise HTTPException(422, "Approve at least one rule, or reject the run")
-    candidate = ExtractedPolicy(policy=original.policy, rules=merged)
+    candidate = ExtractedPolicy(policy=original.policy, rules=merged, unexecutable=original.unexecutable)
     errors = [i for i in validate_extraction(candidate) if i.severity == "ERROR"]
     if errors:
         raise HTTPException(422, "; ".join(f"{i.rule_id or 'policy'} {i.field}: {i.message}" for i in errors)[:1000])

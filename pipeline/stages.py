@@ -22,7 +22,7 @@ from typing import Any, Callable, Iterator, MutableMapping
 from bank_mcp_server.secure_engine import SecureEngine
 from core.app_store import get_app_store, new_id, now
 from core.config import DATA_DIR, get_settings
-from core.models import (Applicability, BlastRadius, CheckResult, ExtractedPolicy, ImpactReport,
+from core.models import (Applicability, BlastRadius, CheckResult, ControlDecision, ExtractedPolicy, ImpactReport,
                          ParsedDocument, ProposedAction, Rule, RuleMapping, ValidationIssue)
 from ingestion import extractor
 from ingestion.cache import EXTRACTOR_VERSION, ExtractionCache
@@ -154,6 +154,7 @@ def stage_extract(state: State) -> dict:
             "document_classification": _classified_payload(classification), "references": state["references"],
             "rules": [{"rule_id": r.rule_id, "title": r.title, "effective_date": r.effective_date,
                        "checks": [c.kind for c in r.checks], "citation": r.citation.snippet} for r in extraction.rules],
+            "unexecutable": [u.model_dump() for u in extraction.unexecutable],
             "issues": state["validation_issues"]}
 
 
@@ -164,19 +165,43 @@ def stage_map(state: State) -> dict:
     supersession = mapper.upsert_policy(extraction.policy)
     mappings = [mapper.map_rule(extraction.policy, rule) for rule in extraction.rules]
     state["mappings"] = [m.model_dump() for m in mappings]
+    for mapping in mappings:
+        for decision in mapping.control_decisions:
+            _emit(state, "mapper", "control_canonicalised", _decision_payload(decision))
     assessments = _assess_applicability(state, extraction)
     for assessment in assessments.values():
         _emit(state, "mapper", "applicability", _applicability_payload(assessment))
     return {"supersedes": supersession, "mappings": [
         {"rule_id": m.rule_id, "products": m.product_ids, "processes": m.process_ids, "segments": m.segment_ids,
          "controls": m.control_ids, "scope_status": m.scope_status, "scope_notes": m.scope_notes, "edges_written": len(m.edges_written),
-         "resolutions": [r.model_dump() for r in m.resolutions]} for m in mappings],
+         "resolutions": [r.model_dump() for r in m.resolutions],
+         "control_decisions": [_decision_payload(d) for d in m.control_decisions]} for m in mappings],
         "applicability": [_applicability_payload(a) for a in assessments.values()]}
+
+
+def _with_controls(state: State, extraction: ExtractedPolicy) -> ExtractedPolicy:
+    """Stamp each check's canonical control id from the mapper's decisions. The extraction in state stays exactly as
+    extracted (and reviewed); the evaluator and the applicability gate read the canonical controls through this.
+    A ``control_id`` that arrived with the extraction is never trusted: only the mapper sets it."""
+    by_check = {(d.get("rule_id"), d.get("check_index")): d.get("control_id")
+                for m in state.get("mappings", []) for d in m.get("control_decisions", [])}
+    for rule in extraction.rules:
+        for index, check in enumerate(rule.checks):
+            check.control_id = by_check.get((rule.rule_id, index))
+    return extraction
+
+
+def _decision_payload(decision: ControlDecision) -> dict:
+    return {"rule_id": decision.rule_id, "check_index": decision.check_index, "term": decision.term,
+            "control_id": decision.control_id, "decision": decision.decision, "method": decision.method,
+            "confidence": decision.confidence, "needs_review": decision.needs_review, "rationale": decision.rationale[:300],
+            "model_decision": decision.model_decision,
+            "candidates": [{k: c.get(k) for k in ("id", "lexical", "embedding")} for c in decision.candidates[:3]]}
 
 
 # 2b. Applicability gate (between mapping and evaluation) ------------------------
 def _assess_applicability(state: State, extraction: ExtractedPolicy | None = None) -> dict[str, Applicability]:
-    extraction = extraction or ExtractedPolicy.model_validate(state["extraction"])
+    extraction = extraction or _with_controls(state, ExtractedPolicy.model_validate(state["extraction"]))
     assessments = gate.assess_rules(extraction.rules, state.get("mappings", []))
     state["applicability"] = {a.rule_id: a.model_dump() for a in assessments}
     return {a.rule_id: a for a in assessments}
@@ -249,7 +274,7 @@ def stage_profile(state: State) -> dict:
 
 # 5. Evaluator ----------------------------------------------------------------
 def stage_evaluate(state: State) -> dict:
-    extraction = ExtractedPolicy.model_validate(state["extraction"])
+    extraction = _with_controls(state, ExtractedPolicy.model_validate(state["extraction"]))
     radii = {r["rule_id"]: BlastRadius.model_validate(r) for r in state["blast_radius"]}
     engine = SecureEngine()
     assessments = _applicability(state)
@@ -342,9 +367,12 @@ def _owner_for(state: State, rule_id: str, workflow_id: str = "") -> str:
     return "Compliance"
 
 
-def overall_status(results: list[CheckResult], unresolved_rules: list[str]) -> str:
+def overall_status(results: list[CheckResult], unresolved_rules: list[str], unexecutable: int = 0) -> str:
+    """Obligations that cannot be machine-checked (``unexecutable``) mean the report can never be COMPLIANT."""
     if any(r.status == "GAP" for r in results):
         return "NON_COMPLIANT"
+    if unexecutable:
+        return "INCONCLUSIVE"
     if any(r.status == "UPCOMING" for r in results):
         return "UPCOMING"
     if not results or unresolved_rules or any(r.status == "NOT_EVALUATED" for r in results):
@@ -382,8 +410,9 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
         "statutory_penalty_inr": sum(r.penalty_inr for r in results),
         "control_gaps": sorted({f"{pid}: {c}" for r in radii for pid, gaps in r.control_gaps.items() for c in gaps}),
         "by_branch": dict(Counter(branch_names.get(l["branch_id"], l["branch_id"]) for l in loans.values()).most_common()),
-        "overall_status": overall_status(results, unresolved),
+        "overall_status": overall_status(results, unresolved, len(extraction.unexecutable)),
         "unresolved_rules": unresolved,
+        "unexecutable_obligations": len(extraction.unexecutable),
         "not_applicable_rules": sorted(rid for rid, a in assessments.items() if a.applicable is False),
         "rules_missing_data": {rid: a.missing_data for rid, a in sorted(assessments.items())
                                if a.applicable is not True and a.missing_data},
@@ -395,6 +424,7 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
         generated_at=now(), as_of=state["as_of"], mode=mode, blast_radius=radii, results=results, summary=summary,
         actions=actions, narrative=narrative.strip(),
         validation_issues=[ValidationIssue.model_validate(i) for i in state.get("validation_issues", [])],
+        unexecutable=extraction.unexecutable,
         limitations=[
             "Synthetic data: every customer, loan and branch is fictional.",
             "Decision support only: actions stay PENDING_APPROVAL until a compliance officer approves them.",
@@ -408,6 +438,8 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
     body["document_classification"] = state.get("document_classification")
     body["references"] = state.get("references", [])
     body["applicability"] = [a.model_dump() for a in assessments.values()]
+    body["control_decisions"] = [_decision_payload(ControlDecision.model_validate(d))
+                                 for m in state.get("mappings", []) for d in m.get("control_decisions", [])]
     store.save_report(body)
     state["report_id"] = report.report_id
     state["actions"] = [a.model_dump() for a in actions]

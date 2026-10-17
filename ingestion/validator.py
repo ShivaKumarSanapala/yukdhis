@@ -60,10 +60,10 @@ def validate_extraction(extraction: ExtractedPolicy, document: ParsedDocument | 
         add("ERROR", "policy.effective_date", f"Not an ISO date: {policy.effective_date!r}")
     if not policy.reference.strip():
         add("ERROR", "policy.reference", "Circular reference number is required.")
-    if not extraction.rules:
+    if not extraction.rules and not extraction.unexecutable:
         add("ERROR", "rules", "No rules extracted.")
     seen: set[str] = set()
-    source = (document.text if document else "").lower()
+    source = " ".join((document.text if document else "").lower().split())
     for rule in extraction.rules:
         rid = rule.rule_id
         if rid in seen:
@@ -73,10 +73,8 @@ def validate_extraction(extraction: ExtractedPolicy, document: ParsedDocument | 
             add("ERROR", "effective_date", f"Not an ISO date: {rule.effective_date!r}", rid)
         if not rule.checks:
             add("ERROR", "checks", "Rule has no executable checks.", rid)
-        if document is not None:
-            snippet = " ".join(rule.citation.snippet.lower().split())
-            if not snippet or snippet[:60] not in " ".join(source.split()):
-                add("ERROR", "citation.snippet", "Citation text is not found verbatim in the source document.", rid)
+        if document is not None and not _verbatim(rule.citation.snippet, source):
+            add("ERROR", "citation.snippet", "Citation text is not found verbatim in the source document.", rid)
         if DRAFT_PATTERN.search(rule.citation.snippet):
             add("ERROR", "citation.snippet", DRAFT_MESSAGE, rid)
         if rule.confidence < MIN_CONFIDENCE:
@@ -90,7 +88,8 @@ def validate_extraction(extraction: ExtractedPolicy, document: ParsedDocument | 
                 if not check.capability:
                     add("ERROR", where, "control_required needs a capability.", rid)
                 elif check.capability not in CAPABILITIES:
-                    add("WARNING", where, f"Capability {check.capability!r} is new to the ontology; mapper will create a control pending review.", rid)
+                    add("WARNING", where, f"Capability {check.capability!r} is new to the ontology; the mapper will match it "
+                        "to an existing control or create one pending review.", rid)
             elif check.kind == "record_flag":
                 if check.record_field not in RECORD_FLAGS:
                     add("ERROR", where, f"record_field must be one of {sorted(RECORD_FLAGS)}.", rid)
@@ -101,7 +100,21 @@ def validate_extraction(extraction: ExtractedPolicy, document: ParsedDocument | 
                     add("ERROR", where, f"Events must be in {sorted(EVENT_TYPES)}.", rid)
                 if not check.deadline_days or check.deadline_days <= 0:
                     add("ERROR", where, "deadline_days must be a positive integer.", rid)
+    for index, item in enumerate(extraction.unexecutable):
+        where = f"unexecutable[{index}]"
+        if document is not None and not _verbatim(item.citation, source):
+            add("ERROR", f"{where}.citation", "Unexecutable obligation citation is not found verbatim in the source document.")
+        if DRAFT_PATTERN.search(item.citation):
+            add("ERROR", f"{where}.citation", DRAFT_MESSAGE)
+        if not item.reason.strip():
+            add("ERROR", f"{where}.reason", "Say why the obligation cannot be checked.")
     return issues
+
+
+def _verbatim(snippet: str, normalised_source: str) -> bool:
+    """Same rule for rule and unexecutable citations: the first 60 characters, whitespace-normalised, appear in the source."""
+    text = " ".join((snippet or "").lower().split())
+    return bool(text) and text[:60] in normalised_source
 
 
 def has_errors(issues: list[ValidationIssue]) -> bool:
