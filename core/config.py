@@ -44,6 +44,7 @@ class Settings:
     project: str | None
     location: str
     reasoning_model: str
+    gemini_location: str  # Vertex location for Gemini calls; "global" spreads load (fewer 429s) but is not regional
     fast_model: str
     embedding_model: str
     agent_mode: str  # agentic | deterministic
@@ -97,6 +98,7 @@ def get_settings() -> Settings:
         project=_env("GOOGLE_CLOUD_PROJECT"),
         location=_env("GOOGLE_CLOUD_LOCATION", "us-central1") or "us-central1",
         reasoning_model=_env("REASONING_MODEL", "gemini-2.5-pro") or "gemini-2.5-pro",
+        gemini_location=_env("GEMINI_LOCATION") or _env("GOOGLE_CLOUD_LOCATION", "us-central1") or "us-central1",
         fast_model=_env("FAST_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash",
         embedding_model=_env("EMBEDDING_MODEL", "text-embedding-005") or "text-embedding-005",
         agent_mode=(_env("AGENT_MODE", "agentic") or "agentic").lower(),

@@ -94,9 +94,9 @@ class EntityResolver:
 
 @lru_cache(maxsize=512)
 def _embed(model: str, texts: tuple[str, ...]) -> list[list[float]]:
-    from core.llm import genai_client
+    from core.llm import regional_genai_client
 
-    response = genai_client().models.embed_content(model=model, contents=list(texts))
+    response = regional_genai_client().models.embed_content(model=model, contents=list(texts))  # not on "global"
     return [list(item.values) for item in response.embeddings]
 
 

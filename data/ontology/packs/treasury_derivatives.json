@@ -1,0 +1,72 @@
+{
+  "pack_id": "treasury_derivatives",
+  "version": "1.0.0",
+  "title": "Treasury and derivatives: FX derivatives, NDDCs, hedging, FERR, IFSC Banking Unit (signals only)",
+  "domain": "treasury_derivatives",
+  "business_line": "treasury_derivatives",
+  "requires_data_domains": [
+    "treasury_trades",
+    "counterparties"
+  ],
+  "applicability_signals": [
+    {
+      "name": "nddc",
+      "label": "INR non-deliverable derivative contracts (NDDCs)",
+      "order": 10,
+      "keywords": [
+        "\\bnon[- ]deliverable\\b",
+        "\\bnddcs?\\b"
+      ],
+      "business_line": "treasury_derivatives",
+      "data_domains": [
+        "treasury_trades",
+        "counterparties"
+      ],
+      "licence": "ifsc_banking_unit"
+    },
+    {
+      "name": "ifsc_banking_unit",
+      "label": "IFSC Banking Unit activity",
+      "order": 20,
+      "keywords": [
+        "\\bifsc banking units?\\b",
+        "\\bibus?\\b",
+        "\\bgift city\\b",
+        "\\binternational financial services centres?\\b"
+      ],
+      "data_domains": [],
+      "licence": "ifsc_banking_unit"
+    },
+    {
+      "name": "ferr",
+      "label": "Foreign Exchange Risk Reserve",
+      "order": 30,
+      "keywords": [
+        "\\bforeign exchange risk reserve\\b",
+        "\\bferr\\b"
+      ],
+      "business_line": "treasury_derivatives",
+      "data_domains": [
+        "treasury_trades",
+        "rbi_reserve_balances"
+      ]
+    },
+    {
+      "name": "fx_derivatives",
+      "label": "FX / derivative contracts",
+      "order": 40,
+      "keywords": [
+        "\\bderivatives?\\b",
+        "\\b(?:fx|foreign exchange|forex|currency) (?:forwards?|swaps?|options?|contracts?)\\b",
+        "\\bforeign currency against (?:the )?(?:inr|rupee)\\b",
+        "\\b(?:cross[- ]currency|interest rate) swaps?\\b",
+        "\\bnotional\\b",
+        "\\bhedg(?:e|es|ed|ing)\\b"
+      ],
+      "business_line": "treasury_derivatives",
+      "data_domains": [
+        "treasury_trades"
+      ]
+    }
+  ]
+}

@@ -21,7 +21,7 @@ from core.models import ExtractedPolicy, ParsedDocument, ValidationIssue
 from ingestion.evaluation import score_extraction
 from ingestion.templates import match_template
 from ingestion.validator import DRAFT_MESSAGE, has_errors, non_binding_message, validate_extraction
-from knowledge_graph.ontology import CAPABILITIES, EVENT_TYPES, RECORD_FLAGS
+from knowledge_graph.ontology import get_ontology
 
 log = logging.getLogger(__name__)
 MAX_ATTEMPTS = 2
@@ -145,21 +145,22 @@ def _gemini_extract(document: ParsedDocument, feedback: str,
     """Streams the structured answer so thought summaries show up live; fails clearly when the answer is cut off."""
     from google.genai import types
 
-    from core.llm import genai_client
+    from core.llm import genai_client, retry_stream
 
     settings = get_settings()
     chunks = "\n\n".join(f"<chunk id={c.chunk_id} page={c.page_start}>\n{c.content}\n</chunk>" for c in document.chunks)
-    prompt = EXTRACTION_PROMPT.format(capabilities=sorted(CAPABILITIES), flags=sorted(RECORD_FLAGS), events=sorted(EVENT_TYPES),
+    vocabulary = get_ontology(tenant_ids=(settings.tenant_id,))  # enabled ontology packs, read at call time
+    prompt = EXTRACTION_PROMPT.format(capabilities=sorted(vocabulary.capabilities), flags=sorted(vocabulary.record_flags),
+                                      events=sorted(vocabulary.event_types),
                                       document_id=document.document_id, parser=document.parser, chunks=chunks)
     if feedback:
         prompt += "\n\n" + feedback
-    stream = genai_client().models.generate_content_stream(
-        model=settings.reasoning_model, contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.0, seed=0, response_mime_type="application/json", response_schema=ExtractedPolicy,
-            max_output_tokens=MAX_OUTPUT_TOKENS,
-            thinking_config=types.ThinkingConfig(include_thoughts=True, thinking_budget=THINKING_BUDGET)),
-    )
+    config = types.GenerateContentConfig(
+        temperature=0.0, seed=0, response_mime_type="application/json", response_schema=ExtractedPolicy,
+        max_output_tokens=MAX_OUTPUT_TOKENS,
+        thinking_config=types.ThinkingConfig(include_thoughts=True, thinking_budget=THINKING_BUDGET))
+    stream = retry_stream(lambda: genai_client().models.generate_content_stream(
+        model=settings.reasoning_model, contents=prompt, config=config), label="extraction")
     answer, thoughts, finish, last = [], [], "", 0.0
     for chunk in stream:
         for candidate in chunk.candidates or []:

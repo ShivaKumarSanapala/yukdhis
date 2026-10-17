@@ -23,6 +23,7 @@
     "not_onboarded": "The bank may run this business, but it is not onboarded in Yukdhis; rules on it cannot be evaluated.",
     "none": "The bank does not run this business; rules that only concern it do not apply."
   },
+  "ontology_packs": ["retail_lending", "msme_lending", "provisioning_iracp"],
   "onboarded_data_domains": ["loans", "customers", "branches", "loan_events", "asset_quality", "kyc"],
   "not_onboarded_data_domains": ["deposits", "treasury_trades", "rbi_reserve_balances", "counterparties", "capital_rwa", "liquidity", "ecl_inputs"],
   "notes": "Demo profile used by the applicability gate (pipeline/applicability.py). No treasury derivatives desk and no capital/RWA data are onboarded. asset_quality (days past due, classification, provisions, interest recognition) and kyc are onboarded; ecl_inputs (PD, LGD, EAD, staging, EIR, macro scenarios) are deliberately not."
