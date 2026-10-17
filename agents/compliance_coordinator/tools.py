@@ -144,16 +144,29 @@ def profile_impacted_portfolio(tool_context: ToolContext) -> dict:
 
 
 @_guarded
-def run_safe_sql(sql: str, intent: str, tool_context: ToolContext) -> dict:
-    """Run an aggregate-only SELECT over sanitized views (vw_compliance_impact, vw_loan_events, vw_branch_directory).
+def describe_bank_data(tool_context: ToolContext) -> dict:
+    """Catalogue of every queryable sanitized view: typed columns, descriptions, live row counts, aggregate hints.
 
-    The query is AST-validated: SELECT only, allow-listed views, no PII or row identifiers, LIMIT 100.
+    Call this before writing SQL. Names, contacts, PAN, Aadhaar and account numbers are in no view.
+    """
+    return SecureEngine().describe_bank_data()
+
+
+@_guarded
+def run_safe_sql(sql: str, intent: str, tool_context: ToolContext, row_level: bool = False) -> dict:
+    """Run a read-only SELECT over any sanitized vw_* view (see describe_bank_data for the list and columns).
+
+    The query is AST-validated: one SELECT, views only, no PII columns, no SELECT *. With row_level=false (default for
+    summaries) it must be an aggregate (COUNT/SUM/AVG/MIN/MAX with GROUP BY) and returns at most 100 rows. With
+    row_level=true it may return per-loan or per-customer rows keyed by the opaque loan_ref / customer_ref (at most 200).
 
     Args:
-        sql: PostgreSQL-dialect SELECT with COUNT/SUM/AVG/MIN/MAX and GROUP BY.
+        sql: PostgreSQL-dialect SELECT.
         intent: One sentence on what the query is for (recorded in the audit log).
+        row_level: true to return individual rows keyed by opaque refs; false for aggregates only.
     """
-    return SecureEngine().run_safe_sql(sql, intent)
+    actor = getattr(tool_context, "agent_name", None) or "data_analyst_agent"
+    return SecureEngine().run_safe_sql(sql, intent, actor=actor, row_level=bool(row_level))
 
 
 # Evaluator ---------------------------------------------------------------------

@@ -6,9 +6,10 @@ second, deterministic layer that runs *before* execution:
 1. exactly one statement, and it is a SELECT (no DML/DDL/commands anywhere);
 2. every table is an allow-listed ``vw_*`` view (CTE names excepted);
 3. no PII column names, no ``SELECT *``;
-4. aggregate-only output: no row-level identifiers, every projection is an
-   aggregate or a GROUP BY key;
-5. LIMIT forced to <= 100, then transpiled to the target dialect.
+4. aggregate mode (default, used by the pipeline): no row-level identifiers, every projection is an
+   aggregate or a GROUP BY key. Row-level mode (``row_level=True``, the assistant and the Data Analyst): plain
+   projections are allowed, keyed by the opaque ``loan_ref`` / ``customer_ref``; PII columns stay refused;
+5. LIMIT forced to <= 100 (aggregate) or <= 200 (row level), then transpiled to the target dialect.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from bank_mcp_server.view_catalog import sanitized_views
 from knowledge_graph.ontology import PII_COLUMNS
 
 MAX_ROWS = 100
+MAX_ROW_LEVEL_ROWS = 200
 IDENTIFIER_COLUMNS = {"loan_ref", "customer_ref", "loan_id"}
 FORBIDDEN_NODES = (exp.Insert, exp.Update, exp.Delete, exp.Drop, exp.Create, exp.Alter, exp.Command,
                    exp.Merge, exp.TruncateTable, exp.Grant, exp.Into)
@@ -38,7 +40,7 @@ class GuardResult:
     original: str
 
 
-def validate_sql(query: str, dialect: str = "sqlite", source_dialect: str = "postgres") -> GuardResult:
+def validate_sql(query: str, dialect: str = "sqlite", source_dialect: str = "postgres", row_level: bool = False) -> GuardResult:
     try:
         statements = [s for s in sqlglot.parse(query, read=source_dialect) if s is not None]
     except sqlglot.errors.ParseError as error:
@@ -64,26 +66,29 @@ def validate_sql(query: str, dialect: str = "sqlite", source_dialect: str = "pos
         if column.name.lower() in PII_COLUMNS:
             raise SqlRejected(f"Column '{column.name}' is PII and not available.")
     if any(isinstance(p, exp.Star) or (isinstance(p, exp.Column) and isinstance(p.this, exp.Star)) for p in tree.expressions):
-        raise SqlRejected("SELECT * is not allowed; select aggregates.")
+        raise SqlRejected("SELECT * is not allowed; name the columns (see describe_bank_data)." if row_level
+                          else "SELECT * is not allowed; select aggregates.")
+    max_rows = MAX_ROW_LEVEL_ROWS if row_level else MAX_ROWS
 
-    group_keys = {g.sql(dialect=source_dialect).lower() for g in (tree.args.get("group") or exp.Group()).expressions}
-    group_names = {g.alias_or_name.lower() for g in (tree.args.get("group") or exp.Group()).expressions}
-    has_aggregate = False
-    for projection in tree.expressions:
-        inner = projection.this if isinstance(projection, exp.Alias) else projection
-        if inner.find(exp.AggFunc):
-            has_aggregate = True
-            if any(isinstance(arg, exp.Column) and arg.name.lower() in IDENTIFIER_COLUMNS and not isinstance(agg, exp.Count)
-                   for agg in inner.find_all(exp.AggFunc) for arg in agg.find_all(exp.Column)):
-                raise SqlRejected("Aggregating identifiers into lists is not allowed.")
-            continue
-        if inner.sql(dialect=source_dialect).lower() not in group_keys and inner.alias_or_name.lower() not in group_names:
-            raise SqlRejected(f"'{projection.sql()}' must be aggregated or in GROUP BY (aggregate-only access).")
-        if any(c.name.lower() in IDENTIFIER_COLUMNS for c in inner.find_all(exp.Column)) or (
-                isinstance(inner, exp.Column) and inner.name.lower() in IDENTIFIER_COLUMNS):
-            raise SqlRejected("Grouping by row-level identifiers is not allowed.")
-    if not has_aggregate:
-        raise SqlRejected("Query must return aggregates (COUNT/SUM/AVG/MIN/MAX).")
+    if not row_level:
+        group_keys = {g.sql(dialect=source_dialect).lower() for g in (tree.args.get("group") or exp.Group()).expressions}
+        group_names = {g.alias_or_name.lower() for g in (tree.args.get("group") or exp.Group()).expressions}
+        has_aggregate = False
+        for projection in tree.expressions:
+            inner = projection.this if isinstance(projection, exp.Alias) else projection
+            if inner.find(exp.AggFunc):
+                has_aggregate = True
+                if any(isinstance(arg, exp.Column) and arg.name.lower() in IDENTIFIER_COLUMNS and not isinstance(agg, exp.Count)
+                       for agg in inner.find_all(exp.AggFunc) for arg in agg.find_all(exp.Column)):
+                    raise SqlRejected("Aggregating identifiers into lists is not allowed.")
+                continue
+            if inner.sql(dialect=source_dialect).lower() not in group_keys and inner.alias_or_name.lower() not in group_names:
+                raise SqlRejected(f"'{projection.sql()}' must be aggregated or in GROUP BY (aggregate-only access).")
+            if any(c.name.lower() in IDENTIFIER_COLUMNS for c in inner.find_all(exp.Column)) or (
+                    isinstance(inner, exp.Column) and inner.name.lower() in IDENTIFIER_COLUMNS):
+                raise SqlRejected("Grouping by row-level identifiers is not allowed.")
+        if not has_aggregate:
+            raise SqlRejected("Query must return aggregates (COUNT/SUM/AVG/MIN/MAX).")
 
     limit = tree.args.get("limit")
     current = None
@@ -92,6 +97,6 @@ def validate_sql(query: str, dialect: str = "sqlite", source_dialect: str = "pos
             current = int(limit.expression.this)
         except (AttributeError, TypeError, ValueError):
             current = None
-    if current is None or current > MAX_ROWS:
-        tree = tree.limit(MAX_ROWS)
+    if current is None or current > max_rows:
+        tree = tree.limit(max_rows)
     return GuardResult(sql=tree.sql(dialect=dialect), tables=tables, original=query)

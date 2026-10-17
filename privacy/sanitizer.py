@@ -19,6 +19,7 @@ from typing import Any
 from core.config import Settings, get_settings
 from privacy.detectors import contextual_findings, structured_findings
 from privacy.gemma import GemmaRedactor
+from privacy.safe_ids import protect, restore
 from privacy.vault import VAULT
 
 log = logging.getLogger(__name__)
@@ -46,8 +47,16 @@ class Sanitizer:
         self.gemma = GemmaRedactor(self.settings)
 
     def sanitize(self, text: str, session_id: str, local: bool = False) -> SanitizedText:
+        """Mask PII. Run/report/rule ids and opaque loan_ref/customer_ref values are protected first (see safe_ids)."""
         if not text or not text.strip():
             return SanitizedText(text=text)
+        shielded, originals = protect(text)
+        result = self._sanitize(shielded, session_id, local)
+        if originals:
+            result.text = restore(result.text, originals)
+        return result
+
+    def _sanitize(self, text: str, session_id: str, local: bool) -> SanitizedText:
         if self.settings.privacy_backend == "gcp" and not local:
             try:
                 return self._dlp_deidentify(text)
