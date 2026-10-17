@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -21,6 +22,7 @@ from typing import Any
 from sqlalchemy import (Column, Index, Integer, MetaData, String, Table, Text, create_engine, delete, func, insert, select,
                         text, update)
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import IntegrityError
 
 from core.config import Settings, get_settings
 
@@ -70,6 +72,24 @@ chat_messages = Table("chat_messages", metadata,
                       Column("content", Text), Column("trace", Text), Column("status", String(16)),
                       Column("created_at", String(40)))
 CHAT_STATUSES = {"complete", "stopped", "error"}
+# Run metadata lives beside ``runs`` (not as new columns) so existing databases need no ALTER TABLE; old runs have no row.
+# ``source`` and ``checkpoint`` are server-only: the full source (with local paths) and the paused state for review.
+run_meta = Table("run_meta", metadata,
+                 Column("run_id", String(64), primary_key=True), Column("tenant_id", String(64)),
+                 Column("owner_id", String(128)), Column("created_by", String(256)), Column("source_kind", String(16)),
+                 Column("filename", String(512)), Column("doc_sha256", String(64)), Column("current_stage", String(64)),
+                 Column("started_at", String(40)), Column("finished_at", String(40)), Column("queued_position", Integer),
+                 Column("as_of", String(16)), Column("review_rules", Integer), Column("rerun_of", String(64)),
+                 Column("heartbeat_at", Integer), Column("rules", Text), Column("source", Text), Column("checkpoint", Text),
+                 Index("ix_run_meta_doc", "tenant_id", "doc_sha256"), Index("ix_run_meta_owner", "tenant_id", "owner_id"))
+# Cross-instance lease that serializes runs of the same document (tenant + content hash); expires unless refreshed.
+doc_locks = Table("doc_locks", metadata,
+                  Column("lock_key", String(160), primary_key=True), Column("run_id", String(64)),
+                  Column("expires_at", Integer))
+RUN_COLUMNS = {"status", "mode", "document", "report_id", "error"}
+META_COLUMNS = {c.name for c in run_meta.columns} - {"run_id", "tenant_id"}
+PRIVATE_META = {"owner_id", "source", "checkpoint", "heartbeat_at"}
+ACTIVE_RUN_STATUSES = ("QUEUED", "RUNNING", "CANCEL_REQUESTED")
 
 
 def now() -> str:
@@ -86,6 +106,19 @@ def _json(text: str | None, default: Any) -> Any:
     except (TypeError, ValueError):
         return default
     return value if isinstance(value, type(default)) else default
+
+
+SOURCE_KINDS = {"upload": "upload", "sample": "sample", "text": "text", "url": "url", "watcher": "watcher"}
+
+
+def _meta_values(values: dict) -> dict:
+    out = {k: v for k, v in values.items() if k in META_COLUMNS}
+    for key in ("rules", "source", "checkpoint"):
+        if out.get(key) is not None and not isinstance(out[key], str):
+            out[key] = json.dumps(out[key], default=str)
+    if "review_rules" in out:
+        out["review_rules"] = int(bool(out["review_rules"]))
+    return out
 
 
 def new_id(prefix: str) -> str:
@@ -135,8 +168,8 @@ class AppStore:
             self.engine = _cloudsql_engine(settings, settings.cloudsql_app_db)
         else:
             settings.runtime_dir.mkdir(parents=True, exist_ok=True)
-            self.engine = create_engine(f"sqlite:///{settings.runtime_dir / 'app.db'}",
-                                        connect_args={"check_same_thread": False})
+            self.engine = create_engine(f"sqlite:///{settings.runtime_dir / 'app.db'}",  # parallel runs write from threads
+                                        connect_args={"check_same_thread": False, "timeout": 30})
         metadata.create_all(self.engine)
         share_owned_objects(self.engine, settings.app_db_grantees)
         self.tenant_id = settings.tenant_id
@@ -144,39 +177,162 @@ class AppStore:
         self._seq: dict[str, int] = {}
 
     # runs ---------------------------------------------------------------
-    def create_run(self, mode: str, document: dict) -> str:
-        run_id = new_id("run")
+    def create_run(self, mode: str, document: dict, meta: dict | None = None) -> str:
+        run_id, ts = new_id("run"), now()
         with self.engine.begin() as conn:
             conn.execute(insert(runs).values(run_id=run_id, tenant_id=self.tenant_id, status="QUEUED", mode=mode,
-                                             document=json.dumps(document), created_at=now(), updated_at=now()))
+                                             document=json.dumps(document), created_at=ts, updated_at=ts))
+            conn.execute(insert(run_meta).values(run_id=run_id, tenant_id=self.tenant_id, heartbeat_at=int(time.time()),
+                                                 **_meta_values(meta or {})))
         return run_id
 
+    def _write_meta(self, conn: Any, run_id: str, values: dict) -> None:
+        if not values:
+            return
+        if conn.execute(update(run_meta).where(run_meta.c.run_id == run_id).values(**values)).rowcount == 0:
+            conn.execute(insert(run_meta).values(run_id=run_id, tenant_id=self.tenant_id, **values))  # run predates run_meta
+
     def update_run(self, run_id: str, **values: Any) -> None:
+        unknown = set(values) - RUN_COLUMNS - META_COLUMNS
+        if unknown:
+            raise ValueError(f"Unknown run fields: {sorted(unknown)}")
         with self.engine.begin() as conn:
-            conn.execute(update(runs).where(runs.c.run_id == run_id).values(updated_at=now(), **values))
+            conn.execute(update(runs).where(runs.c.run_id == run_id, runs.c.tenant_id == self.tenant_id)
+                         .values(updated_at=now(), **{k: v for k, v in values.items() if k in RUN_COLUMNS}))
+            self._write_meta(conn, run_id, _meta_values(values))
 
-    def get_run(self, run_id: str) -> dict | None:
+    def transition_run(self, run_id: str, expected: tuple[str, ...] | set[str], status: str, **values: Any) -> bool:
+        """Compare-and-set on status (shared by every instance); False when the run was not in ``expected``."""
+        with self.engine.begin() as conn:
+            result = conn.execute(update(runs).where(runs.c.run_id == run_id, runs.c.tenant_id == self.tenant_id,
+                                                     runs.c.status.in_(list(expected)))
+                                  .values(status=status, updated_at=now(), **{k: v for k, v in values.items() if k in RUN_COLUMNS}))
+            if result.rowcount != 1:
+                return False
+            self._write_meta(conn, run_id, _meta_values(values))
+        return True
+
+    def run_status(self, run_id: str) -> str | None:
         with self.engine.connect() as conn:
-            row = conn.execute(select(runs).where(runs.c.run_id == run_id)).mappings().first()
-        if not row:
+            return conn.execute(select(runs.c.status).where(runs.c.run_id == run_id, runs.c.tenant_id == self.tenant_id)).scalar()
+
+    def heartbeat(self, run_id: str) -> None:
+        with self.engine.begin() as conn:
+            conn.execute(update(run_meta).where(run_meta.c.run_id == run_id).values(heartbeat_at=int(time.time())))
+
+    def _run_query(self):
+        return (select(runs, *[run_meta.c[c] for c in sorted(META_COLUMNS)])
+                .select_from(runs.outerjoin(run_meta, run_meta.c.run_id == runs.c.run_id))
+                .where(runs.c.tenant_id == self.tenant_id))
+
+    def _previous(self, conn: Any, shas: set[str]) -> dict[str, list[dict]]:
+        if not shas:
+            return {}
+        rows = conn.execute(select(run_meta.c.doc_sha256, runs.c.run_id, runs.c.report_id, runs.c.created_at)
+                            .join(runs, runs.c.run_id == run_meta.c.run_id)
+                            .where(run_meta.c.tenant_id == self.tenant_id, run_meta.c.doc_sha256.in_(sorted(shas)))
+                            .order_by(runs.c.created_at.desc(), runs.c.run_id.desc()).limit(50 * len(shas))).mappings().all()
+        out: dict[str, list[dict]] = {}
+        for r in rows:
+            out.setdefault(r["doc_sha256"], []).append(dict(r))
+        return out
+
+    @staticmethod
+    def _run(row: Any, previous: dict[str, list[dict]], private: bool = False) -> dict:
+        """Public run shape; fields added after the first release are read defensively (old rows have no run_meta)."""
+        document = _json(row["document"], {})
+        others = [p for p in previous.get(row["doc_sha256"] or "", []) if p["run_id"] != row["run_id"]]
+        earlier = [p for p in others if p["report_id"] and (p["created_at"] or "") <= (row["created_at"] or "")]
+        out = {k: row[k] for k in ("run_id", "status", "mode", "report_id", "error", "created_at", "updated_at")}
+        out.update(
+            document={k: v for k, v in document.items() if k != "user_id"},
+            created_by=row["created_by"] or document.get("user_id"),
+            source_kind=row["source_kind"] or SOURCE_KINDS.get(document.get("trigger") or "", "upload"),
+            filename=row["filename"] or document.get("filename"), doc_sha256=row["doc_sha256"],
+            current_stage=row["current_stage"], started_at=row["started_at"], finished_at=row["finished_at"],
+            queued_position=row["queued_position"], as_of=row["as_of"], review_rules=bool(row["review_rules"]),
+            rerun_of=row["rerun_of"], rules=_json(row["rules"], []), previous_run_ids=[p["run_id"] for p in others][:20],
+            previous_report_id=earlier[0]["report_id"] if earlier else None,
+            owner_id=row["owner_id"] or document.get("user_id"))  # for ownership checks; the API does not return it
+        if private:
+            out.update(source=_json(row["source"], {}), checkpoint=_json(row["checkpoint"], {}),
+                       heartbeat_at=row["heartbeat_at"])
+        return out
+
+    def get_run(self, run_id: str, private: bool = False) -> dict | None:
+        with self.engine.connect() as conn:
+            row = conn.execute(self._run_query().where(runs.c.run_id == run_id)).mappings().first()
+            if not row:
+                return None
+            previous = self._previous(conn, {row["doc_sha256"]} if row["doc_sha256"] else set())
+        return self._run(row, previous, private)
+
+    def list_runs(self, limit: int = 20, statuses: list[str] | None = None, owner_id: str | None = None,
+                  source_kind: str | None = None) -> list[dict]:
+        query = self._run_query()
+        if statuses:
+            query = query.where(runs.c.status.in_(statuses))
+        if owner_id:
+            query = query.where(run_meta.c.owner_id == owner_id)
+        if source_kind:
+            query = query.where(run_meta.c.source_kind == source_kind)
+        with self.engine.connect() as conn:
+            rows = conn.execute(query.order_by(runs.c.created_at.desc(), runs.c.run_id.desc()).limit(limit)).mappings().all()
+            previous = self._previous(conn, {r["doc_sha256"] for r in rows if r["doc_sha256"]})
+        return [self._run(r, previous) for r in rows]
+
+    def count_active_runs(self, owner_id: str, stale_after_s: int = 300) -> int:
+        """Active runs of one user; runs whose executor stopped heart-beating (instance gone) do not count."""
+        query = (select(func.count()).select_from(runs.join(run_meta, run_meta.c.run_id == runs.c.run_id))
+                 .where(runs.c.tenant_id == self.tenant_id, run_meta.c.owner_id == owner_id,
+                        runs.c.status.in_(ACTIVE_RUN_STATUSES), run_meta.c.heartbeat_at >= int(time.time()) - stale_after_s))
+        with self.engine.connect() as conn:
+            return int(conn.execute(query).scalar() or 0)
+
+    # document leases: serialize runs of the same document across instances ----------------
+    def acquire_doc_lock(self, key: str, run_id: str, ttl_s: int) -> str | None:
+        """None when ``run_id`` now holds the lease; otherwise the run id holding it ("" if it just changed hands)."""
+        t = int(time.time())
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(insert(doc_locks).values(lock_key=key, run_id=run_id, expires_at=t + ttl_s))
             return None
-        return {**row, "document": json.loads(row["document"] or "{}")}
+        except IntegrityError:
+            pass
+        with self.engine.begin() as conn:
+            taken = conn.execute(update(doc_locks).where(doc_locks.c.lock_key == key,
+                                                         (doc_locks.c.expires_at < t) | (doc_locks.c.run_id == run_id))
+                                 .values(run_id=run_id, expires_at=t + ttl_s)).rowcount == 1
+            holder = None if taken else conn.execute(select(doc_locks.c.run_id).where(doc_locks.c.lock_key == key)).scalar()
+        return None if taken else (holder or "")
 
-    def list_runs(self, limit: int = 20) -> list[dict]:
-        with self.engine.connect() as conn:
-            rows = conn.execute(select(runs).where(runs.c.tenant_id == self.tenant_id)
-                                .order_by(runs.c.created_at.desc()).limit(limit)).mappings().all()
-        return [{**r, "document": json.loads(r["document"] or "{}")} for r in rows]
+    def refresh_doc_lock(self, key: str, run_id: str, ttl_s: int) -> None:
+        with self.engine.begin() as conn:
+            conn.execute(update(doc_locks).where(doc_locks.c.lock_key == key, doc_locks.c.run_id == run_id)
+                         .values(expires_at=int(time.time()) + ttl_s))
+
+    def release_doc_lock(self, key: str, run_id: str) -> None:
+        with self.engine.begin() as conn:
+            conn.execute(delete(doc_locks).where(doc_locks.c.lock_key == key, doc_locks.c.run_id == run_id))
 
     def add_event(self, run_id: str, stage: str, kind: str, payload: dict) -> dict:
         with self._seq_lock:
-            seq = self._seq.get(run_id, 0) + 1
+            if run_id not in self._seq:  # a resumed (reviewed) or restarted run continues after its last stored event
+                with self.engine.connect() as conn:
+                    last = conn.execute(select(func.max(run_events.c.seq)).where(run_events.c.run_id == run_id)).scalar()
+                self._seq[run_id] = int(last or 0)
+            seq = self._seq[run_id] + 1
             self._seq[run_id] = seq
-        event = {"run_id": run_id, "seq": seq, "ts": now(), "stage": stage, "kind": kind, "payload": payload}
+        event = {"run_id": run_id, "seq": seq, "ts": now_ms(), "stage": stage, "kind": kind, "payload": payload}
         with self.engine.begin() as conn:
             conn.execute(insert(run_events).values(run_id=run_id, seq=seq, ts=event["ts"], stage=stage, kind=kind,
                                                    payload=json.dumps(payload, default=str)))
         return event
+
+    def forget_seq(self, run_id: str) -> None:
+        """Drop the cached event counter once this instance stops writing a run's events."""
+        with self._seq_lock:
+            self._seq.pop(run_id, None)
 
     def events(self, run_id: str, after: int = 0) -> list[dict]:
         with self.engine.connect() as conn:

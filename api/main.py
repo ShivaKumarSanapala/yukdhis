@@ -7,17 +7,19 @@ service) and opens the run-event WebSocket directly against the Cloud Run URL.
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import logging
 import os
 import time
 import uuid
+import zipfile
 from collections import defaultdict, deque
 from datetime import date
 from pathlib import Path
 from typing import Literal
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -27,16 +29,20 @@ from pydantic import BaseModel, Field
 from api.adk_runtime import ASSISTANT_APP, assistant_runner, memory_service, session_service
 from api.auth import User, current_user, verify_firebase_token, verify_service_caller
 from api.chat import auto_title, build_prompt, single_error, sse_response, stream_turn
-from api.runs import choose_mode, start_run
+from api.runs import (PAUSED, RUN_STATUSES, TERMINAL, WATCHER_USER, RunLimitExceeded, choose_mode, ensure_capacity,
+                      reject_run, request_cancel, resume_run, sha256_of, start_run)
 from bank_mcp_server.remediation import dispatch, request_dispatch
-from core.app_store import get_app_store
+from core.app_store import SOURCE_KINDS, get_app_store
 from core.config import DATA_DIR, ROOT, get_settings
+from core.models import ExtractedPolicy, Rule
 from ingestion.documents import DOCAI_TYPES, TEXT_TYPES, archive_to_gcs, document_id_for, guess_mime
+from ingestion.validator import validate_extraction
 from ingestion.watcher import eligible, list_incoming, source_for
 from knowledge_graph.mapper import review_rule
 from knowledge_graph.ontology import ontology_summary
 from knowledge_graph.store import get_graph_store
 from knowledge_graph.traversal import blast_radius
+from pipeline.deterministic import GRAPH_TRAVERSAL_LOCK
 from pipeline.stages import default_as_of
 from privacy.sanitizer import get_sanitizer
 
@@ -118,55 +124,270 @@ def samples(user: User = Depends(current_user)) -> list[dict]:
 
 
 # Runs ----------------------------------------------------------------------
-@app.post("/api/runs")
-async def create_run(request: Request, file: UploadFile | None = File(default=None), sample_id: str | None = Form(default=None),
-                     mode: str | None = Form(default=None), as_of: str | None = Form(default=None),
-                     user: User = Depends(current_user)) -> dict:
+MAX_BATCH = 10                 # runs started by one request (files + samples + text + url)
+MAX_TEXT_BYTES = 500 * 1024    # pasted circular
+MAX_URL_LENGTH = 2048
+DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+BINARY_SIGNATURES = (b"%PDF", b"PK\x03\x04", b"\x89PNG", b"GIF8", b"\xd0\xcf\x11\xe0")
+EDITABLE_RULE_FIELDS = ("title", "description", "modality", "effective_date", "penalty_risk")
+
+
+def content_problem(content: bytes, mime: str) -> str | None:
+    """Magic-byte check of an upload against its declared type; a user-safe reason, or None when it matches."""
+    if not content.strip():
+        return "The file is empty."
+    if mime == "application/pdf":
+        return None if content.startswith(b"%PDF") else "The file is named .pdf but its content is not a PDF."
+    if mime == DOCX_TYPE:
+        try:
+            with zipfile.ZipFile(io.BytesIO(content)) as archive:
+                is_docx = content.startswith(b"PK\x03\x04") and "word/document.xml" in archive.namelist()
+        except zipfile.BadZipFile:
+            is_docx = False
+        return None if is_docx else "The file is named .docx but its content is not a Word document."
+    if content.startswith(BINARY_SIGNATURES) or b"\x00" in content[:65536]:
+        return "The file is named as text, Markdown or HTML but its content is binary."
+    try:
+        content.decode("utf-8")
+    except UnicodeDecodeError:
+        return "Text, Markdown and HTML files must be UTF-8 encoded."
+    return None
+
+
+def _store_document(content: bytes, filename: str, trigger: str) -> dict:
+    gcs_uri = archive_to_gcs(content, filename)
+    if gcs_uri:
+        return {"gcs_uri": gcs_uri, "filename": filename, "trigger": trigger}
+    target = settings.runtime_dir / "uploads" / f"{document_id_for(content)}-{filename}"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(content)
+    return {"path": str(target), "filename": filename, "display_uri": f"{trigger}://{filename}", "trigger": trigger}
+
+
+async def _upload_source(file: UploadFile) -> tuple[dict, str]:
+    content = await file.read(settings.max_upload_bytes + 1)
+    filename = Path(file.filename or "upload.md").name[:200] or "upload.md"
+    if len(content) > settings.max_upload_bytes:
+        raise HTTPException(413, f"{filename} is larger than {settings.max_upload_bytes // (1024 * 1024)} MB")
+    mime = guess_mime(filename)
+    if mime not in ALLOWED_TYPES:
+        raise HTTPException(415, f"{filename}: upload PDF, DOCX, HTML, Markdown or text")
+    if problem := content_problem(content, mime):
+        raise HTTPException(400, f"{filename}: {problem}")
+    return _store_document(content, filename, "upload"), sha256_of(content)
+
+
+def _sample_source(sample_id: str) -> dict:
+    path = SAMPLES_DIR / Path(sample_id).name
+    if not path.exists() or path.suffix != ".md":
+        raise HTTPException(404, "Unknown sample")
+    return {"path": str(path), "filename": path.name, "display_uri": f"sample://{path.name}", "trigger": "sample"}
+
+
+def _text_source(text: str) -> tuple[dict, str]:
+    content = text.strip().encode("utf-8")
+    if not content:
+        raise HTTPException(422, "Pasted text is empty")
+    if len(content) > MAX_TEXT_BYTES:
+        raise HTTPException(413, f"Pasted text is larger than {MAX_TEXT_BYTES // 1024} KB")
+    if b"\x00" in content:
+        raise HTTPException(400, "Pasted text contains binary data")
+    sha = sha256_of(content)
+    return _store_document(content, f"pasted-circular-{sha[:8]}.md", "text"), sha
+
+
+async def _url_source(url: str) -> dict:
+    url = url.strip()
+    if len(url) > MAX_URL_LENGTH or not url.lower().startswith(("https://", "http://")):
+        raise HTTPException(400, "Enter a full http(s) link to the circular")
+    try:
+        from ingestion.fetch import fetch_circular
+    except ImportError:
+        raise HTTPException(501, "Fetching circulars from a link is not available on this server")
+    try:
+        source = await asyncio.to_thread(fetch_circular, url)
+    except ValueError as error:  # user-safe message from the fetcher (host not allowed, not a circular, too large...)
+        raise HTTPException(400, str(error)[:500])
+    return {**source, "trigger": source.get("trigger") or "url"}
+
+
+def _check_as_of(as_of: str | None) -> None:
     if as_of:
         try:
             date.fromisoformat(as_of)
         except ValueError:
             raise HTTPException(422, "as_of must be an ISO date")
-    if sample_id:
-        path = (SAMPLES_DIR / Path(sample_id).name)
-        if not path.exists() or path.suffix != ".md":
-            raise HTTPException(404, "Unknown sample")
-        source = {"path": str(path), "filename": path.name, "display_uri": f"sample://{path.name}", "trigger": "sample"}
-    elif file is not None:
-        content = await file.read(settings.max_upload_bytes + 1)
-        if len(content) > settings.max_upload_bytes:
-            raise HTTPException(413, "File too large")
-        filename = Path(file.filename or "upload.md").name
-        mime = guess_mime(filename)
-        if mime not in ALLOWED_TYPES:
-            raise HTTPException(415, "Upload PDF, DOCX, HTML, Markdown or text")
-        if mime == "application/pdf" and not content.startswith(b"%PDF"):
-            raise HTTPException(415, "File content is not a PDF")
-        gcs_uri = archive_to_gcs(content, filename)
-        if gcs_uri:
-            source = {"gcs_uri": gcs_uri, "filename": filename, "trigger": "upload"}
-        else:
-            target = settings.runtime_dir / "uploads" / f"{document_id_for(content)}-{filename}"
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(content)
-            source = {"path": str(target), "filename": filename, "display_uri": f"upload://{filename}", "trigger": "upload"}
-    else:
-        raise HTTPException(422, "Provide a file or a sample_id")
-    return start_run(source, user.user_id, mode, as_of)
+
+
+def _public_run(run: dict, user: User) -> dict:
+    out = {k: v for k, v in run.items() if k not in {"owner_id", "source", "checkpoint", "heartbeat_at"}}
+    out["is_mine"] = run.get("owner_id") == user.user_id
+    return out
+
+
+def _visible_run(run_id: str, private: bool = False) -> dict:
+    run = get_app_store().get_run(run_id, private=private)  # tenant-scoped
+    if not run:
+        raise HTTPException(404, "Unknown run")
+    return run
+
+
+def _my_run(run_id: str, user: User) -> dict:
+    run = get_app_store().get_run(run_id, private=True)
+    if not run or run.get("owner_id") != user.user_id:  # never confirm that someone else's run exists
+        raise HTTPException(404, "Unknown run")
+    return run
+
+
+@app.post("/api/runs")
+async def create_run(file: UploadFile | None = File(default=None), files: list[UploadFile] | None = File(default=None),
+                     sample_id: str | None = Form(default=None), sample_ids: list[str] | None = Form(default=None),
+                     text: str | None = Form(default=None), url: str | None = Form(default=None),
+                     mode: str | None = Form(default=None), as_of: str | None = Form(default=None),
+                     review_rules: bool = Form(default=False), user: User = Depends(current_user)) -> dict:
+    """One run per item: each file, each sample, the pasted text and the URL. All items are validated first."""
+    _check_as_of(as_of)
+    samples = list(dict.fromkeys([s for s in [sample_id, *(sample_ids or [])] if s]))
+    uploads = [f for f in [file, *(files or [])] if f is not None]
+    count = len(samples) + len(uploads) + bool(text and text.strip()) + bool(url and url.strip())
+    if not count:
+        raise HTTPException(422, "Provide a file, a sample, pasted text or a URL")
+    if count > MAX_BATCH:
+        raise HTTPException(422, f"Start at most {MAX_BATCH} analyses at once")
+    try:
+        ensure_capacity(user.user_id, count)
+    except RunLimitExceeded as error:
+        raise HTTPException(429, str(error))
+    items: list[tuple[dict, str, str | None]] = [(_sample_source(s), "sample", None) for s in samples]
+    for upload in uploads:
+        source, sha = await _upload_source(upload)
+        items.append((source, "upload", sha))
+    if text and text.strip():
+        source, sha = _text_source(text)
+        items.append((source, "text", sha))
+    if url and url.strip():
+        items.append((await _url_source(url), "url", None))
+    started = [start_run(source, user.user_id, mode, as_of, email=user.email, source_kind=kind, review_rules=review_rules,
+                         doc_sha256=sha) for source, kind, sha in items]
+    get_app_store().audit(user.email, "run_start", {"runs": [r["run_id"] for r in started], "kinds": [k for _, k, _ in items],
+                                                    "review_rules": review_rules, "as_of": as_of}, "START", {"count": len(started)})
+    return {"run_id": started[0]["run_id"], "mode": started[0]["mode"], "run_ids": [r["run_id"] for r in started],
+            "runs": started}
 
 
 @app.get("/api/runs")
-def runs(user: User = Depends(current_user)) -> list[dict]:
-    return get_app_store().list_runs()
+def runs(status: str | None = None, mine: bool = False, source_kind: str | None = None,
+         limit: int = Query(default=20, ge=1, le=100), user: User = Depends(current_user)) -> list[dict]:
+    """Newest first. ``status`` takes one or more comma-separated statuses; ``mine=1`` keeps the caller's runs."""
+    statuses = [s.strip().upper() for s in (status or "").split(",") if s.strip()]
+    if unknown := sorted(set(statuses) - RUN_STATUSES):
+        raise HTTPException(422, f"Unknown status: {', '.join(unknown)}")
+    if source_kind and source_kind not in SOURCE_KINDS:
+        raise HTTPException(422, "Unknown source_kind")
+    rows = get_app_store().list_runs(limit, statuses or None, user.user_id if mine else None, source_kind)
+    return [_public_run(r, user) for r in rows]
 
 
 @app.get("/api/runs/{run_id}")
 def run_status(run_id: str, after: int = 0, user: User = Depends(current_user)) -> dict:
+    run = _visible_run(run_id)
+    return {"run": _public_run(run, user), "events": get_app_store().events(run_id, after)}
+
+
+@app.post("/api/runs/{run_id}/cancel")
+async def cancel_run(run_id: str, user: User = Depends(current_user)) -> dict:
+    """Owner only. Runs on the event loop: it may cancel this instance's task for the run."""
+    run = _my_run(run_id, user)
+    status = request_cancel(run)
+    get_app_store().audit(user.email, "run_cancel", {"run_id": run_id}, "CANCEL", {"status": status})
+    return {"run_id": run_id, "status": status}
+
+
+class RunReview(BaseModel):
+    decision: Literal["APPROVE", "REJECT"]
+    rules: list[Rule] | None = Field(default=None, max_length=200)
+    comment: str = Field(default="", max_length=1000)
+
+
+def _approved_extraction(extraction: dict, edited: list[Rule] | None) -> tuple[dict, dict]:
+    """Merge reviewer edits into the extracted rules. Rules can be edited (EDITABLE_RULE_FIELDS) or removed, not added;
+    checks, scope and citations stay as extracted so every rule is still grounded in the circular."""
+    original = ExtractedPolicy.model_validate(extraction)
+    if edited is None:
+        return original.model_dump(), {"edited": [], "removed": []}
+    by_id = {r.rule_id: r for r in original.rules}
+    merged, changed, seen = [], [], set()
+    for rule in edited:
+        base = by_id.get(rule.rule_id)
+        if base is None:
+            raise HTTPException(422, f"Unknown rule {rule.rule_id!r}: rules can be edited or removed, not added")
+        if rule.rule_id in seen:
+            raise HTTPException(422, f"Rule {rule.rule_id!r} is listed twice")
+        seen.add(rule.rule_id)
+        if not rule.title.strip():
+            raise HTTPException(422, f"Rule {rule.rule_id!r} needs a title")
+        updates = {f: getattr(rule, f) for f in EDITABLE_RULE_FIELDS if getattr(rule, f) != getattr(base, f)}
+        updates["title"] = rule.title.strip()
+        if any(updates[f] != getattr(base, f) for f in updates):
+            changed.append(rule.rule_id)
+        merged.append(base.model_copy(update=updates))
+    if not merged:
+        raise HTTPException(422, "Approve at least one rule, or reject the run")
+    candidate = ExtractedPolicy(policy=original.policy, rules=merged)
+    errors = [i for i in validate_extraction(candidate) if i.severity == "ERROR"]
+    if errors:
+        raise HTTPException(422, "; ".join(f"{i.rule_id or 'policy'} {i.field}: {i.message}" for i in errors)[:1000])
+    return candidate.model_dump(), {"edited": changed, "removed": sorted(set(by_id) - seen)}
+
+
+@app.post("/api/runs/{run_id}/review")
+async def review_run(run_id: str, body: RunReview, user: User = Depends(current_user)) -> dict:
+    """Owner only: approve (optionally with edited or removed rules) and continue, or reject a paused run."""
     store = get_app_store()
-    run = store.get_run(run_id)
-    if not run:
+    run = _my_run(run_id, user)
+    if run["status"] != "AWAITING_REVIEW":
+        raise HTTPException(409, "Run is not awaiting review")
+    if body.decision == "REJECT":
+        if not reject_run(run_id):
+            raise HTTPException(409, "Run is not awaiting review")
+        store.add_event(run_id, "pipeline", "run_rejected", {"by": user.email, "comment": body.comment})
+        store.audit(user.email, "run_review", {"run_id": run_id, "comment": body.comment}, "REJECT", {})
+        return {"run_id": run_id, "status": "REJECTED"}
+    extraction = (run.get("checkpoint") or {}).get("extraction")
+    if not extraction:
+        raise HTTPException(409, "This run has no extracted rules to review")
+    approved, changes = _approved_extraction(extraction, body.rules)
+    if not resume_run(run, approved):
+        raise HTTPException(409, "Run is not awaiting review")
+    store.add_event(run_id, "reader", "rules_reviewed", {"decision": "APPROVE", "by": user.email,
+                                                         "rules": len(approved["rules"]), **changes})
+    store.audit(user.email, "run_review", {"run_id": run_id, "comment": body.comment, **changes}, "APPROVE",
+                {"rules": len(approved["rules"])})
+    return {"run_id": run_id, "status": "QUEUED", "rules": len(approved["rules"]), **changes}
+
+
+class Rerun(BaseModel):
+    as_of: str | None = Field(default=None, max_length=10)
+    mode: Literal["agentic", "deterministic"] | None = None
+    review_rules: bool = False
+
+
+@app.post("/api/runs/{run_id}/rerun")
+async def rerun(run_id: str, body: Rerun, user: User = Depends(current_user)) -> dict:
+    """Retry or re-run with another date. Your own runs and watcher-started runs (the new run is yours)."""
+    run = get_app_store().get_run(run_id, private=True)
+    if not run or run.get("owner_id") not in {user.user_id, WATCHER_USER} or not run.get("source"):
         raise HTTPException(404, "Unknown run")
-    return {"run": run, "events": store.events(run_id, after)}
+    _check_as_of(body.as_of)
+    try:
+        ensure_capacity(user.user_id)
+    except RunLimitExceeded as error:
+        raise HTTPException(429, str(error))
+    started = start_run(run["source"], user.user_id, body.mode or run["mode"], body.as_of or run.get("as_of"),
+                        email=user.email, source_kind=run["source_kind"], review_rules=body.review_rules,
+                        doc_sha256=run.get("doc_sha256"), rerun_of=run_id)
+    get_app_store().audit(user.email, "run_rerun", {"run_id": run_id, **body.model_dump()}, "START", started)
+    return {**started, "run_ids": [started["run_id"]], "runs": [started]}
 
 
 @app.websocket("/ws/runs/{run_id}")
@@ -179,12 +400,12 @@ async def run_events(websocket: WebSocket, run_id: str):
             await asyncio.to_thread(verify_firebase_token, hello.get("token", ""))
         store, seq = get_app_store(), 0
         while True:
-            for event in store.events(run_id, seq):
+            run = store.get_run(run_id)  # tenant-scoped
+            for event in store.events(run_id, seq) if run else []:
                 await websocket.send_json(event)
                 seq = event["seq"]
-            run = store.get_run(run_id)
-            if not run or run["status"] in {"SUCCEEDED", "FAILED"}:
-                for event in store.events(run_id, seq):
+            if not run or run["status"] in TERMINAL | PAUSED:
+                for event in store.events(run_id, seq) if run else []:  # events written with the final status
                     await websocket.send_json(event)
                 await websocket.send_json({"kind": "closed", "status": run["status"] if run else "UNKNOWN"})
                 break
@@ -277,7 +498,8 @@ def ontology(user: User = Depends(current_user)) -> dict:
 
 @app.get("/api/graph/blast-radius")
 def graph_blast_radius(rule_id: str, as_of: str | None = None, user: User = Depends(current_user)) -> dict:
-    return blast_radius(get_graph_store(), rule_id, as_of or default_as_of()).model_dump()
+    with GRAPH_TRAVERSAL_LOCK:  # shares the graph store's query log with running pipelines
+        return blast_radius(get_graph_store(), rule_id, as_of or default_as_of()).model_dump()
 
 
 # Privacy shield demo & chat ------------------------------------------------------
@@ -397,7 +619,7 @@ async def gcs_event(request: Request, caller: str = Depends(verify_service_calle
     source = source_for(bucket, name)
     if not get_app_store().mark_processed(source["gcs_uri"], "pending"):
         return {"status": "duplicate", "name": name}
-    return start_run(source, "watcher", None, None)
+    return start_run(source, WATCHER_USER, None, None, email=WATCHER_USER, source_kind="watcher")
 
 
 @app.post("/api/watch/poll")
@@ -405,7 +627,7 @@ async def watch_poll(caller: str = Depends(verify_service_caller)) -> dict:
     started = []
     for source in list_incoming():
         if get_app_store().mark_processed(source["gcs_uri"], "pending"):
-            started.append(start_run(source, "watcher", None, None))
+            started.append(start_run(source, WATCHER_USER, None, None, email=WATCHER_USER, source_kind="watcher"))
     return {"started": started}
 
 
