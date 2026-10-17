@@ -129,8 +129,22 @@ engine).
 
 ### 3.4 Synthetic data (`scripts/generate_synthetic_bank.py`, seed 2026, reference date 17 Oct 2026)
 
-- 6 branches, 120 customers, 161 loans, 401 loan events.
-- Planted scenario for RBI/2023-24/60 (document release within 30 days): 12 violations, 7 at Koramangala.
+- **Baseline bank** (see `docs/evals/bank-baseline.md`): 20 branches, 12 products, 2,500 customers, 3,998 loans (3,550
+  active), 16,387 loan events. CSVs are byte-identical across runs. Asset-quality fields follow the IRACP Directions
+  (days past due, classification, NPA date, provision held and required, interest recognition basis, restructuring),
+  customers carry KYC status and review dates. PD, LGD and EAD deliberately do not exist (ECL readiness gap).
+- About 99% of active accounts comply with the current IRACP rules. The exceptions are planted and counted in
+  `manifest.json`: 14 DPD>90 accounts still STANDARD, 16 NPA provision shortfalls at two branches, 6 SMA mis-tags,
+  5 re-restructured accounts on accrual, 22 customers past re-KYC due, plus the original RBI/2023-24/60 scenario
+  (12 document-release violations, 7 at Koramangala).
+- **Internal governance** (`data/bank/policies.json`, `controls.json`): 13 internal policies whose clauses map to RBI
+  paragraphs and controls, and 53 controls with implementation status (31 implemented, 6 partial, 6 planned,
+  10 absent). The ECL controls are absent or planned, so the ACPIR Directions (effective 1 Apr 2027) give readiness
+  gaps rather than failures. The graph carries internal Policy nodes with `IMPLEMENTS` and `ENFORCES` edges.
+- **Ontology packs** (`data/ontology/packs/*.json`, `docs/ontology.md`): the meta-model (node and edge types) is code;
+  domain content (capabilities, record flags, events, views, glossary, workflows, applicability signals) is versioned
+  pack data enabled per bank in `entity_profile.json`. The LLM can propose new controls (`needs_review`) but only
+  `scripts/ontology_proposals.py --promote` writes them into a pack.
 - All names, emails, phones and PANs are fictional. Every synthetic customer uses an `example.com` address.
 
 ---
@@ -196,10 +210,10 @@ flowchart LR
 | `mapper_agent` | Gemini 2.5 Flash | `get_graph_ontology`, `map_rules_to_graph` | Scoring and resolution are deterministic (§6) |
 | `graphrag_agent` | Gemini 2.5 Flash | `traverse_blast_radius`, and `run_graph_query` on GCP | GQL is read-only, `@tenant_id` bound, LIMIT 200 |
 | `precedent_agent` | Gemini 2.5 Flash | `recall_precedents`, `load_memory` | Read-only history |
-| `data_analyst_agent` | Gemini 2.5 Flash | `profile_impacted_portfolio`, `run_safe_sql` | sqlglot AST guard: one SELECT, `vw_*` only, aggregates only, LIMIT 100 |
+| `data_analyst_agent` | Gemini 2.5 Flash | `profile_impacted_portfolio`, `describe_bank_data`, `run_safe_sql` | sqlglot AST guard: one SELECT, sanitized views only, no PII columns, no `SELECT *`. Aggregate mode LIMIT 100; row-level mode (opaque `loan_ref`/`customer_ref`) LIMIT 200 |
 | `evaluator_agent` | Gemini 2.5 Pro | `evaluate_compliance`, `fetch_anonymized_samples` | Parameterised checks, worklists stay in the database |
 | `orchestrator_agent` | Gemini 2.5 Pro | `trigger_compliance_workflow`, `finalize_impact_report` | Proposals only, placeholder-only notice text |
-| `compliance_assistant` (separate agent) | Gemini 2.5 Pro | list and get reports, time-travel blast radius, ontology, `run_safe_sql`, `load_memory`, `preload_memory` | Same read surface as the pipeline |
+| `compliance_assistant` (separate agent) | Gemini 2.5 Pro | runs (`list_runs`, `get_run`, `get_run_events`, `compare_runs`), reports (`list_impact_reports`, `get_impact_report`, `get_report_checks`, `list_report_actions`), graph (`query_graph`, `get_node`, `neighbours`, `time_travel_blast_radius`, `get_ontology`), bank data (`describe_bank_data`, `run_safe_sql`), governance (`list_policies`, `get_policy`, `list_controls`, `get_control`, `readiness_gaps`), `load_memory`, `preload_memory` | Read-only, tenant-scoped, outputs capped at about 16k characters, every call audited, PII keys stripped |
 
 - Agents pass structured results through session state (`document`, `extraction`, `mappings`, `blast_radius`, `results`,
   `actions`, `report_id`), not through prose.
@@ -269,7 +283,7 @@ whose scope could not be resolved. No remediation action is proposed for a rule 
 
 | Concern | Control |
 | --- | --- |
-| PII reaches Gemini | `before_model_callback` masks text. On GCP, Cloud DLP de-identifies built-in infoTypes (name, email, phone, PAN, Aadhaar, card, IBAN, account) using a crypto-deterministic surrogate with a KMS-wrapped key (`YUKDHIS_TOKEN`). Tool output gets a regex scrub. The local Aadhaar pattern is checksum-validated (Verhoeff) and ignores identifiers such as `rpt-…`; card numbers must pass Luhn. |
+| PII reaches Gemini | `before_model_callback` masks text. On GCP, Cloud DLP de-identifies built-in infoTypes (name, email, phone, PAN, Aadhaar, card, IBAN, account) using a crypto-deterministic surrogate with a KMS-wrapped key (`YUKDHIS_TOKEN`). Tool output gets a regex scrub. The local Aadhaar pattern is checksum-validated (Verhoeff). Run, report, action and worklist ids, `LR-`/`CUST-` refs and graph node ids are swapped for letter-only placeholders before detection (including the DLP path) and restored afterwards (`privacy/safe_ids.py`); card numbers must pass Luhn. |
 | Contextual PII | Gemma redactor (`privacy/gemma.py`) is **switched off** (see §9.4). Contextual names are found by a heuristic only, so coverage is weaker than planned. |
 | Local vault | Local mode only: AES-GCM tokens `{{TYPE_N}}` in process memory, TTL 1 h. |
 | SQL exfiltration | DB role (views only, READ ONLY session) plus the sqlglot AST guard. |
@@ -395,6 +409,14 @@ Each component is switchable with `*_BACKEND=local|gcp` (`core/config.py`). The 
 
 `AGENT_MODE=agentic` runs the ADK pipeline. Without a Vertex AI project it falls back to deterministic mode.
 
+**Gemini calls** (`core/llm.py`): `GEMINI_LOCATION` (default: the deployment region; deployed as `global`) selects the
+endpoint for generation, because the regional `us-central1` pool returned 429 RESOURCE_EXHAUSTED under shared-capacity
+pressure. Embeddings stay on the regional endpoint (`text-embedding-005` is not served on `global`). Every call
+retries 429 and 5xx with exponential backoff (6 attempts, 2 to 45 s, jitter), only before the first chunk of a
+stream. `GEMINI_MAX_CONCURRENCY` (default 4) caps in-flight calls per instance. Each call logs one `llm_call` JSON
+line (model, location, status, attempt, duration, token counts). Document AI online processing accepts 30 pages per
+request, so PDFs are split into 30-page parts (up to 300 pages) and chunk page numbers are offset.
+
 `APP_DB_GRANTEES` (set by `deploy.sh` to the API and action-engine IAM users) makes whichever service first creates
 an app-state table grant it to the other. Without it, a new table such as `conversations` is usable only by its creator.
 
@@ -457,7 +479,7 @@ Defects found by the evals in `docs/evals/` (both are real circulars):
 | L2 | `NOT_EVALUATED` rolled up to `COMPLIANT` | **Fixed**: `UPCOMING` and `INCONCLUSIVE` statuses |
 | L3 | No document-type classification or link following (a press release was read as a rule) | **Partly fixed**: draft or proposal wording in a citation is a validation error and the run fails with a clear message. Classifier and link following are open |
 | L4 | No rule modality | **Fixed**: `MUST` / `MAY` / `MUST_NOT`; `MAY` is not evaluated as an obligation |
-| L5 | No applicability gate (licence, entity type, business line) | Open. Helped by unexecutable obligations: obligations no check can test are reported as "Not machine-checkable" instead of fake checks, and keep the report from being `COMPLIANT` |
+| L5 | No applicability gate (licence, entity type, business line) | **Fixed**: `pipeline/applicability.py` reads the entity profile and the pack signals; not-applicable and not-onboarded rules are not evaluated and roll up to `INCONCLUSIVE`. Helped by unexecutable obligations: obligations no check can test are reported as "Not machine-checkable" instead of fake checks, and keep the report from being `COMPLIANT` |
 | L6 | Re-mapping is not idempotent; rule ids are positional | Open |
 | L7 | Capability names are created verbatim, giving near-duplicate controls | **Partly fixed**: control canonicalisation (exact or synonym, then Gemini with guards, or a strict lexical or embedding match), synonyms recorded so re-mapping is idempotent, and `scripts/dedupe_controls.py` for bitemporal merges of existing duplicates. Open: Gemini behaviour is not yet measured on real circulars, and merges are not applied to the deployed graph |
 | L8 | Extraction is non-deterministic and not cached | **Partly fixed**: `seed=0`. No cache by `document_id` yet |
@@ -466,7 +488,7 @@ Defects found by the evals in `docs/evals/` (both are real circulars):
 | L11 | Approval allowed for rules with unresolved scope | **Fixed**: API returns 409; UI disables the button with the reason |
 | L12 | Aadhaar regex had no checksum | **Fixed**: Verhoeff, identifier guard, Luhn for cards |
 | L13 | Contextual PII detection is heuristic only, since Gemma is off | Open (cost decision) |
-| L14 | The graph holds rules from test runs, including unreviewed and wrong ones (CVA, FERR) | Open |
+| L14 | The graph holds rules from test runs, including unreviewed and wrong ones (CVA, FERR) | Partly fixed: the live graph was reseeded on 17 Oct 2026. New test runs still add rules; no environment separation yet |
 | L15 | Orchestrator restates the mapping as fact; no critic step | Open |
 
 Extraction quality is now measured against the templates of record (`scripts/eval_extraction.py`: rule and check P/R/F1,
@@ -495,8 +517,9 @@ Completed since the first prototype: the small-effort correctness, API, extracti
 roles, Document AI, DLP and KMS, Memory Bank, Cloud Run, Pub/Sub action engine, Eventarc watcher, Firebase UI with
 sign-in, CI, deployed smoke test, evals on two real circulars.
 
-**P0: fail-safe outputs (mostly done).** Remaining: regulated-entity profile and applicability gate (L5), and keeping
-test-run data out of the production graph (L14).
+**P0: fail-safe outputs (mostly done).** The applicability gate (L5) is in (`pipeline/applicability.py`, driven by the
+entity profile and the pack signals). Remaining: keeping test-run data out of the production graph (L14; the live graph
+was reseeded on 17 Oct 2026, which cleared earlier test rules but does not prevent new ones).
 
 **P1: reading regulation like a compliance officer.** Document-type classifier and link following (L3). Stable
 content-hash rule ids and idempotent re-mapping of rules (L6); control canonicalisation and dedup are in (L7), with an

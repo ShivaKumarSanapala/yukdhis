@@ -215,3 +215,29 @@ def test_trace_buffers_thinking_and_times_tool_calls(monkeypatch):
                         {"agent": "mapper_agent", "stream": "mapper_agent-0", "text": "Looking at products.", "done": True}]
     result = next(p for k, p in events if k == "tool_result")
     assert result["id"] == "c1" and result["status"] == "ok" and "duration_ms" in result
+
+
+def test_finalising_twice_updates_the_same_report_without_duplicate_actions():
+    """The agent may call finalize_impact_report again to refine its narrative: that must not fail on action ids."""
+    from pipeline import stages
+    from pipeline.deterministic import run_pipeline
+
+    store = get_app_store()
+    seen = {}
+    state = run_pipeline({"path": "data/circulars/rbi_2023_09_13_release_of_property_documents.md",
+                          "filename": "docs.md"}, "2026-10-17", lambda *a: None)
+    first = state["report_id"]
+    n_actions = len(store.get_report(first)["actions"])
+    assert n_actions > 0
+    stages.stage_finalize(state, narrative="Second, refined narrative", mode="agentic")
+    assert state["report_id"] == first
+    again = store.get_report(first)
+    assert again["narrative"] == "Second, refined narrative" and len(again["actions"]) == n_actions
+    assert len(store.list_actions(report_id=first)) == n_actions
+
+    # a decided action survives a re-finalise untouched
+    action_id = again["actions"][0]["action_id"]
+    assert store.decide_action(action_id, "APPROVED", "tester")
+    stages.stage_finalize(state, narrative="Third", mode="agentic")
+    assert store.get_action(action_id)["status"] == "APPROVED"
+    assert len(store.list_actions(report_id=first)) == n_actions

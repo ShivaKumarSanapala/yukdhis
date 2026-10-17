@@ -356,13 +356,25 @@ class AppStore:
 
     # reports & actions -------------------------------------------------
     def save_report(self, report: dict) -> None:
+        """Insert the report, or update it when the same run finalises again (the agent may refine its narrative).
+        Actions that a human has already decided are kept as they are."""
         with self.engine.begin() as conn:
-            conn.execute(insert(reports).values(report_id=report["report_id"], tenant_id=self.tenant_id,
-                                                policy_id=report["policy"]["policy_id"], created_at=now(),
-                                                body=json.dumps(report, default=str)))
+            exists = conn.execute(select(reports.c.report_id).where(
+                reports.c.report_id == report["report_id"], reports.c.tenant_id == self.tenant_id)).first()
+            body = json.dumps(report, default=str)
+            if exists:
+                conn.execute(update(reports).where(reports.c.report_id == report["report_id"],
+                                                   reports.c.tenant_id == self.tenant_id).values(body=body))
+                conn.execute(delete(actions).where(actions.c.report_id == report["report_id"],
+                                                   actions.c.status == "PENDING_APPROVAL"))
+            else:
+                conn.execute(insert(reports).values(report_id=report["report_id"], tenant_id=self.tenant_id,
+                                                    policy_id=report["policy"]["policy_id"], created_at=now(), body=body))
+            decided = {r[0] for r in conn.execute(select(actions.c.action_id).where(actions.c.report_id == report["report_id"]))}
             for action in report.get("actions", []):
-                conn.execute(insert(actions).values(action_id=action["action_id"], report_id=report["report_id"],
-                                                    status=action["status"], body=json.dumps(action)))
+                if action["action_id"] not in decided:
+                    conn.execute(insert(actions).values(action_id=action["action_id"], report_id=report["report_id"],
+                                                        status=action["status"], body=json.dumps(action)))
 
     def get_report(self, report_id: str) -> dict | None:
         with self.engine.connect() as conn:
