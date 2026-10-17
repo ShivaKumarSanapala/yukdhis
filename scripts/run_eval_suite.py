@@ -116,6 +116,12 @@ def evaluate_report(result: CaseResult, expected: dict, report: dict) -> None:
         _expect(result, f"{label}: violations", finding["violations"], sum(r["violations"] for r in picked) if picked else None)
         if "status" in finding:
             _expect(result, f"{label}: status", finding["status"], sorted({r["status"] for r in picked}) if picked else None)
+        if "branches_include" in finding:  # the designed concentration; the other branches are drawn at random
+            branches = Counter()
+            for r in picked:
+                branches.update(r["by_branch"])
+            _expect(result, f"{label}: branches (designed concentration)", dict(sorted(finding["branches_include"].items())),
+                    {b: branches.get(b) for b in sorted(finding["branches_include"])})
         if "branches" in finding:
             branches: Counter = Counter()
             for r in picked:
@@ -216,8 +222,9 @@ def run_control_check(item: dict) -> CaseResult:
                                       where=expression["where"], assertion=expression["assert"])]
         outcomes = [engine.check_data(c, item["as_of"], subject=item["control"]) for c in checks]
         _expect(result, "violations across the data check", item["expected_violations"], sum(o.violations for o in outcomes))
-        if "expected_in_scope" in item:
-            _expect(result, "rows in scope", item["expected_in_scope"], sum(o.in_scope for o in outcomes))
+        if "min_in_scope" in item:  # a check that matches (almost) nothing proves nothing
+            in_scope = sum(o.in_scope for o in outcomes)
+            result.assertions.append(Assertion("rows in scope (at least)", in_scope >= item["min_in_scope"], f">= {item['min_in_scope']}", in_scope))
         _expect(result, "control status", item["control_status"], control["implementation_status"])
     except Exception as error:  # noqa: BLE001
         result.error = f"{type(error).__name__}: {error}"

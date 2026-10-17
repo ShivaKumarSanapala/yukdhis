@@ -6,12 +6,12 @@
     "branches": 20,
     "customers": 2500,
     "loans": 3998,
-    "loan_events": 15957
+    "loan_events": 15946
   },
   "asset_classification_mix_active_book": {
-    "STANDARD": 3189,
+    "STANDARD": 3190,
     "SMA0": 171,
-    "SUBSTANDARD": 65,
+    "SUBSTANDARD": 64,
     "SMA1": 59,
     "DOUBTFUL": 37,
     "SMA2": 22,
@@ -23,10 +23,10 @@
       "first_plan": 28,
       "repeated": 8,
       "by_branch": {
-        "branch:bbsr-saheednagar": 11,
+        "branch:bbsr-saheednagar": 12,
         "branch:kochi-mgroad": 9,
         "branch:patna-boring": 8,
-        "branch:guwahati-gs": 8
+        "branch:guwahati-gs": 7
       }
     },
     "repeat_restructured_on_accrual": {
@@ -52,11 +52,20 @@
         "branch:pune-kothrud": 10,
         "branch:lko-hazratganj": 6
       },
-      "by_classification": {
-        "SUBSTANDARD": 13,
-        "DOUBTFUL": 3
+      "by_kind": {
+        "branch:pune-kothrud:SS_SECURED": 6,
+        "branch:pune-kothrud:SS_UNSECURED": 3,
+        "branch:pune-kothrud:DOUBTFUL": 1,
+        "branch:lko-hazratganj:SS_SECURED": 4,
+        "branch:lko-hazratganj:DOUBTFUL": 2
       },
-      "shortfall_inr": 4336170
+      "failing_checks": {
+        "substandard-provision-secured-15": 10,
+        "substandard-provision-unsecured-25": 3,
+        "doubtful-unsecured-portion-100": 3,
+        "doubtful-secured-portion-ageing": 3
+      },
+      "shortfall_inr": 9422880
     },
     "kyc_periodic_updation_overdue": {
       "count": 22,

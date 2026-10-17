@@ -48,7 +48,13 @@ N_CUSTOMERS, N_MSME = 2500, 250
 # Planted exception counts (exact; see manifest["planted"]).
 PLANT_DPD90_STANDARD = {"branch:patna-boring": 6, "branch:surat-adajan": 5, "branch:jaipur-cscheme": 3}
 PLANT_SMA_MISTAG = {"SMA1": 3, "SMA2": 3}          # SMA1 reported as SMA0, SMA2 reported as SMA1
-PLANT_SHORTFALL = {"branch:pune-kothrud": 10, "branch:lko-hazratganj": 6}
+# NPA provision shortfalls by branch and kind: substandard secured (para 85), substandard unsecured (para 86), doubtful with an
+# unsecured portion (paras 90 and 91; held below the unsecured portion, so it fails both doubtful rules), by age band of the
+# doubtful rule, whatever its age band.
+PLANT_SHORTFALL = {
+    "branch:pune-kothrud": {"SS_SECURED": 6, "SS_UNSECURED": 3, "DOUBTFUL": 1},
+    "branch:lko-hazratganj": {"SS_SECURED": 4, "SS_UNSECURED": 0, "DOUBTFUL": 2},
+}
 PLANT_REKYC = {"HIGH": 8, "MEDIUM": 8, "LOW": 6}
 N_RESTRUCTURED_FIRST, N_RESTRUCTURED_REPEAT, N_REPEAT_ON_ACCRUAL = 28, 8, 5
 N_UNNOTIFIED, N_NO_TENOR_CHOICE, N_NO_STATEMENT = 42, 9, 18
@@ -269,7 +275,7 @@ def apply_state(rng: random.Random, loan: dict, profile: dict, state: str) -> No
             loan["security_value"] = int(outstanding * rng.uniform(0.45, 1.15))
         else:
             loan["security_value"] = int(outstanding * rng.uniform(ratio_low, ratio_high))
-    if loan["asset_classification"] == "LOSS":
+    if loan["asset_classification"] == "LOSS" and loan["secured"]:
         loan["security_value"] = int(outstanding * rng.uniform(0.02, 0.09))
     dpd = loan["days_past_due"]
     emi = loan["emi_amount"]
@@ -360,19 +366,41 @@ def plant_classification_exceptions(rng: random.Random, loans: list[dict]) -> di
             mistag += 1
     planted["sma_band_mistags"] = {"count": mistag, "sma1_reported_as_sma0": PLANT_SMA_MISTAG["SMA1"],
                                    "sma2_reported_as_sma1": PLANT_SMA_MISTAG["SMA2"]}
-    # (c) NPA provision shortfall in two branches (paras 85-91, 95): provision held is 30-85 per cent of the requirement.
-    short = []
-    for branch, count in PLANT_SHORTFALL.items():
-        pool = [l for l in loans if l["_branch"] == branch and l["_state"] == "NPA" and l["asset_classification"] != "LOSS"]
-        if len(pool) < count:
-            raise SystemExit(f"{branch}: only {len(pool)} NPAs for {count} planted shortfalls; raise STRESSED_BRANCHES")
-        short += rng.sample(pool, count)
-    for loan in short:
-        loan["provision_held"] = int(loan["provision_required"] * rng.uniform(0.30, 0.85))
-        loan["_state"] = "SHORTFALL"
+    # (c) NPA provision shortfalls in two branches (paras 85, 86, 90, 91): the provision held is a fraction of the requirement.
+    short, by_kind = [], Counter()
+    for branch, kinds in PLANT_SHORTFALL.items():
+        for kind, count in kinds.items():
+            if not count:
+                continue
+
+            def eligible(l, kind=kind, branch=branch):
+                if l["_branch"] != branch or l["_state"] != "NPA":
+                    return False
+                if kind == "SS_SECURED":
+                    return l["asset_classification"] == "SUBSTANDARD" and l["secured"]
+                if kind == "SS_UNSECURED":
+                    return l["asset_classification"] == "SUBSTANDARD" and not l["secured"]
+                unsecured = l["outstanding_balance"] - min(l["security_value"], l["outstanding_balance"])
+                return l["asset_classification"] == "DOUBTFUL" and unsecured >= 0.02 * l["outstanding_balance"]
+
+            pool = [l for l in loans if eligible(l) and l not in short]
+            if len(pool) < count:
+                raise SystemExit(f"{branch}: only {len(pool)} {kind} NPAs for {count} planted shortfalls; raise STRESSED_BRANCHES")
+            chosen_here = rng.sample(pool, count)
+            short += chosen_here
+            by_kind[(branch, kind)] = count
+            for loan in chosen_here:
+                if kind == "DOUBTFUL":  # below the unsecured portion, so it fails the unsecured-portion and the ageing rule
+                    unsecured = loan["outstanding_balance"] - min(loan["security_value"], loan["outstanding_balance"])
+                    loan["provision_held"] = int(unsecured * rng.uniform(0.3, 0.8))
+                else:
+                    loan["provision_held"] = int(loan["provision_required"] * rng.uniform(0.30, 0.85))
+                loan["_state"] = "SHORTFALL"
     planted["npa_provision_shortfall"] = {
-        "count": len(short), "by_branch": dict(PLANT_SHORTFALL),
-        "by_classification": dict(Counter(l["asset_classification"] for l in short).most_common()),
+        "count": len(short), "by_branch": {b: sum(k.values()) for b, k in PLANT_SHORTFALL.items()},
+        "by_kind": {f"{b}:{k}": n for (b, k), n in by_kind.items()},
+        "failing_checks": {"substandard-provision-secured-15": 10, "substandard-provision-unsecured-25": 3,
+                           "doubtful-unsecured-portion-100": 3, "doubtful-secured-portion-ageing": 3},
         "shortfall_inr": sum(l["provision_required"] - l["provision_held"] for l in short)}
     return planted
 
@@ -595,16 +623,17 @@ def write_csv(path: Path, rows: list[dict]) -> None:
             writer.writerow({k: (str(v).lower() if isinstance(v, bool) else v) for k, v in row.items()})
 
 
-def main() -> None:
+def build(bank: Path = BANK, pack_file: Path | None = None) -> dict:
+    """Write every output under ``bank`` (and the ontology pack to ``pack_file``) and return the manifest."""
     from scripts.bank_library import write_library
-    from scripts.bank_pack import write_pack
+    from scripts.bank_pack import PACK_FILE, write_pack
 
-    write_library()
-    write_pack()
+    write_library(bank)
+    write_pack(pack_file or PACK_FILE)
     tables, planted = operational()
-    (BANK / "architecture.json").write_text(json.dumps(architecture(), indent=1) + "\n")
+    (bank / "architecture.json").write_text(json.dumps(architecture(), indent=1) + "\n")
     for name, rows in tables.items():
-        write_csv(BANK / "operational" / f"{name}.csv", rows)
+        write_csv(bank / "operational" / f"{name}.csv", rows)
     mix = planted.pop("_classification_mix")
     manifest = {
         "reference_date": REFERENCE_DATE.isoformat(), "seed": SEED, "synthetic": True,
@@ -614,8 +643,12 @@ def main() -> None:
         "absent_by_design": ["PD", "LGD", "EAD", "ECL staging engine output", "effective interest rate schedules",
                              "macro scenarios", "prudential floor computation"],
     }
-    (BANK / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    print(json.dumps(manifest, indent=2))
+    (bank / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    return manifest
+
+
+def main() -> None:
+    print(json.dumps(build(), indent=2))
 
 
 if __name__ == "__main__":

@@ -426,9 +426,10 @@ def library() -> dict:
     return {"instruments": INSTRUMENTS, "controls": CONTROLS, "policies": POLICIES}
 
 
-def write_library() -> None:
-    (BANK / "controls.json").write_text(json.dumps({"synthetic": True, "controls": CONTROLS}, indent=1) + "\n")
-    (BANK / "policies.json").write_text(json.dumps({"synthetic": True, "instruments": INSTRUMENTS, "policies": POLICIES}, indent=1) + "\n")
+def write_library(directory: Path = BANK) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "controls.json").write_text(json.dumps({"synthetic": True, "controls": CONTROLS}, indent=1) + "\n")
+    (directory / "policies.json").write_text(json.dumps({"synthetic": True, "instruments": INSTRUMENTS, "policies": POLICIES}, indent=1) + "\n")
 
 
 def rule_id(instrument: str, suffix: str) -> str:

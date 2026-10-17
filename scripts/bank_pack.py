@@ -136,6 +136,6 @@ def pack() -> dict:
     }
 
 
-def write_pack() -> None:
-    PACK_FILE.parent.mkdir(parents=True, exist_ok=True)
-    PACK_FILE.write_text(json.dumps(pack(), indent=1) + "\n")
+def write_pack(path: Path = PACK_FILE) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(pack(), indent=1) + "\n")

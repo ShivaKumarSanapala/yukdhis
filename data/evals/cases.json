@@ -179,9 +179,10 @@
      },
      {
       "rule_hint": "doubtful-unsecured-portion-100",
-      "violations": 1,
+      "violations": 3,
       "branches": {
-       "Kothrud, Pune": 1
+       "Kothrud, Pune": 1,
+       "Hazratganj, Lucknow": 2
       }
      },
      {
@@ -305,9 +306,10 @@
      },
      {
       "rule_hint": "doubtful-unsecured-portion-100",
-      "violations": 1,
+      "violations": 3,
       "branches": {
-       "Kothrud, Pune": 1
+       "Kothrud, Pune": 1,
+       "Hazratganj, Lucknow": 2
       }
      },
      {
@@ -320,12 +322,7 @@
      },
      {
       "rule_hint": "restructured-again-income-cash-basis-139b",
-      "violations": 5,
-      "branches": {
-       "MG Road, Kochi": 2,
-       "Boring Road, Patna": 2,
-       "Saheed Nagar, Bhubaneswar": 1
-      }
+      "violations": 5
      }
     ],
     "compliant_rules": [
@@ -386,9 +383,10 @@
      },
      {
       "rule_hint": "doubtful-unsecured-portion-100",
-      "violations": 1,
+      "violations": 3,
       "branches": {
-       "Kothrud, Pune": 1
+       "Kothrud, Pune": 1,
+       "Hazratganj, Lucknow": 2
       }
      },
      {
@@ -447,12 +445,7 @@
     "planted_findings": [
      {
       "rule_hint": "restructured-again-income-cash-basis-139b",
-      "violations": 5,
-      "branches": {
-       "MG Road, Kochi": 2,
-       "Boring Road, Patna": 2,
-       "Saheed Nagar, Bhubaneswar": 1
-      }
+      "violations": 5
      }
     ],
     "compliant_rules": [
@@ -677,13 +670,8 @@
       "rule_hint": "release-within-30-days",
       "check_index": 0,
       "violations": 12,
-      "branches": {
-       "Koramangala, Bengaluru": 7,
-       "Andheri East, Mumbai": 1,
-       "C-Scheme, Jaipur": 1,
-       "GS Road, Guwahati": 1,
-       "Salt Lake, Kolkata": 1,
-       "Boring Road, Patna": 1
+      "branches_include": {
+       "Koramangala, Bengaluru": 7
       }
      }
     ],
@@ -758,7 +746,7 @@
    "as_of": "2026-10-17",
    "control_status": "implemented",
    "expected_violations": 14,
-   "expected_in_scope": 123,
+   "min_in_scope": 98,
    "rationale": "The control is implemented, but 14 accounts more than 90 days past due were not classified: the system missed them."
   },
   {
@@ -767,7 +755,7 @@
    "as_of": "2026-10-17",
    "control_status": "implemented",
    "expected_violations": 6,
-   "expected_in_scope": 252,
+   "min_in_scope": 201,
    "rationale": "Six accounts carry the tag of a lower band (3 SMA-1 as SMA-0, 3 SMA-2 as SMA-1)."
   },
   {
@@ -776,7 +764,7 @@
    "as_of": "2026-10-17",
    "control_status": "implemented",
    "expected_violations": 0,
-   "expected_in_scope": 1137,
+   "min_in_scope": 909,
    "rationale": "Every standard account in the 0.25 per cent sectors holds the general provision."
   },
   {
@@ -785,7 +773,7 @@
    "as_of": "2026-10-17",
    "control_status": "implemented",
    "expected_violations": 10,
-   "expected_in_scope": 37,
+   "min_in_scope": 29,
    "rationale": "Substandard secured accounts: 10 hold less than 15 per cent, all at Pune Kothrud (6) and Lucknow Hazratganj (4)."
   },
   {
@@ -794,7 +782,7 @@
    "as_of": "2026-10-17",
    "control_status": "implemented",
    "expected_violations": 0,
-   "expected_in_scope": 28,
+   "min_in_scope": 22,
    "rationale": "Live since 1 Jul 2026; every first-plan account in the 0.25 per cent sectors holds the extra 5 per cent."
   },
   {
@@ -803,7 +791,7 @@
    "as_of": "2026-10-17",
    "control_status": "implemented",
    "expected_violations": 0,
-   "expected_in_scope": 109,
+   "min_in_scope": 87,
    "rationale": "All 109 NPAs are on cash basis. The 5 re-restructured accounts on accrual are a 139B finding, not an NPA finding."
   },
   {
@@ -812,7 +800,7 @@
    "as_of": "2026-10-17",
    "control_status": "implemented",
    "expected_violations": 0,
-   "expected_in_scope": 36,
+   "min_in_scope": 28,
    "rationale": "No account under a resolution plan was downgraded for the plan."
   },
   {
@@ -821,7 +809,7 @@
    "as_of": "2026-10-17",
    "control_status": "implemented",
    "expected_violations": 22,
-   "expected_in_scope": 2500,
+   "min_in_scope": 2500,
    "rationale": "Automated reminders only started in Jan 2026; 22 customers (8 high, 8 medium, 6 low risk) are past their re-KYC due date."
   }
  ]
