@@ -80,3 +80,51 @@ def test_embeddings_stay_regional_when_gemini_goes_global(monkeypatch):
     made = []
     monkeypatch.setattr(llm, "_client", lambda location: made.append(location) or location)
     assert llm.genai_client() == "global" and llm.regional_genai_client() == "us-central1"
+
+
+def test_calls_share_a_bounded_number_of_slots(monkeypatch):
+    import threading
+    import time
+
+    monkeypatch.setattr(llm, "_SLOTS", threading.BoundedSemaphore(2))
+    active, peak, lock = 0, 0, threading.Lock()
+
+    def work():
+        nonlocal active, peak
+        with llm.slot():
+            with lock:
+                active += 1
+                peak = max(peak, active)
+            time.sleep(0.05)
+            with lock:
+                active -= 1
+
+    threads = [threading.Thread(target=work) for _ in range(6)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert peak == 2
+
+    async def async_work():
+        async with llm.async_slot():
+            await asyncio.sleep(0)
+
+    async def many():
+        await asyncio.gather(*[async_work() for _ in range(5)])
+
+    asyncio.run(many())
+    assert llm._SLOTS.acquire(blocking=False) and llm._SLOTS.acquire(blocking=False)  # both slots were released
+    llm._SLOTS.release()
+    llm._SLOTS.release()
+
+
+def test_llm_call_is_logged_as_json(capsys):
+    import json
+    import types
+    import time
+
+    usage = types.SimpleNamespace(prompt_token_count=1200, candidates_token_count=300, thoughts_token_count=80)
+    llm.log_call("gemini-2.5-pro", "global", time.monotonic() - 1.5, usage, attempt=2)
+    line = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert line["event"] == "llm_call" and line["model"] == "gemini-2.5-pro" and line["location"] == "global"
+    assert line["prompt_tokens"] == 1200 and line["output_tokens"] == 300 and line["thought_tokens"] == 80
+    assert line["attempt"] == 2 and line["duration_ms"] >= 1500 and line["status"] == 200
