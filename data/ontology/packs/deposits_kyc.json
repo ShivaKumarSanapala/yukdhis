@@ -40,7 +40,7 @@
       ],
       "business_line": "deposits",
       "data_domains": [
-        "deposits"
+        "kyc"
       ]
     }
   ]

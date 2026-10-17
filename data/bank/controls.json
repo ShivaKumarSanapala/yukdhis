@@ -1,0 +1,1810 @@
+{
+ "synthetic": true,
+ "controls": [
+  {
+   "id": "control:borrower-notification",
+   "name": "Reset Impact Notification",
+   "kind": "product",
+   "description": "Tells each borrower the EMI or tenor impact of a benchmark reset.",
+   "owner_team": "team:customer-comms",
+   "process": "process:borrower-notification",
+   "implementation_status": "implemented",
+   "implemented_from": "2023-12-31",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "floating_rate_reset",
+     "paragraph": "Key provisions (1)"
+    }
+   ],
+   "data_check": null,
+   "evidence": [
+    {
+     "type": "mis_report",
+     "ref": "MIS-RESET-2026Q3",
+     "title": "Quarterly reset notification report"
+    }
+   ],
+   "last_tested": "2026-08-12",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:emi-tenor-choice",
+   "name": "EMI or Tenor Choice",
+   "kind": "product",
+   "description": "Lets the borrower choose a higher EMI or a longer tenor at reset.",
+   "owner_team": "team:lending-ops",
+   "process": "process:rate-reset",
+   "implementation_status": "implemented",
+   "implemented_from": "2023-12-31",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "floating_rate_reset",
+     "paragraph": "Key provisions (2)"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-08-12",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:fixed-rate-option",
+   "name": "Fixed Rate Conversion Option",
+   "kind": "product",
+   "description": "Lets the borrower switch to a fixed rate. DriveNow Floating lost the option on 2024-07-01 (change CHG-2024-0612).",
+   "owner_team": "team:lending-ops",
+   "process": "process:rate-reset",
+   "implementation_status": "partial",
+   "implemented_from": "2023-12-31",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "floating_rate_reset",
+     "paragraph": "Key provisions (2)"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-08-12",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": "Planted product-level gap: DriveNow Floating Loan has no fixed-rate switch."
+  },
+  {
+   "id": "control:reset-statement",
+   "name": "Quarterly Reset Statement with APR",
+   "kind": "product",
+   "description": "Issues a statement of principal and interest recovered, EMIs remaining and APR.",
+   "owner_team": "team:customer-comms",
+   "process": "process:borrower-notification",
+   "implementation_status": "implemented",
+   "implemented_from": "2023-12-31",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "floating_rate_reset",
+     "paragraph": "Key provisions (3)"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-08-12",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:document-release-sla",
+   "name": "30-day Document Release Tracker",
+   "kind": "product",
+   "description": "Tracks original property documents from loan closure to release; escalates before day 30.",
+   "owner_team": "team:collateral-ops",
+   "process": "process:collateral-release",
+   "implementation_status": "implemented",
+   "implemented_from": "2023-12-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "document_release",
+     "paragraph": "Release timeline"
+    }
+   ],
+   "data_check": null,
+   "evidence": [
+    {
+     "type": "mis_report",
+     "ref": "MIS-DOC-2026-09",
+     "title": "Document release ageing report"
+    }
+   ],
+   "last_tested": "2026-09-02",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:delay-compensation",
+   "name": "Automatic Delay Compensation",
+   "kind": "product",
+   "description": "Computes and pays INR 5,000 per day of delay attributable to the bank.",
+   "owner_team": "team:collateral-ops",
+   "process": "process:collateral-release",
+   "implementation_status": "implemented",
+   "implemented_from": "2023-12-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "document_release",
+     "paragraph": "Compensation for delay"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-09-02",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:document-collection-choice",
+   "name": "Document Collection Location Choice",
+   "kind": "product",
+   "description": "Offers the branch of servicing or any office holding the documents.",
+   "owner_team": "team:collateral-ops",
+   "process": "process:document-custody",
+   "implementation_status": "implemented",
+   "implemented_from": "2023-12-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "document_release",
+     "paragraph": "Place of collection"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-09-02",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:day-end-npa-classification",
+   "name": "Automated Day-end NPA Classification",
+   "kind": "system",
+   "description": "Core-banking module that classifies every borrowal account at day-end, with straight-through upgrades and downgrades.",
+   "owner_team": "team:credit-risk",
+   "process": "process:asset-classification",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "31"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "36(2)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "37"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "42(1)"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "8"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "15"
+    }
+   ],
+   "data_check": {
+    "instrument": "iracp",
+    "rule": "npa-classification-90-days",
+    "view": "vw_asset_quality",
+    "description": "Accounts with DPD above 90 are classified NPA.",
+    "expression": null
+   },
+   "evidence": [
+    {
+     "type": "audit_report",
+     "ref": "IA-2026-011",
+     "title": "System audit of the NPA classification system, FY26"
+    },
+    {
+     "type": "system_config",
+     "ref": "CBS-ACM-2026.3",
+     "title": "Asset classification parameters, release 2026.3"
+    }
+   ],
+   "last_tested": "2026-09-18",
+   "last_test_result": "exceptions",
+   "synonyms": [
+    "npa classification",
+    "asset classification system",
+    "day-end process classification"
+   ],
+   "notes": ""
+  },
+  {
+   "id": "control:sma-day-end-tagging",
+   "name": "SMA Day-end Tagging (SMA-0, SMA-1, SMA-2)",
+   "kind": "system",
+   "description": "Tags overdue accounts as SMA-0, SMA-1 or SMA-2 in the day-end process, with the date of tagging.",
+   "owner_team": "team:credit-risk",
+   "process": "process:asset-classification",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "30"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "31"
+    }
+   ],
+   "data_check": {
+    "instrument": "iracp",
+    "rule": "sma-reporting-bands",
+    "view": "vw_asset_quality",
+    "description": "SMA tag matches the days past due band.",
+    "expression": null
+   },
+   "evidence": [
+    {
+     "type": "system_config",
+     "ref": "CBS-ACM-2026.3",
+     "title": "SMA band parameters"
+    }
+   ],
+   "last_tested": "2026-09-18",
+   "last_test_result": "exceptions",
+   "synonyms": [
+    "sma classification",
+    "special mention accounts"
+   ],
+   "notes": ""
+  },
+  {
+   "id": "control:overdue-day-end-flagging",
+   "name": "Overdue Flagging at Day-end",
+   "kind": "system",
+   "description": "Flags an account overdue in the day-end process for the due date, whatever time the process runs.",
+   "owner_team": "team:credit-risk",
+   "process": "process:asset-classification",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "30"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "14"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-09-18",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:standard-asset-provisioning",
+   "name": "Standard Asset Provisioning Engine",
+   "kind": "system",
+   "description": "Computes the general provision on standard assets at 0.25 per cent (housing, farm credit, small and micro enterprises) or 0.40 per cent.",
+   "owner_team": "team:finance",
+   "process": "process:provisioning",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "36(3)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "80"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "81"
+    }
+   ],
+   "data_check": {
+    "instrument": "iracp",
+    "rule": "standard-asset-provision-025",
+    "view": "vw_asset_quality",
+    "description": "Provision held meets the standard-asset rate.",
+    "expression": null
+   },
+   "evidence": [
+    {
+     "type": "audit_report",
+     "ref": "IA-2026-011",
+     "title": "System audit of provisioning rules, FY26"
+    }
+   ],
+   "last_tested": "2026-09-18",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:npa-provisioning-engine",
+   "name": "NPA Provisioning Engine",
+   "kind": "system",
+   "description": "Computes substandard (15% / 25% unsecured), doubtful (100% unsecured plus 25/40/100% secured by age) and loss (100%) provisions.",
+   "owner_team": "team:finance",
+   "process": "process:provisioning",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "36(3)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "85"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "86"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "90"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "91"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "95"
+    }
+   ],
+   "data_check": {
+    "instrument": "iracp",
+    "rule": "substandard-provision-secured-15",
+    "view": "vw_asset_quality",
+    "description": "Provision held meets the substandard, doubtful and loss rates.",
+    "expression": null
+   },
+   "evidence": [
+    {
+     "type": "audit_report",
+     "ref": "IA-2026-011",
+     "title": "System audit of provisioning rules, FY26"
+    },
+    {
+     "type": "test_script",
+     "ref": "UAT-PROV-0412",
+     "title": "Provisioning regression pack"
+    }
+   ],
+   "last_tested": "2026-09-18",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:resolution-plan-provisioning",
+   "name": "Additional Provision for Resolution Plans (5% per plan)",
+   "kind": "system",
+   "description": "Books the additional specific provision of 5 per cent of the outstanding for each resolution plan implemented.",
+   "owner_team": "team:finance",
+   "process": "process:provisioning",
+   "implementation_status": "implemented",
+   "implemented_from": "2026-07-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "84A"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "84B"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "84C"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "84D"
+    },
+    {
+     "instrument": "iracp_amend_2026",
+     "paragraph": "3(iv)"
+    }
+   ],
+   "data_check": {
+    "instrument": "iracp",
+    "rule": "resolution-plan-additional-provision-84a",
+    "view": "vw_asset_quality",
+    "description": "Additional 5% per resolution plan is held.",
+    "expression": null
+   },
+   "evidence": [
+    {
+     "type": "change_ticket",
+     "ref": "CHG-2026-0701",
+     "title": "Go-live of 84A/84B parameters on 1 Jul 2026"
+    }
+   ],
+   "last_tested": "2026-09-30",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": "Implemented from 1 Jul 2026, the day the amendment took effect (bitemporal demo)."
+  },
+  {
+   "id": "control:cash-basis-income-recognition",
+   "name": "Income Recognition on Cash Basis for NPAs",
+   "kind": "system",
+   "description": "Stops interest accrual on non-standard accounts and recognises income on receipt; re-restructured accounts are on cash basis.",
+   "owner_team": "team:finance",
+   "process": "process:income-recognition",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "36(4)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "124"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "125"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "139A"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "139B"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "115"
+    }
+   ],
+   "data_check": {
+    "instrument": "iracp",
+    "rule": "npa-income-cash-basis",
+    "view": "vw_asset_quality",
+    "description": "Interest on NPAs is recognised on cash basis.",
+    "expression": null
+   },
+   "evidence": [
+    {
+     "type": "audit_report",
+     "ref": "IA-2026-011",
+     "title": "System audit of income recognition, FY26"
+    }
+   ],
+   "last_tested": "2026-09-18",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:interest-reversal-memorandum",
+   "name": "Interest Reversal and Memorandum Account on NPA",
+   "kind": "system",
+   "description": "Reverses uncollected interest on an account that turns NPA and tracks it in a memorandum account.",
+   "owner_team": "team:finance",
+   "process": "process:income-recognition",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "128"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "132"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "133"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "134"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-09-18",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:classification-override-governance",
+   "name": "Manual Override Log with Dual Authorisation",
+   "kind": "governance",
+   "description": "Overrides of system classification need two-level authorisation, a system-generated log kept three years, and Audit Committee reporting.",
+   "owner_team": "team:credit-risk",
+   "process": "process:asset-classification",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "38(2)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "38(3)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "38(4)"
+    }
+   ],
+   "data_check": null,
+   "evidence": [
+    {
+     "type": "audit_report",
+     "ref": "IA-2026-004",
+     "title": "Concurrent audit: overrides, Q1 FY27"
+    }
+   ],
+   "last_tested": "2026-06-30",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:npa-system-audit",
+   "name": "Annual System Audit of the NPA Classification System",
+   "kind": "governance",
+   "description": "Yearly audit of the classification system parameters and of compliance with the IRACP norms.",
+   "owner_team": "team:internal-audit",
+   "process": "process:asset-classification",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "39(3)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "40"
+    }
+   ],
+   "data_check": null,
+   "evidence": [
+    {
+     "type": "audit_report",
+     "ref": "IA-2026-011",
+     "title": "System audit of the NPA classification system, FY26"
+    }
+   ],
+   "last_tested": "2026-03-20",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:npa-mis-reporting",
+   "name": "Segment-wise NPA and Restructured Asset MIS",
+   "kind": "process",
+   "description": "System-generated segment-wise NPA, provisions, write-offs and restructured assets, reconciled to regulatory returns.",
+   "owner_team": "team:finance",
+   "process": "process:regulatory-reporting",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "29"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "33"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "34"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "16"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-07-15",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:crilc-reporting",
+   "name": "CRILC and Supervisory NPA Reporting",
+   "kind": "process",
+   "description": "Reports large credits and SMA accounts to CRILC and files the supervisory returns on time.",
+   "owner_team": "team:compliance",
+   "process": "process:regulatory-reporting",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "11"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-07-15",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:collateral-valuation-stock-audit",
+   "name": "Collateral Valuation and Stock Audit for NPAs of INR 5 crore and above",
+   "kind": "process",
+   "description": "Annual external stock audit and three-yearly valuation of immovable collateral for NPAs of INR 5 crore and above.",
+   "owner_team": "team:credit-risk",
+   "process": "process:provisioning",
+   "implementation_status": "partial",
+   "implemented_from": "2024-10-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "22"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "23"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-05-10",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": "Two valuations older than three years at the last test; remediation owner Credit Risk."
+  },
+  {
+   "id": "control:borrower-education-sma-npa",
+   "name": "Borrower Education on SMA and NPA",
+   "kind": "process",
+   "description": "Website literature and branch posters on overdue, SMA and NPA; front-line briefing at sanction.",
+   "owner_team": "team:customer-comms",
+   "process": "process:borrower-notification",
+   "implementation_status": "implemented",
+   "implemented_from": "2022-01-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "25"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-04-22",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:credit-limit-review-tracker",
+   "name": "Credit Limit Review and Renewal Tracker",
+   "kind": "process",
+   "description": "Tracks regular and ad hoc limits so that reviews finish within three months and no limit goes 180 days unreviewed.",
+   "owner_team": "team:credit-risk",
+   "process": "process:credit-underwriting",
+   "implementation_status": "implemented",
+   "implemented_from": "2022-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "16"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "18"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "20"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "42(5)"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-06-05",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:floating-provision-governance",
+   "name": "Floating Provisions Utilisation Governance",
+   "kind": "governance",
+   "description": "Board-approved ceiling and extraordinary-circumstance criteria; RBI approval before any utilisation.",
+   "owner_team": "team:finance",
+   "process": "process:provisioning",
+   "implementation_status": "implemented",
+   "implemented_from": "2022-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "10(2)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "10(3)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "97"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "98"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "99"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-03-31",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:resolution-plan-register",
+   "name": "Resolution Plan Register and Restructuring Flagging",
+   "kind": "process",
+   "description": "Flags accounts under a resolution plan, counts restructuring instances and keeps them standard per 62A/62B.",
+   "owner_team": "team:collections-recovery",
+   "process": "process:restructuring-resolution",
+   "implementation_status": "implemented",
+   "implemented_from": "2026-07-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "62A"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "62B"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "84A"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "84B"
+    },
+    {
+     "instrument": "iracp_amend_2026",
+     "paragraph": "3(ii)"
+    },
+    {
+     "instrument": "resolution_stressed_assets",
+     "paragraph": "Chapter VI-A"
+    }
+   ],
+   "data_check": {
+    "instrument": "iracp",
+    "rule": "resolution-plan-classification-62a-62b",
+    "view": "vw_asset_quality",
+    "description": "Accounts under a resolution plan are not downgraded for the plan itself.",
+    "expression": null
+   },
+   "evidence": [
+    {
+     "type": "change_ticket",
+     "ref": "CHG-2026-0701",
+     "title": "Go-live of the resolution plan register on 1 Jul 2026"
+    }
+   ],
+   "last_tested": "2026-09-30",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:crop-season-npa-calendar",
+   "name": "Crop-season NPA Calendar for Agricultural Advances",
+   "kind": "system",
+   "description": "Applies the two-crop-season (short duration) and one-crop-season (long duration) norms with SLBC calendars.",
+   "owner_team": "team:agri-banking",
+   "process": "process:asset-classification",
+   "implementation_status": "partial",
+   "implemented_from": "2025-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "42(6)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "42(7)"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "57"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-08-01",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": "Calendars loaded for 9 of 14 states; the rest follow the 90-day norm conservatively."
+  },
+  {
+   "id": "control:loan-agreement-due-date-disclosure",
+   "name": "Loan Agreement Due-date and SMA/NPA Date Disclosure",
+   "kind": "process",
+   "description": "Loan agreements state due dates, frequency, principal and interest split and example SMA/NPA dates.",
+   "owner_team": "team:lending-ops",
+   "process": "process:credit-underwriting",
+   "implementation_status": "implemented",
+   "implemented_from": "2022-01-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "13"
+    },
+    {
+     "instrument": "iracp",
+     "paragraph": "14"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "13"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-05-30",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:board-iracp-policy",
+   "name": "Board-approved IRACP Implementation Policy",
+   "kind": "governance",
+   "description": "Board policy covering income recognition, floating provisions, higher standard-asset provisioning, valuers and delegation for overrides.",
+   "owner_team": "team:credit-risk",
+   "process": "process:asset-classification",
+   "implementation_status": "implemented",
+   "implemented_from": "2024-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "10"
+    }
+   ],
+   "data_check": null,
+   "evidence": [
+    {
+     "type": "board_minute",
+     "ref": "BRD-2026-03-27",
+     "title": "Board approval of the Asset Classification and Provisioning Policy v5"
+    }
+   ],
+   "last_tested": "2026-03-31",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:kyc-risk-categorisation",
+   "name": "Customer Risk Categorisation",
+   "kind": "process",
+   "description": "Assigns low, medium or high risk at onboarding and at review.",
+   "owner_team": "team:kyc-aml",
+   "process": "process:kyc-periodic-review",
+   "implementation_status": "implemented",
+   "implemented_from": "2019-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "kyc_md",
+     "paragraph": "risk categorisation"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-06-12",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:kyc-periodic-updation",
+   "name": "Risk-based Periodic KYC Updation",
+   "kind": "process",
+   "description": "Re-KYC every 2 years (high risk), 8 years (medium) and 10 years (low), with reminders from 60 days before the due date.",
+   "owner_team": "team:kyc-aml",
+   "process": "process:kyc-periodic-review",
+   "implementation_status": "implemented",
+   "implemented_from": "2026-01-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "kyc_md",
+     "paragraph": "periodic updation"
+    }
+   ],
+   "data_check": {
+    "instrument": "kyc_md",
+    "rule": null,
+    "view": "vw_kyc_status",
+    "description": "No customer is past the re-KYC due date.",
+    "expression": {
+     "where": null,
+     "assert": "kyc_due_date >= :as_of"
+    }
+   },
+   "evidence": [
+    {
+     "type": "campaign",
+     "ref": "KYC-REFRESH-2026",
+     "title": "Re-KYC campaign and automated reminders from Jan 2026"
+    }
+   ],
+   "last_tested": "2026-09-24",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": "Automated reminders only started in 2026; 22 customers are past their due date at the reference date."
+  },
+  {
+   "id": "control:aml-transaction-monitoring",
+   "name": "AML Transaction Monitoring",
+   "kind": "system",
+   "description": "Scenario-based monitoring on the deposit and card books; loan repayments are not yet covered.",
+   "owner_team": "team:kyc-aml",
+   "process": "process:kyc-periodic-review",
+   "implementation_status": "partial",
+   "implemented_from": "2021-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "kyc_md",
+     "paragraph": "ongoing monitoring"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-02-18",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:grievance-redressal-tracker",
+   "name": "Customer Grievance Redressal Tracker",
+   "kind": "process",
+   "description": "Registers, routes and ages complaints; escalates to the internal ombudsman and tracks Ombudsman references.",
+   "owner_team": "team:customer-service",
+   "process": "process:customer-grievance",
+   "implementation_status": "implemented",
+   "implemented_from": "2021-11-12",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "ombudsman",
+     "paragraph": "complaint handling"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-07-08",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:fair-practices-disclosure",
+   "name": "Fair Practices Code Disclosure Checks",
+   "kind": "process",
+   "description": "Checks that loan applications, sanction letters and charge disclosures follow the Fair Practices Code.",
+   "owner_team": "team:retail-lending",
+   "process": "process:credit-underwriting",
+   "implementation_status": "implemented",
+   "implemented_from": "2012-05-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "fair_practices",
+     "paragraph": "disclosure"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-05-30",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:recovery-agent-conduct",
+   "name": "Recovery Agent Conduct Monitoring",
+   "kind": "process",
+   "description": "Code of conduct, call-hour limits and complaint review for recovery agents; call recording covers 60 per cent of agencies.",
+   "owner_team": "team:collections-recovery",
+   "process": "process:collections-recovery",
+   "implementation_status": "partial",
+   "implemented_from": "2023-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "fair_practices",
+     "paragraph": "recovery"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-04-15",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:outsourcing-due-diligence-register",
+   "name": "Outsourced Service Provider Register and Due Diligence",
+   "kind": "process",
+   "description": "Register of material outsourcing, due diligence, access for supervisors and exit plans.",
+   "owner_team": "team:vendor-management",
+   "process": null,
+   "implementation_status": "implemented",
+   "implemented_from": "2023-10-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "outsourcing_it",
+     "paragraph": "outsourcing governance"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-05-05",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:collateral-document-custody-register",
+   "name": "Original Document Custody Register",
+   "kind": "process",
+   "description": "Records every original property document by loan, location and movement; feeds the 30-day release tracker.",
+   "owner_team": "team:collateral-ops",
+   "process": "process:document-custody",
+   "implementation_status": "implemented",
+   "implemented_from": "2018-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "document_release",
+     "paragraph": "Release timeline"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-09-02",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:credit-appraisal-delegation",
+   "name": "Credit Appraisal and Delegation of Powers Checks",
+   "kind": "process",
+   "description": "Appraisal checklist, cash-flow-based repayment schedules and sanction within delegated limits.",
+   "owner_team": "team:credit-risk",
+   "process": "process:credit-underwriting",
+   "implementation_status": "implemented",
+   "implemented_from": "2020-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "iracp",
+     "paragraph": "12"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "12"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-06-05",
+   "last_test_result": "pass",
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:regulatory-change-tracking",
+   "name": "Regulatory Change Tracking",
+   "kind": "governance",
+   "description": "Compliance logs RBI circulars and assigns owners; impact assessment is manual and takes weeks.",
+   "owner_team": "team:compliance",
+   "process": "process:regulatory-reporting",
+   "implementation_status": "partial",
+   "implemented_from": "2025-04-01",
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": "2026-06-20",
+   "last_test_result": "exceptions",
+   "synonyms": [],
+   "notes": "The gap Yukdhis is meant to close."
+  },
+  {
+   "id": "control:ecl-staging-engine",
+   "name": "ECL Staging Engine (Stages 1, 2, 3)",
+   "kind": "system",
+   "description": "Assigns every instrument to Stage 1, 2 or 3 at each reporting date, with SICR triggers.",
+   "owner_team": "team:credit-risk",
+   "process": "process:asset-classification",
+   "implementation_status": "absent",
+   "implemented_from": null,
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "25"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "26"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "33"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": "Only a DPD-based proxy (ecl_stage_proxy) exists; it is not a staging engine."
+  },
+  {
+   "id": "control:sicr-criteria-documentation",
+   "name": "SICR Criteria Documentation",
+   "kind": "governance",
+   "description": "Documented, consistently applied criteria for a significant increase in credit risk, with the 30-day rebuttable presumption.",
+   "owner_team": "team:credit-risk",
+   "process": "process:model-governance",
+   "implementation_status": "planned",
+   "implemented_from": null,
+   "planned_go_live": "2026-12-31",
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "26"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "29"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "30"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "33"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "34"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "35"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "36"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": "Working group set up in Aug 2026; drafting in progress."
+  },
+  {
+   "id": "control:pd-model",
+   "name": "Probability of Default Models",
+   "kind": "system",
+   "description": "12-month and lifetime PD by segment, with the regulatory floor of 0.03 per cent.",
+   "owner_team": "team:model-risk",
+   "process": "process:model-governance",
+   "implementation_status": "absent",
+   "implemented_from": null,
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "45"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "96"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:lgd-model",
+   "name": "Loss Given Default Models",
+   "kind": "system",
+   "description": "LGD from own recovery history, with the prescribed LGD where history is insufficient.",
+   "owner_team": "team:model-risk",
+   "process": "process:model-governance",
+   "implementation_status": "absent",
+   "implemented_from": null,
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "97"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "98"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "99"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:ead-model",
+   "name": "Exposure at Default Models",
+   "kind": "system",
+   "description": "EAD including drawdown expectations on commitments and guarantees.",
+   "owner_team": "team:model-risk",
+   "process": "process:model-governance",
+   "implementation_status": "absent",
+   "implemented_from": null,
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "100"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "43"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:eir-computation-engine",
+   "name": "Effective Interest Rate Computation",
+   "kind": "system",
+   "description": "EIR at initial recognition, fee and cost amortisation, interest income on gross carrying amount.",
+   "owner_team": "team:finance",
+   "process": "process:income-recognition",
+   "implementation_status": "absent",
+   "implemented_from": null,
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "20"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "21"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "50"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "51"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "52"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "53"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "113"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:macro-scenario-framework",
+   "name": "Macroeconomic Scenario Framework",
+   "kind": "governance",
+   "description": "Multiple macro scenarios with probability weights, linked to PD and LGD.",
+   "owner_team": "team:model-risk",
+   "process": "process:model-governance",
+   "implementation_status": "planned",
+   "implemented_from": null,
+   "planned_go_live": "2027-02-28",
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "47"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "48"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "49"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "72"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "124"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "132"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:ecl-model-validation-framework",
+   "name": "ECL Model Validation Framework",
+   "kind": "governance",
+   "description": "Independent pre-implementation validation, back-testing and calibration of ECL models.",
+   "owner_team": "team:model-risk",
+   "process": "process:model-governance",
+   "implementation_status": "planned",
+   "implemented_from": null,
+   "planned_go_live": "2027-01-31",
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "99"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "130"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "131"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": "The general MRM policy exists; the ECL-specific validation standard does not."
+  },
+  {
+   "id": "control:prudential-floor-calculator",
+   "name": "Prudential Floor Calculator",
+   "kind": "system",
+   "description": "Product-wise and stage-wise floors on the ECL allowance, with strict product category segregation.",
+   "owner_team": "team:finance",
+   "process": "process:provisioning",
+   "implementation_status": "absent",
+   "implemented_from": null,
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "82"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "90"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "91"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "92"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "93"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "94"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:ecl-model-inventory-tiering",
+   "name": "ECL Model Inventory and Risk Tiering",
+   "kind": "governance",
+   "description": "Inventory of all models in the ECL lifecycle with risk-based tiering and documentation.",
+   "owner_team": "team:model-risk",
+   "process": "process:model-governance",
+   "implementation_status": "planned",
+   "implemented_from": null,
+   "planned_go_live": "2026-12-31",
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "120"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "121"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "122"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:ecl-historical-loss-database",
+   "name": "Historical Loss and Default Database",
+   "kind": "system",
+   "description": "Sufficient history of defaults, recoveries and loss to calibrate PD and LGD.",
+   "owner_team": "team:it-core-banking",
+   "process": "process:model-governance",
+   "implementation_status": "absent",
+   "implemented_from": null,
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "64"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "70"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "71"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:ecl-transition-fair-valuation",
+   "name": "Fair Valuation on Transition and Transitional Arrangements",
+   "kind": "process",
+   "description": "Fair valuation of the loan portfolio on 1 Apr 2027 and the CET1 transition adjustment.",
+   "owner_team": "team:finance",
+   "process": "process:provisioning",
+   "implementation_status": "absent",
+   "implemented_from": null,
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "19"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "106"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "107"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "108"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "110"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:ecl-board-governance",
+   "name": "Board ECL Oversight (Committee with CFO and CRO)",
+   "kind": "governance",
+   "description": "Board policy and a committee with the CFO and CRO that oversees ECL implementation.",
+   "owner_team": "team:compliance",
+   "process": "process:model-governance",
+   "implementation_status": "planned",
+   "implemented_from": null,
+   "planned_go_live": "2026-12-15",
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "56"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "57"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:ecl-disclosure-reporting",
+   "name": "ECL Disclosures and Regulatory Reporting",
+   "kind": "process",
+   "description": "Annex 4 disclosures and the first ECL reporting as at 30 Jun 2027.",
+   "owner_team": "team:finance",
+   "process": "process:regulatory-reporting",
+   "implementation_status": "absent",
+   "implemented_from": null,
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "141"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "142"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "144"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "147"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "148"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "150"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:third-party-model-governance",
+   "name": "Third-party Model Governance",
+   "kind": "governance",
+   "description": "Selection, validation and contractual access for models bought from vendors.",
+   "owner_team": "team:vendor-management",
+   "process": "process:model-governance",
+   "implementation_status": "planned",
+   "implemented_from": null,
+   "planned_go_live": "2027-02-28",
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "135"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "136"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "137"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "139"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "140"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  },
+  {
+   "id": "control:ecl-model-monitoring",
+   "name": "Continuous ECL Model Performance Monitoring",
+   "kind": "governance",
+   "description": "Ongoing performance monitoring with clear responsibilities and frequency.",
+   "owner_team": "team:model-risk",
+   "process": "process:model-governance",
+   "implementation_status": "absent",
+   "implemented_from": null,
+   "planned_go_live": null,
+   "applies_to": "all",
+   "satisfies": [
+    {
+     "instrument": "acpir",
+     "paragraph": "133"
+    }
+   ],
+   "data_check": null,
+   "evidence": [],
+   "last_tested": null,
+   "last_test_result": null,
+   "synonyms": [],
+   "notes": ""
+  }
+ ]
+}

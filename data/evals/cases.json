@@ -1,0 +1,824 @@
+{
+ "version": 1,
+ "reference_date": "2026-10-17",
+ "notes": "Eval cases for the synthetic bank baseline (docs/evals/bank-baseline.md). Expectations come from the planted exceptions in data/bank/manifest.json, never from a run's own output. 'modes' says where a case runs: deterministic (no LLM, in tests) and/or llm (scripts/run_eval_suite.py --llm, which applies 'llm_expected' over 'expected').",
+ "cases": [
+  {
+   "id": "ecl-01-discussion-paper",
+   "document": "rbi_ecl_2023_01_16_discussion_paper.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "A discussion paper proposes; it binds nobody. The run must stop at extraction, never produce rules, and propose no action.",
+   "expected": {
+    "doc_type": "draft_or_consultation",
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   },
+   "llm_expected": {
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   }
+  },
+  {
+   "id": "ecl-02-press-release-discussion-paper",
+   "document": "rbi_ecl_2023_01_16_press_release_discussion_paper.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "A press release announcing a paper is not an instrument.",
+   "expected": {
+    "doc_type": "press_release",
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   },
+   "llm_expected": {
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   }
+  },
+  {
+   "id": "ecl-03-press-release-working-group",
+   "document": "rbi_ecl_2023_10_04_press_release_working_group.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "Constitutes a working group; no obligations.",
+   "expected": {
+    "doc_type": "press_release",
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   },
+   "llm_expected": {
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   }
+  },
+  {
+   "id": "ecl-04-sdrp-statement-2025-10-01",
+   "document": "rbi_ecl_2025_10_01_statement_developmental_regulatory_policies.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "The policy statement announces the draft Directions; it carries no obligation itself.",
+   "expected": {
+    "doc_type": "press_release",
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   },
+   "llm_expected": {
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   }
+  },
+  {
+   "id": "ecl-05-draft-acpir-directions",
+   "document": "rbi_ecl_2025_10_07_draft_directions_scb.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "A draft for comments (until 30 Nov 2025). Binding obligations come only from the final Directions (case ecl-08).",
+   "expected": {
+    "doc_type": "draft_or_consultation",
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   },
+   "llm_expected": {
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   }
+  },
+  {
+   "id": "ecl-06-press-release-draft-directions",
+   "document": "rbi_ecl_2025_10_07_press_release_draft_directions.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "Announces the draft; points to it as the announced instrument.",
+   "expected": {
+    "doc_type": "press_release",
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   },
+   "llm_expected": {
+    "outcome": "blocked",
+    "blocked_reason_contains": "No binding obligations were found"
+   }
+  },
+  {
+   "id": "ecl-07a-iracp-jan-2026",
+   "document": "rbi_ecl_2025_11_28_iracp_directions_v2026_01_01.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "The IRACP Directions as updated 1 Jan 2026 are in force. The bank follows them, so most checks are COMPLIANT. The planted exceptions surface: 14 accounts more than 90 days past due still STANDARD (Patna, Surat, Jaipur), 6 SMA mis-tags and 16 NPAs under-provisioned at Pune Kothrud and Lucknow Hazratganj. Five governance obligations cannot be tested on loan data (Board policy, system coverage, annual system audit, crop-season calendar, stock audit). The July-only rules (62A/62B, 84A, 84B, 139A, 139B) must not appear in this version.",
+   "expected": {
+    "doc_type": "master_direction",
+    "overall_status": "NON_COMPLIANT",
+    "rule_suffixes_exactly": [
+     "npa-classification-90-days",
+     "sma-reporting-bands",
+     "standard-asset-provision-025",
+     "standard-asset-provision-040",
+     "substandard-provision-secured-15",
+     "substandard-provision-unsecured-25",
+     "doubtful-unsecured-portion-100",
+     "doubtful-secured-portion-ageing",
+     "loss-asset-provision-100",
+     "npa-income-cash-basis"
+    ],
+    "unexecutable_expected": true,
+    "unexecutable_count": 5,
+    "planted_findings": [
+     {
+      "rule_hint": "npa-classification-90-days",
+      "violations": 14,
+      "branches": {
+       "Boring Road, Patna": 6,
+       "Adajan, Surat": 5,
+       "C-Scheme, Jaipur": 3
+      }
+     },
+     {
+      "rule_hint": "sma-reporting-bands",
+      "check_index": 1,
+      "violations": 3
+     },
+     {
+      "rule_hint": "sma-reporting-bands",
+      "check_index": 2,
+      "violations": 3
+     },
+     {
+      "rule_hint": "substandard-provision-secured-15",
+      "violations": 10,
+      "branches": {
+       "Kothrud, Pune": 6,
+       "Hazratganj, Lucknow": 4
+      }
+     },
+     {
+      "rule_hint": "substandard-provision-unsecured-25",
+      "violations": 3,
+      "branches": {
+       "Kothrud, Pune": 3
+      }
+     },
+     {
+      "rule_hint": "doubtful-unsecured-portion-100",
+      "violations": 3,
+      "branches": {
+       "Kothrud, Pune": 1,
+       "Hazratganj, Lucknow": 2
+      }
+     },
+     {
+      "rule_hint": "doubtful-secured-portion-ageing",
+      "violations": 3,
+      "branches": {
+       "Kothrud, Pune": 1,
+       "Hazratganj, Lucknow": 2
+      }
+     }
+    ],
+    "compliant_rules": [
+     "standard-asset-provision-025",
+     "standard-asset-provision-040",
+     "loss-asset-provision-100",
+     "npa-income-cash-basis"
+    ],
+    "no_actions": false
+   },
+   "known_gaps": [
+    "Master Direction classified with confidence 0.69 (ecl-timeline.md known gap)"
+   ]
+  },
+  {
+   "id": "ecl-07a-iracp-jan-2026-before-effective",
+   "document": "rbi_ecl_2025_11_28_iracp_directions_v2026_01_01.md",
+   "as_of": "2025-11-01",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "Analysis date before the Directions took effect (28 Nov 2025): every rule is UPCOMING and nothing is evaluated, so no violations and no actions. The roll-up is INCONCLUSIVE rather than UPCOMING because the five unexecutable governance obligations outrank UPCOMING in the roll-up order (GAP, unexecutable, UPCOMING).",
+   "expected": {
+    "doc_type": "master_direction",
+    "overall_status": "INCONCLUSIVE",
+    "unexecutable_count": 5,
+    "upcoming_rules": [
+     "npa-classification-90-days",
+     "sma-reporting-bands",
+     "standard-asset-provision-025",
+     "standard-asset-provision-040",
+     "substandard-provision-secured-15",
+     "substandard-provision-unsecured-25",
+     "doubtful-unsecured-portion-100",
+     "doubtful-secured-portion-ageing",
+     "loss-asset-provision-100",
+     "npa-income-cash-basis"
+    ],
+    "planted_findings": [
+     {
+      "rule_hint": "npa-classification-90-days",
+      "violations": 0
+     }
+    ],
+    "no_actions": true
+   }
+  },
+  {
+   "id": "ecl-07b-iracp-jul-2026",
+   "document": "rbi_ecl_2025_11_28_iracp_directions_v2026_07_01.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "The consolidated Directions as updated 1 Jul 2026 add 62A/62B, 84A/84B and 139A/139B. The bank implemented the resolution-plan provision on 1 Jul 2026 (control resolution-plan-provisioning), so 84A and 84B are COMPLIANT. The planted exception in the new text: 5 of the 8 accounts restructured again are still on accrual basis (139B).",
+   "expected": {
+    "doc_type": "master_direction",
+    "overall_status": "NON_COMPLIANT",
+    "rule_suffixes_exactly": [
+     "npa-classification-90-days",
+     "sma-reporting-bands",
+     "standard-asset-provision-025",
+     "standard-asset-provision-040",
+     "substandard-provision-secured-15",
+     "substandard-provision-unsecured-25",
+     "doubtful-unsecured-portion-100",
+     "doubtful-secured-portion-ageing",
+     "loss-asset-provision-100",
+     "npa-income-cash-basis",
+     "resolution-plan-classification-62a-62b",
+     "resolution-plan-additional-provision-84a",
+     "repeated-restructuring-additional-provision-84b",
+     "resolution-plan-income-accrual-139a",
+     "restructured-again-income-cash-basis-139b"
+    ],
+    "unexecutable_expected": true,
+    "unexecutable_count": 5,
+    "planted_findings": [
+     {
+      "rule_hint": "npa-classification-90-days",
+      "violations": 14,
+      "branches": {
+       "Boring Road, Patna": 6,
+       "Adajan, Surat": 5,
+       "C-Scheme, Jaipur": 3
+      }
+     },
+     {
+      "rule_hint": "sma-reporting-bands",
+      "check_index": 1,
+      "violations": 3
+     },
+     {
+      "rule_hint": "sma-reporting-bands",
+      "check_index": 2,
+      "violations": 3
+     },
+     {
+      "rule_hint": "substandard-provision-secured-15",
+      "violations": 10,
+      "branches": {
+       "Kothrud, Pune": 6,
+       "Hazratganj, Lucknow": 4
+      }
+     },
+     {
+      "rule_hint": "substandard-provision-unsecured-25",
+      "violations": 3,
+      "branches": {
+       "Kothrud, Pune": 3
+      }
+     },
+     {
+      "rule_hint": "doubtful-unsecured-portion-100",
+      "violations": 3,
+      "branches": {
+       "Kothrud, Pune": 1,
+       "Hazratganj, Lucknow": 2
+      }
+     },
+     {
+      "rule_hint": "doubtful-secured-portion-ageing",
+      "violations": 3,
+      "branches": {
+       "Kothrud, Pune": 1,
+       "Hazratganj, Lucknow": 2
+      }
+     },
+     {
+      "rule_hint": "restructured-again-income-cash-basis-139b",
+      "violations": 5
+     }
+    ],
+    "compliant_rules": [
+     "standard-asset-provision-025",
+     "standard-asset-provision-040",
+     "loss-asset-provision-100",
+     "npa-income-cash-basis",
+     "resolution-plan-classification-62a-62b",
+     "resolution-plan-additional-provision-84a",
+     "repeated-restructuring-additional-provision-84b",
+     "resolution-plan-income-accrual-139a"
+    ],
+    "no_actions": false
+   }
+  },
+  {
+   "id": "ecl-07b-iracp-jul-2026-asof-2026-06-01",
+   "document": "rbi_ecl_2025_11_28_iracp_directions_v2026_07_01.md",
+   "as_of": "2026-06-01",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "Same consolidated text read on 1 Jun 2026: the rules inserted by the 29 Apr 2026 amendment take effect on 1 Jul 2026, so they are UPCOMING and not evaluated (their planted exception does not show yet). The base rules are evaluated on the same snapshot. The run comparison against case ecl-07a shows the five new rules.",
+   "expected": {
+    "doc_type": "master_direction",
+    "overall_status": "NON_COMPLIANT",
+    "upcoming_rules": [
+     "resolution-plan-classification-62a-62b",
+     "resolution-plan-additional-provision-84a",
+     "repeated-restructuring-additional-provision-84b",
+     "resolution-plan-income-accrual-139a",
+     "restructured-again-income-cash-basis-139b"
+    ],
+    "planted_findings": [
+     {
+      "rule_hint": "npa-classification-90-days",
+      "violations": 14,
+      "branches": {
+       "Boring Road, Patna": 6,
+       "Adajan, Surat": 5,
+       "C-Scheme, Jaipur": 3
+      }
+     },
+     {
+      "rule_hint": "substandard-provision-secured-15",
+      "violations": 10,
+      "branches": {
+       "Kothrud, Pune": 6,
+       "Hazratganj, Lucknow": 4
+      }
+     },
+     {
+      "rule_hint": "substandard-provision-unsecured-25",
+      "violations": 3,
+      "branches": {
+       "Kothrud, Pune": 3
+      }
+     },
+     {
+      "rule_hint": "doubtful-unsecured-portion-100",
+      "violations": 3,
+      "branches": {
+       "Kothrud, Pune": 1,
+       "Hazratganj, Lucknow": 2
+      }
+     },
+     {
+      "rule_hint": "doubtful-secured-portion-ageing",
+      "violations": 3,
+      "branches": {
+       "Kothrud, Pune": 1,
+       "Hazratganj, Lucknow": 2
+      }
+     }
+    ],
+    "no_actions": false
+   }
+  },
+  {
+   "id": "ecl-07x-iracp-amendment-dec-2025",
+   "document": "rbi_ecl_2025_12_04_iracp_amendment_directions.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "Deletes para 117 (effective 1 Jan 2026): a deletion, not an obligation. No template exists, so the deterministic run is blocked rather than guessing. With the LLM the expected result is no obligations; the deletion is lineage (AMENDS), not a rule.",
+   "expected": {
+    "doc_type": "master_direction",
+    "outcome": "blocked",
+    "blocked_reason_contains": "No approved template matches"
+   },
+   "llm_expected": {
+    "outcome": "blocked",
+    "blocked_reason_contains": "No approved template matches"
+   },
+   "known_gaps": [
+    "Classified master_direction at confidence 0.56; there is no 'amendment' document type yet"
+   ]
+  },
+  {
+   "id": "ecl-07y-iracp-amendment-apr-2026",
+   "document": "rbi_ecl_2026_04_29_iracp_amendment_directions.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "The amendment effective 1 Jul 2026, read on 17 Oct 2026, must extract only what it changes: 62A/62B, 84A, 84B, 139A, 139B. It must not re-extract the Direction. The bank's position: provisions held and classification COMPLIANT; 5 re-restructured accounts on accrual basis violate 139B.",
+   "expected": {
+    "doc_type": "circular",
+    "overall_status": "NON_COMPLIANT",
+    "rule_suffixes_exactly": [
+     "resolution-plan-classification-62a-62b",
+     "resolution-plan-additional-provision-84a",
+     "repeated-restructuring-additional-provision-84b",
+     "resolution-plan-income-accrual-139a",
+     "restructured-again-income-cash-basis-139b"
+    ],
+    "unexecutable_count": 0,
+    "planted_findings": [
+     {
+      "rule_hint": "restructured-again-income-cash-basis-139b",
+      "violations": 5
+     }
+    ],
+    "compliant_rules": [
+     "resolution-plan-classification-62a-62b",
+     "resolution-plan-additional-provision-84a",
+     "repeated-restructuring-additional-provision-84b",
+     "resolution-plan-income-accrual-139a"
+    ],
+    "no_actions": false,
+    "actions_workflows": [
+     "BRANCH_MANAGER_ALERT"
+    ]
+   },
+   "known_gaps": [
+    "Classified circular at confidence 0.64; there is no 'amendment' document type yet"
+   ]
+  },
+  {
+   "id": "ecl-07y-iracp-amendment-apr-2026-asof-2026-06-01",
+   "document": "rbi_ecl_2026_04_29_iracp_amendment_directions.md",
+   "as_of": "2026-06-01",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "The same amendment read before it takes effect: every new obligation is UPCOMING, so the roll-up is UPCOMING, nothing is evaluated and no action is proposed.",
+   "expected": {
+    "doc_type": "circular",
+    "overall_status": "UPCOMING",
+    "upcoming_rules": [
+     "resolution-plan-classification-62a-62b",
+     "resolution-plan-additional-provision-84a",
+     "repeated-restructuring-additional-provision-84b",
+     "resolution-plan-income-accrual-139a",
+     "restructured-again-income-cash-basis-139b"
+    ],
+    "planted_findings": [
+     {
+      "rule_hint": "restructured-again-income-cash-basis-139b",
+      "violations": 0,
+      "status": [
+       "UPCOMING"
+      ]
+     }
+    ],
+    "no_actions": true
+   }
+  },
+  {
+   "id": "ecl-08-acpir-final-asof-2026-10-17",
+   "document": "rbi_ecl_2026_04_27_acpir_directions_final.md",
+   "as_of": "2026-10-17",
+   "instrument": "acpir",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "The final ACPIR Directions take effect on 1 Apr 2027; until then banks stay under the IRACP Directions (para 3). The deterministic run has no template for them and is blocked. With the LLM the report must be UPCOMING with unexecutable obligations (PD/LGD/EAD, EIR, staging, floors need data the bank does not hold) and no actions. Readiness comes from the control library: 16 controls the Directions need are absent or planned, while the carried-over incurred-loss controls (NPA classification, overdue flagging, cash-basis income, MIS) are ready. These are readiness gaps, not compliance failures.",
+   "expected": {
+    "doc_type": "master_direction",
+    "outcome": "blocked",
+    "blocked_reason_contains": "No approved template matches",
+    "readiness_phase": "upcoming",
+    "readiness_gaps": [
+     "ECL Staging Engine (Stages 1, 2, 3)",
+     "SICR Criteria Documentation",
+     "Probability of Default Models",
+     "Loss Given Default Models",
+     "Exposure at Default Models",
+     "Effective Interest Rate Computation",
+     "Macroeconomic Scenario Framework",
+     "ECL Model Validation Framework",
+     "Prudential Floor Calculator",
+     "ECL Model Inventory and Risk Tiering",
+     "Historical Loss and Default Database",
+     "Fair Valuation on Transition and Transitional Arrangements",
+     "Board ECL Oversight (Committee with CFO and CRO)",
+     "ECL Disclosures and Regulatory Reporting",
+     "Third-party Model Governance",
+     "Continuous ECL Model Performance Monitoring"
+    ],
+    "readiness_ready": [
+     "Automated Day-end NPA Classification",
+     "Credit Appraisal and Delegation of Powers Checks",
+     "Income Recognition on Cash Basis for NPAs",
+     "Loan Agreement Due-date and SMA/NPA Date Disclosure",
+     "Overdue Flagging at Day-end",
+     "Segment-wise NPA and Restructured Asset MIS"
+    ],
+    "readiness_gap_status": {
+     "ECL Staging Engine (Stages 1, 2, 3)": "absent",
+     "SICR Criteria Documentation": "planned",
+     "Probability of Default Models": "absent",
+     "Loss Given Default Models": "absent",
+     "Exposure at Default Models": "absent",
+     "Effective Interest Rate Computation": "absent",
+     "Macroeconomic Scenario Framework": "planned",
+     "ECL Model Validation Framework": "planned",
+     "Prudential Floor Calculator": "absent",
+     "ECL Model Inventory and Risk Tiering": "planned",
+     "Historical Loss and Default Database": "absent",
+     "Fair Valuation on Transition and Transitional Arrangements": "absent",
+     "Board ECL Oversight (Committee with CFO and CRO)": "planned",
+     "ECL Disclosures and Regulatory Reporting": "absent",
+     "Third-party Model Governance": "planned",
+     "Continuous ECL Model Performance Monitoring": "absent"
+    }
+   },
+   "llm_expected": {
+    "outcome": "report",
+    "overall_status": "UPCOMING",
+    "unexecutable_expected": true,
+    "no_actions": true
+   },
+   "known_gaps": [
+    "Classified master_direction at confidence 0.62"
+   ]
+  },
+  {
+   "id": "ecl-08-acpir-final-asof-2027-04-02",
+   "document": "rbi_ecl_2026_04_27_acpir_directions_final.md",
+   "as_of": "2027-04-02",
+   "instrument": "acpir",
+   "modes": [
+    "deterministic"
+   ],
+   "rationale": "The same Directions the day after they took effect: the unchanged absent and planned controls are now control gaps (the phase is in force), not readiness gaps. Shows the position the bank must avoid by 1 Apr 2027.",
+   "expected": {
+    "doc_type": "master_direction",
+    "outcome": "blocked",
+    "blocked_reason_contains": "No approved template matches",
+    "readiness_phase": "in_force",
+    "readiness_gaps": [
+     "ECL Staging Engine (Stages 1, 2, 3)",
+     "SICR Criteria Documentation",
+     "Probability of Default Models",
+     "Loss Given Default Models",
+     "Exposure at Default Models",
+     "Effective Interest Rate Computation",
+     "Macroeconomic Scenario Framework",
+     "ECL Model Validation Framework",
+     "Prudential Floor Calculator",
+     "ECL Model Inventory and Risk Tiering",
+     "Historical Loss and Default Database",
+     "Fair Valuation on Transition and Transitional Arrangements",
+     "Board ECL Oversight (Committee with CFO and CRO)",
+     "ECL Disclosures and Regulatory Reporting",
+     "Third-party Model Governance",
+     "Continuous ECL Model Performance Monitoring"
+    ]
+   }
+  },
+  {
+   "id": "ecl-09-iracp-repeal-directions",
+   "document": "rbi_ecl_2026_04_27_iracp_repeal_directions.md",
+   "as_of": "2026-10-17",
+   "instrument": "iracp_repeal",
+   "modes": [
+    "deterministic"
+   ],
+   "rationale": "Repeals the IRACP Directions from 1 Apr 2027: lineage (REPEALS), not an obligation. No checks exist, so the deterministic run is blocked. No control satisfies a repeal, so there is no readiness gap.",
+   "expected": {
+    "doc_type": "master_direction",
+    "outcome": "blocked",
+    "blocked_reason_contains": "No approved template matches",
+    "readiness_phase": "upcoming",
+    "readiness_gaps": [],
+    "readiness_ready": []
+   },
+   "known_gaps": [
+    "Classified master_direction at confidence 0.62; there is no 'repeal' document type yet"
+   ]
+  },
+  {
+   "id": "sample-floating-rate-reset",
+   "document": "rbi_2023_08_18_floating_rate_reset_emi_loans.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "RBI/2023-24/55 in force since 31 Dec 2023. Planted: 42 of 1,410 floating EMI loans without a reset notice, 18 without a statement; DriveNow Floating (240 loans) lost its fixed-rate switch on 2024-07-01, a product-level control gap that time travel shows is absent before that date.",
+   "expected": {
+    "doc_type": "circular",
+    "overall_status": "NON_COMPLIANT",
+    "unexecutable_count": 0,
+    "rule_count": 3,
+    "planted_findings": [
+     {
+      "rule_hint": "notify-rate-reset",
+      "check_index": 0,
+      "violations": 42
+     },
+     {
+      "rule_hint": "fixed-rate-choice",
+      "check_index": 0,
+      "violations": 240
+     },
+     {
+      "rule_hint": "reset-statement",
+      "check_index": 1,
+      "violations": 18
+     }
+    ],
+    "compliant_rules": [],
+    "no_actions": false
+   }
+  },
+  {
+   "id": "sample-document-release",
+   "document": "rbi_2023_09_13_release_of_property_documents.md",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic",
+    "llm"
+   ],
+   "rationale": "RBI/2023-24/60: the original planted scenario, unchanged. Exactly 12 closed secured loans had documents released late or not at all, 7 of them at Koramangala. Every product offers the three required controls, so the control checks are COMPLIANT.",
+   "expected": {
+    "doc_type": "circular",
+    "overall_status": "NON_COMPLIANT",
+    "unexecutable_count": 0,
+    "rule_count": 3,
+    "planted_findings": [
+     {
+      "rule_hint": "release-within-30-days",
+      "check_index": 0,
+      "violations": 12,
+      "branches_include": {
+       "Koramangala, Bengaluru": 7
+      }
+     }
+    ],
+    "compliant_rules": [
+     "delay-compensation",
+     "collection-choice"
+    ],
+    "no_actions": false,
+    "actions_workflows": [
+     "BRANCH_MANAGER_ALERT",
+     "COMPENSATION_PAYOUT_REVIEW"
+    ]
+   }
+  },
+  {
+   "id": "sample-ferr-nddc-ap-dir-27",
+   "preset": "data/evals/presets/ferr_nddc_ap_dir_27.json",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic"
+   ],
+   "rationale": "A.P. (DIR Series) Circular No. 27 (FERR and NDDC hedging), as extracted and reviewed (preset). The NDDC rule targets an IFSC Banking Unit the bank does not have: not applicable. The FERR rule needs treasury trades and RBI reserve balances, which are not onboarded: it cannot be evaluated. Nothing is evaluated against the loan book, nothing is COMPLIANT and no action is proposed (docs/evals 2026-10-17-rbi-ap-dir-27-ferr.md, defects R1 and R2).",
+   "expected": {
+    "overall_status": "INCONCLUSIVE",
+    "not_evaluated_rules": [
+     "nddc-hedging-only",
+     "maintain-ferr"
+    ],
+    "gated": {
+     "nddc-hedging-only": "not_applicable",
+     "maintain-ferr": "cannot_evaluate"
+    },
+    "missing_data": {
+     "maintain-ferr": [
+      "rbi_reserve_balances",
+      "treasury_trades"
+     ]
+    },
+    "no_actions": true
+   }
+  },
+  {
+   "id": "sample-cva-directions",
+   "preset": "data/evals/presets/cva_directions.json",
+   "as_of": "2026-10-17",
+   "modes": [
+    "deterministic"
+   ],
+   "rationale": "The CVA capital charge, effective 1 Apr 2027, concerns derivative counterparty exposures and needs capital and RWA data plus trade-level derivative data, none of which the bank has onboarded: the rule cannot be evaluated, the report is INCONCLUSIVE, and no action is proposed.",
+   "expected": {
+    "overall_status": "INCONCLUSIVE",
+    "not_evaluated_rules": [
+     "cva-capital-charge"
+    ],
+    "gated": {
+     "cva-capital-charge": "cannot_evaluate"
+    },
+    "missing_data": {
+     "cva-capital-charge": [
+      "capital_rwa",
+      "treasury_trades"
+     ]
+    },
+    "no_actions": true
+   }
+  }
+ ],
+ "control_checks": [
+  {
+   "id": "control-check-day-end-npa-classification",
+   "control": "control:day-end-npa-classification",
+   "as_of": "2026-10-17",
+   "control_status": "implemented",
+   "expected_violations": 14,
+   "min_in_scope": 98,
+   "rationale": "The control is implemented, but 14 accounts more than 90 days past due were not classified: the system missed them."
+  },
+  {
+   "id": "control-check-sma-day-end-tagging",
+   "control": "control:sma-day-end-tagging",
+   "as_of": "2026-10-17",
+   "control_status": "implemented",
+   "expected_violations": 6,
+   "min_in_scope": 201,
+   "rationale": "Six accounts carry the tag of a lower band (3 SMA-1 as SMA-0, 3 SMA-2 as SMA-1)."
+  },
+  {
+   "id": "control-check-standard-asset-provisioning",
+   "control": "control:standard-asset-provisioning",
+   "as_of": "2026-10-17",
+   "control_status": "implemented",
+   "expected_violations": 0,
+   "min_in_scope": 909,
+   "rationale": "Every standard account in the 0.25 per cent sectors holds the general provision."
+  },
+  {
+   "id": "control-check-npa-provisioning-engine",
+   "control": "control:npa-provisioning-engine",
+   "as_of": "2026-10-17",
+   "control_status": "implemented",
+   "expected_violations": 10,
+   "min_in_scope": 29,
+   "rationale": "Substandard secured accounts: 10 hold less than 15 per cent, all at Pune Kothrud (6) and Lucknow Hazratganj (4)."
+  },
+  {
+   "id": "control-check-resolution-plan-provisioning",
+   "control": "control:resolution-plan-provisioning",
+   "as_of": "2026-10-17",
+   "control_status": "implemented",
+   "expected_violations": 0,
+   "min_in_scope": 22,
+   "rationale": "Live since 1 Jul 2026; every first-plan account in the 0.25 per cent sectors holds the extra 5 per cent."
+  },
+  {
+   "id": "control-check-cash-basis-income-recognition",
+   "control": "control:cash-basis-income-recognition",
+   "as_of": "2026-10-17",
+   "control_status": "implemented",
+   "expected_violations": 0,
+   "min_in_scope": 87,
+   "rationale": "All 109 NPAs are on cash basis. The 5 re-restructured accounts on accrual are a 139B finding, not an NPA finding."
+  },
+  {
+   "id": "control-check-resolution-plan-register",
+   "control": "control:resolution-plan-register",
+   "as_of": "2026-10-17",
+   "control_status": "implemented",
+   "expected_violations": 0,
+   "min_in_scope": 28,
+   "rationale": "No account under a resolution plan was downgraded for the plan."
+  },
+  {
+   "id": "control-check-kyc-periodic-updation",
+   "control": "control:kyc-periodic-updation",
+   "as_of": "2026-10-17",
+   "control_status": "implemented",
+   "expected_violations": 22,
+   "min_in_scope": 2500,
+   "rationale": "Automated reminders only started in Jan 2026; 22 customers (8 high, 8 medium, 6 low risk) are past their re-KYC due date."
+  }
+ ]
+}

@@ -9,22 +9,31 @@ dual-entry audit log: the LLM's intent and the exact query executed.
 from __future__ import annotations
 
 import re
+import time
 from collections import Counter
+from contextlib import contextmanager
 from datetime import date
+from types import SimpleNamespace
 from typing import Any
 
 from sqlalchemy import bindparam, text
 
+from bank_mcp_server.assertions import AssertionRejected, compile_assertion
 from bank_mcp_server.operational_store import analyst_engine
 from bank_mcp_server.sql_guard import SqlRejected, validate_sql
+from bank_mcp_server.view_catalog import sanitized_views, view_columns
 from core.app_store import AppStore, get_app_store, new_id
 from core.config import get_settings
 from core.models import BlastRadius, CheckResult, ComplianceCheck, ProposedAction, Rule
-from knowledge_graph.ontology import CAPABILITIES, PII_COLUMNS, RECORD_FLAGS, SANITIZED_VIEWS, WORKFLOWS, ontology_summary
+from knowledge_graph.ontology import CAPABILITIES, PII_COLUMNS, RECORD_FLAGS, WORKFLOWS, ontology_summary
 from privacy.detectors import structured_findings
 from privacy.vault import VAULT
 
 MAX_SAMPLES = 5
+ASSERTION_ROW_CAP = 100_000   # rows a record_assertion may read; more is NOT_EVALUATED, never a silent truncation
+ASSERTION_SECONDS = 5.0       # wall-clock limit (SQLite progress handler; Cloud SQL sessions also set statement_timeout)
+WORKLIST_KEYS = ("loan_ref", "customer_ref", "product_id", "branch_id", "outstanding_balance")
+VIEW_NAME = re.compile(r"^[a-z_][a-z0-9_]*$")
 
 
 def _d(value: Any) -> date | None:
@@ -40,7 +49,7 @@ class SecureEngine:
 
     # Tool 1: schema discovery ------------------------------------------
     def get_graph_ontology(self, target_domain: str = "All") -> dict:
-        return {**ontology_summary(target_domain), "sanitized_views": SANITIZED_VIEWS}
+        return {**ontology_summary(target_domain), "sanitized_views": sanitized_views()}
 
     # Guarded ad-hoc SQL ---------------------------------------------------
     def run_safe_sql(self, sql: str, intent: str, actor: str = "data_analyst_agent") -> dict:
@@ -103,7 +112,64 @@ class SecureEngine:
                                              "status": "GAP" if missing else "COMPLIANT"})
         if check.kind == "event_deadline":
             return self._event_deadline(base, rule, check, product_ids, as_of)
+        if check.kind == "record_assertion":
+            return self._record_assertion(base, rule, check, product_ids, as_of)
         return base
+
+    def check_data(self, check: ComplianceCheck, as_of: str, subject: str = "adhoc") -> CheckResult:
+        """Run one ``record_assertion`` outside any rule (a control's data check, an eval): same guard, same limits, no product scope."""
+        base = CheckResult(rule_id=subject, check_index=0, kind=check.kind, description=check.description, status="NOT_EVALUATED")
+        if check.kind != "record_assertion":
+            return base.model_copy(update={"evidence": "Only record_assertion checks can be run on their own."})
+        result = self._record_assertion(base, SimpleNamespace(rule_id=subject), check, None, as_of)
+        self.store.audit("eval_suite", "check_data", {"subject": subject, "as_of": as_of}, f"record_assertion on {check.view}",
+                         {"in_scope": result.in_scope, "violations": result.violations})
+        return result
+
+    def _record_assertion(self, base: CheckResult, rule: Rule, check: ComplianceCheck, product_ids: list[str] | None,
+                          as_of: str) -> CheckResult:
+        """Declarative per-record test: rows matching ``where`` (in scope) that fail ``assert`` (violations).
+
+        The expressions are validated and re-serialised from the AST (``bank_mcp_server.assertions``); nothing the model or
+        a template wrote reaches the database as text. Runs on the read-only analyst connection with a row cap and a
+        wall-clock limit. NULL in ``assert`` counts as a violation; ``tolerance`` is the share of in-scope rows allowed to
+        fail. Zero in-scope rows is NOT_EVALUATED, never COMPLIANT."""
+        try:
+            compiled = compile_assertion(check.view, check.where, check.assertion, as_of=as_of)
+            if not VIEW_NAME.match(compiled.view):
+                raise AssertionRejected("unsafe view name")
+        except AssertionRejected as error:
+            return base.model_copy(update={"evidence": f"Assertion rejected by the guard: {error}"})
+        columns = view_columns(compiled.view)
+        keys = [c for c in WORKLIST_KEYS if c in columns]
+        where_sql, assert_sql = compiled.sql(self.dialect)
+        conditions = [f"({where_sql})"] if where_sql else []
+        scoped = "product_id" in columns and product_ids is not None
+        if scoped:
+            conditions.append("product_id IN :pids")
+        sql = (f"SELECT {', '.join(keys)}, CASE WHEN ({assert_sql}) THEN 0 ELSE 1 END AS failed FROM {compiled.view}"
+               + (f" WHERE {' AND '.join(conditions)}" if conditions else "") + f" LIMIT {ASSERTION_ROW_CAP + 1}")
+        query = text(sql)
+        params: dict[str, Any] = {}
+        if scoped:
+            query, params = query.bindparams(bindparam("pids", expanding=True)), {"pids": product_ids}
+        try:
+            with analyst_engine().connect() as conn, _deadline(conn, ASSERTION_SECONDS):
+                rows = [dict(row._mapping) for row in conn.execute(query, params)]
+        except Exception as error:  # a bad column type, a timeout: report, never crash the run
+            return base.model_copy(update={"evidence": f"Assertion could not be executed ({type(error).__name__})."})
+        if len(rows) > ASSERTION_ROW_CAP:
+            return base.model_copy(update={"evidence": f"More than {ASSERTION_ROW_CAP} rows in scope; narrow the `where`."})
+        bad = [r for r in rows if r.pop("failed") == 1]
+        label = f"{compiled.view}: {len(bad)} of {len(rows)} rows" + (f" where {(check.where or '').strip()[:160]}" if check.where else "")
+        if not rows:
+            return base.model_copy(update={"evidence": f"No rows in {compiled.view} matched the scope; nothing was tested."
+                                                       + (f" Scope: {check.where.strip()[:160]}" if check.where else "")})
+        result = self._finish(base, rule, rows, bad, f"{label} fail: {(check.assertion or '').strip()[:200]}")
+        tolerance = check.tolerance or 0.0
+        if bad and len(bad) <= tolerance * len(rows):
+            result = result.model_copy(update={"status": "COMPLIANT", "evidence": f"{result.evidence} (within tolerance {tolerance:.1%})"})
+        return result
 
     def _loans(self, product_ids: list[str], status: str | None, extra: str | None = None) -> list[dict]:
         columns = "loan_ref, customer_ref, product_id, branch_id, outstanding_balance" + (f", {extra}" if extra else "")
@@ -161,8 +227,8 @@ class SecureEngine:
         return base.model_copy(update={
             "status": "GAP" if bad else "COMPLIANT", "in_scope": len(in_scope), "violations": len(bad),
             "exposure_inr": float(sum(item.get("outstanding_balance") or 0 for item in bad)),
-            "by_branch": dict(Counter(names.get(i["branch_id"], i["branch_id"]) for i in bad).most_common()),
-            "by_product": dict(Counter(i["product_id"] for i in bad).most_common()),
+            "by_branch": dict(Counter(names.get(i.get("branch_id"), i.get("branch_id")) for i in bad).most_common()),
+            "by_product": dict(Counter(i["product_id"] for i in bad if i.get("product_id")).most_common()),
             "worklist_id": worklist_id, "evidence": evidence,
         })
 
@@ -179,7 +245,8 @@ class SecureEngine:
         samples = []
         for item in items:
             sample = {k: v for k, v in item.items() if k not in {"loan_ref", "customer_ref"}}
-            sample["loan_token"] = VAULT.tokenize(session_id, item["loan_ref"], "LOAN")
+            if item.get("loan_ref"):  # customer-level views (vw_kyc_status) have no loan reference
+                sample["loan_token"] = VAULT.tokenize(session_id, item["loan_ref"], "LOAN")
             sample["customer_token"] = VAULT.tokenize(session_id, item["customer_ref"], "CUSTOMER")
             sample["branch"] = self.branch_names().get(item["branch_id"], item["branch_id"])
             samples.append(sample)
@@ -197,6 +264,22 @@ class SecureEngine:
         self.store.audit("orchestrator_agent", "trigger_compliance_workflow", action.model_dump(), "PROPOSED (human approval required)",
                          {"action_id": action.action_id})
         return action
+
+
+@contextmanager
+def _deadline(conn, seconds: float):
+    """Abort a long statement on SQLite (the local analyst database). Cloud SQL enforces statement_timeout on the session."""
+    raw = getattr(getattr(conn, "connection", None), "dbapi_connection", None)
+    setter = getattr(raw, "set_progress_handler", None)
+    if setter is None:
+        yield
+        return
+    end = time.monotonic() + seconds
+    setter(lambda: 1 if time.monotonic() > end else 0, 10_000)
+    try:
+        yield
+    finally:
+        setter(None, 0)
 
 
 def _plain(value: Any) -> Any:

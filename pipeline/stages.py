@@ -340,6 +340,9 @@ def default_actions(state: State) -> list[ProposedAction]:
             if result.penalty_inr:
                 plan.append(("COMPENSATION_PAYOUT_REVIEW", f"Review statutory delay compensation of INR {result.penalty_inr:,.0f} "
                              "for {{COUNT}} borrower(s) at INR 5,000 per day of delay."))
+        elif result.kind == "record_assertion":
+            plan.append(("BRANCH_MANAGER_ALERT", "Dear {{MANAGER_NAME}}, {{COUNT}} account(s) at {{BRANCH}} do not meet an RBI requirement: "
+                         f"{result.description.lower()}. Review each account, correct it in the core banking system and record the reason today."))
         elif result.kind == "control_required":
             plan.append(("PRODUCT_CONTROL_CHANGE", f"Add control '{result.description}' to "
                          f"{', '.join(result.products_missing_control)}; {{{{COUNT}}}} loan(s) are affected."))
@@ -392,7 +395,7 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
         if result.worklist_id:
             target = exposed if result.kind == "control_required" else loans
             for item in store.get_worklist(result.worklist_id):
-                target.setdefault(item["loan_ref"], item)
+                target.setdefault(item.get("loan_ref") or item.get("customer_ref"), item)  # customer-level views carry no loan_ref
     radii = [BlastRadius.model_validate(r) for r in state["blast_radius"]]
     branch_names = SecureEngine().branch_names()
     unresolved = sorted(r.rule_id for r in radii if r.scope_status == "UNRESOLVED")

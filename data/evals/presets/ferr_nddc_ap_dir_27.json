@@ -1,0 +1,118 @@
+{
+ "note": "Reviewed extraction supplied to the deterministic pipeline (rules skip parse and extract). Mirrors what the LLM extractor produced for the real circular.",
+ "extraction": {
+  "policy": {
+   "policy_id": "policy:RBI/2026-27/293",
+   "title": "Risk Management and Inter-Bank Dealings (FERR and NDDC hedging)",
+   "issuer": "RBI",
+   "reference": "RBI/2026-27/293",
+   "issued_on": "2026-10-12",
+   "effective_date": "2026-10-12",
+   "source_uri": null,
+   "supersedes": []
+  },
+  "rules": [
+   {
+    "rule_id": "rule:RBI/2026-27/293:nddc-hedging-only",
+    "title": "NDDCs for hedging only",
+    "description": "AD Category-I banks with an operating IFSC Banking Unit may offer INR non-deliverable derivative contracts (NDDCs) to non-residents only for hedging.",
+    "effective_date": "2026-10-12",
+    "scope": {
+     "product_terms": [
+      "INR non-deliverable derivative contracts"
+     ],
+     "rate_type": null,
+     "instalment_based": null,
+     "secured": null,
+     "collateral_type": null,
+     "category": null,
+     "record_status": null
+    },
+    "processes": [],
+    "segments": [],
+    "checks": [
+     {
+      "kind": "control_required",
+      "description": "NDDCs for hedging only",
+      "capability": "nddc_hedging_purpose_only",
+      "capability_description": null,
+      "control_id": null,
+      "record_field": null,
+      "expected": null,
+      "trigger_event": null,
+      "required_event": null,
+      "deadline_days": null,
+      "penalty_per_day_inr": null,
+      "view": null,
+      "where": null,
+      "assertion": null,
+      "tolerance": null
+     }
+    ],
+    "penalty_risk": "MEDIUM",
+    "modality": "MUST",
+    "citation": {
+     "document_id": "doc:eval-preset",
+     "chunk_id": null,
+     "page": null,
+     "snippet": "AD Category-I banks with an operating IFSC Banking Unit may offer INR non-deliverable derivative contracts (NDDCs) to non-residents only for hedging."
+    },
+    "confidence": 1.0,
+    "status": "PENDING_REVIEW"
+   },
+   {
+    "rule_id": "rule:RBI/2026-27/293:maintain-ferr",
+    "title": "Maintain the Foreign Exchange Risk Reserve",
+    "description": "AD Category-I banks shall maintain a Foreign Exchange Risk Reserve of 20% of the INR-equivalent notional of each FX derivative contract undertaken to hedge their own assets and liabilities, held as cash with RBI.",
+    "effective_date": "2026-10-12",
+    "scope": {
+     "product_terms": [
+      "FX derivative contracts involving INR"
+     ],
+     "rate_type": null,
+     "instalment_based": null,
+     "secured": null,
+     "collateral_type": null,
+     "category": null,
+     "record_status": null
+    },
+    "processes": [],
+    "segments": [],
+    "checks": [
+     {
+      "kind": "control_required",
+      "description": "Maintain the Foreign Exchange Risk Reserve",
+      "capability": "maintain_ferr",
+      "capability_description": null,
+      "control_id": null,
+      "record_field": null,
+      "expected": null,
+      "trigger_event": null,
+      "required_event": null,
+      "deadline_days": null,
+      "penalty_per_day_inr": null,
+      "view": null,
+      "where": null,
+      "assertion": null,
+      "tolerance": null
+     }
+    ],
+    "penalty_risk": "MEDIUM",
+    "modality": "MUST",
+    "citation": {
+     "document_id": "doc:eval-preset",
+     "chunk_id": null,
+     "page": null,
+     "snippet": "AD Category-I banks shall maintain a Foreign Exchange Risk Reserve of 20% of the INR-equivalent notional of each FX derivative contract undertaken to hedge their own assets and liabilities, held as cash with RBI."
+    },
+    "confidence": 1.0,
+    "status": "PENDING_REVIEW"
+   }
+  ],
+  "unexecutable": []
+ },
+ "validation_issues": [],
+ "extraction_provenance": {
+  "method": "reviewed-preset"
+ }
+}

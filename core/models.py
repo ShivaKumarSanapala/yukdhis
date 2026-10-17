@@ -10,12 +10,12 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
-CheckKind = Literal["control_required", "record_flag", "event_deadline"]
+CheckKind = Literal["control_required", "record_flag", "event_deadline", "record_assertion"]
 RateType = Literal["FLOATING", "FIXED"]
 CollateralType = Literal["IMMOVABLE", "MOVABLE", "NONE"]
-ProductCategory = Literal["RETAIL_LOAN", "MSME_LOAN", "CARD", "DEPOSIT"]
+ProductCategory = Literal["RETAIL_LOAN", "MSME_LOAN", "AGRI_LOAN", "CARD", "DEPOSIT"]
 RiskLevel = Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 RuleStatus = Literal["PENDING_REVIEW", "APPROVED", "REJECTED", "SUPERSEDED"]
 Modality = Literal["MUST", "MAY", "MUST_NOT"]
@@ -63,6 +63,26 @@ class ComplianceCheck(BaseModel):
     required_event: Optional[str] = Field(default=None, description="event_deadline: event that must follow.")
     deadline_days: Optional[int] = None
     penalty_per_day_inr: Optional[float] = None
+    view: Optional[str] = Field(default=None, description="record_assertion: sanitized view the expressions run on, e.g. vw_asset_quality.")
+    where: Optional[str] = Field(
+        default=None, description="record_assertion: boolean expression selecting the rows in scope (columns of `view`, "
+                                  "comparisons, AND/OR/NOT, IN, arithmetic; no functions). Omit to test every row.")
+    assertion: Optional[str] = Field(
+        default=None, description="record_assertion: boolean expression every in-scope row must satisfy (same grammar "
+                                  "as `where`). JSON key may be spelled `assert`.")
+    tolerance: Optional[float] = Field(
+        default=None, ge=0.0, le=1.0, description="record_assertion: share of in-scope rows allowed to fail before the check is a GAP "
+                                                  "(default 0).")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _assert_alias(cls, data):
+        """`assert` is a Python keyword; accept it as the JSON spelling of ``assertion``."""
+        if isinstance(data, dict) and "assert" in data:
+            data = {**data}
+            data.setdefault("assertion", data.pop("assert"))
+            data.pop("assert", None)
+        return data
 
 
 class Rule(BaseModel):

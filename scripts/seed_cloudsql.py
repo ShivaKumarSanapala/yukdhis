@@ -44,6 +44,9 @@ def main() -> None:
         cur.executemany(f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join(['%s'] * len(columns))})",
                         [tuple(row[c] for c in columns) for row in rows])
         print(f"loaded {len(rows)} rows into {table}")
+    for view in ("vw_compliance_impact", "vw_asset_quality", "vw_kyc_status"):  # the sanitized views the analyst role reads
+        cur.execute(f"SELECT COUNT(*) FROM {view}")
+        print(f"{view}: {cur.fetchone()[0]} rows")
     cur.execute(f"GRANT compliance_analyst TO {api_user}")
     cur.execute(f"GRANT pii_hydrator TO {action_user}")
     conn.commit()

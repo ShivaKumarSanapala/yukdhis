@@ -187,6 +187,7 @@ NAMES = ["CAPABILITIES", "RECORD_FLAGS", "EVENT_TYPES", "PRODUCT_ATTRIBUTES", "S
 NEW_EDGES = {"AMENDS": ("Policy", "Policy"), "REFERS_TO": ("Policy", "Policy"), "IMPLEMENTS": ("Policy", "Rule"),
              "ENFORCES": ("Policy", "Control")}
 LENDING_PACK_FILES = {"retail_lending", "msme_lending"}
+ENABLED_PACKS = LENDING_PACK_FILES | {"provisioning_iracp"}  # the demo profile also enables the provisioning pack
 FERR = ("AD Category-I banks shall maintain a Foreign Exchange Risk Reserve of 20% of the INR-equivalent notional of each "
         "FX derivative contract undertaken to hedge their own assets and liabilities.")
 POLICY = Policy(policy_id="policy:FERR/1", title="FERR", issuer="RBI", reference="FERR/1", effective_date="2026-10-12")
@@ -250,10 +251,17 @@ def propose(store, capability_id: str = "rate_switch_window", suffix: str = "a")
 # ---------------------------------------------------------------------------------------------------------------
 # Golden equality: the packs reproduce the constants that used to live in Python
 # ---------------------------------------------------------------------------------------------------------------
+def contains(new, old) -> bool:
+    """``new`` reproduces ``old`` exactly for every old entry. Further packs (e.g. provisioning_iracp) may add entries."""
+    if isinstance(old, dict):
+        return all(k in new and new[k] == v for k, v in old.items())
+    return set(old) <= set(new)
+
+
 @pytest.mark.parametrize("name", NAMES)
 def test_module_constants_equal_the_old_python_constants(name):
     old, new = globals()[f"OLD_{name}"], getattr(ontology, name)
-    assert new == (tuple(old) if name == "PRODUCT_ATTRIBUTES" else old)
+    assert contains(new, tuple(old) if name == "PRODUCT_ATTRIBUTES" else old)
 
 
 @pytest.mark.parametrize("profile_over", [{}, {"ontology_packs": None}])
@@ -261,17 +269,22 @@ def test_get_ontology_equals_the_old_constants_with_and_without_the_packs_key(pr
     prof = dict(packs.load_profile())
     if profile_over.get("ontology_packs", 1) is None:
         prof.pop("ontology_packs")  # key absent: every pack onboarded for the profile is enabled
+    else:
+        prof["ontology_packs"] = ["retail_lending", "msme_lending"]  # exactly the old vocabulary
     vocabulary = ontology.get_ontology(prof)
-    assert vocabulary.capabilities == OLD_CAPABILITIES
-    assert vocabulary.record_flags == OLD_RECORD_FLAGS
-    assert set(vocabulary.event_types) == OLD_EVENT_TYPES
-    assert vocabulary.product_attributes == tuple(OLD_PRODUCT_ATTRIBUTES)
-    assert vocabulary.sanitized_views == OLD_SANITIZED_VIEWS
-    assert vocabulary.glossary == OLD_REGULATORY_GLOSSARY
-    assert vocabulary.event_processes == OLD_EVENT_PROCESSES
-    assert vocabulary.capability_processes == OLD_CAPABILITY_PROCESSES
-    assert vocabulary.workflows == OLD_WORKFLOWS
-    assert {p for p, _ in vocabulary.packs} == LENDING_PACK_FILES
+    exact = "ontology_packs" in prof
+    same = (lambda new, old: new == old) if exact else contains
+    assert same(vocabulary.capabilities, OLD_CAPABILITIES)
+    assert same(vocabulary.record_flags, OLD_RECORD_FLAGS)
+    assert same(set(vocabulary.event_types), OLD_EVENT_TYPES)
+    assert same(vocabulary.product_attributes, tuple(OLD_PRODUCT_ATTRIBUTES))
+    assert same(vocabulary.sanitized_views, OLD_SANITIZED_VIEWS)
+    assert same(vocabulary.glossary, OLD_REGULATORY_GLOSSARY)
+    assert same(vocabulary.event_processes, OLD_EVENT_PROCESSES)
+    assert same(vocabulary.capability_processes, OLD_CAPABILITY_PROCESSES)
+    assert same(vocabulary.workflows, OLD_WORKFLOWS)
+    ids = {p for p, _ in vocabulary.packs}
+    assert ids == LENDING_PACK_FILES if exact else LENDING_PACK_FILES <= ids
 
 
 def test_meta_model_keeps_the_old_types_and_adds_the_lineage_and_enforcement_edges():
@@ -282,8 +295,8 @@ def test_meta_model_keeps_the_old_types_and_adds_the_lineage_and_enforcement_edg
     assert set(ontology.EDGE_TYPES) == set(OLD_EDGE_TYPES) | set(NEW_EDGES)
     assert ontology.POLICY_KINDS == ("regulatory", "internal")
     summary = ontology.ontology_summary("lending")
-    assert summary["edge_types"]["AMENDS"] == "Policy -> Policy" and summary["capabilities"] == OLD_CAPABILITIES
-    assert {p["pack_id"] for p in summary["packs"]} == LENDING_PACK_FILES
+    assert summary["edge_types"]["AMENDS"] == "Policy -> Policy" and contains(summary["capabilities"], OLD_CAPABILITIES)
+    assert {p["pack_id"] for p in summary["packs"]} == ENABLED_PACKS
 
 
 def test_old_import_names_still_exist():
@@ -678,10 +691,10 @@ def test_ontology_endpoint_lists_packs_vocabulary_and_pending_proposals(tmp_path
     assert response.status_code == 200
     body = response.json()
     by_id = {p["pack_id"]: p for p in body["packs"]}
-    assert set(by_id) == LENDING_PACK_FILES and by_id["retail_lending"]["version"] == "1.0.0"
+    assert set(by_id) == ENABLED_PACKS and by_id["retail_lending"]["version"] == "1.0.0"
     assert by_id["retail_lending"]["counts"]["capabilities"] == 7 and by_id["msme_lending"]["counts"]["capabilities"] == 0
     assert "treasury_derivatives" in body["available_packs"]
-    assert body["vocabulary"]["capabilities"] == OLD_CAPABILITIES and body["counts"]["capabilities"] == 7
+    assert contains(body["vocabulary"]["capabilities"], OLD_CAPABILITIES) and body["counts"]["capabilities"] >= 7
     assert body["vocabulary"]["edge_types"]["IMPLEMENTS"] == "Policy -> Rule"
     assert [p["id"] for p in body["pending_proposals"]] == [control_id]
     pending = body["pending_proposals"][0]

@@ -1,7 +1,21 @@
 branch_id,branch_name,city,region,manager_name,manager_email
-branch:blr-koramangala,Koramangala,Bengaluru,South,Ananya Nair,mgr.blr-koramangala@bank.example.com
-branch:mum-andheri,Andheri East,Mumbai,West,Karthik Menon,mgr.mum-andheri@bank.example.com
-branch:del-cp,Connaught Place,New Delhi,North,Ananya Banerjee,mgr.del-cp@bank.example.com
-branch:chn-tnagar,T Nagar,Chennai,South,Zoya Das,mgr.chn-tnagar@bank.example.com
-branch:hyd-banjara,Banjara Hills,Hyderabad,South,Lakshmi Khan,mgr.hyd-banjara@bank.example.com
-branch:kol-saltlake,Salt Lake,Kolkata,East,Farhan Menon,mgr.kol-saltlake@bank.example.com
+branch:blr-koramangala,Koramangala,Bengaluru,South,Aarav Iyer,mgr.blr-koramangala@bank.example.com
+branch:mum-andheri,Andheri East,Mumbai,West,Manoj Bose,mgr.mum-andheri@bank.example.com
+branch:del-cp,Connaught Place,New Delhi,North,Meera Bose,mgr.del-cp@bank.example.com
+branch:chn-tnagar,T Nagar,Chennai,South,Nisha Verma,mgr.chn-tnagar@bank.example.com
+branch:hyd-banjara,Banjara Hills,Hyderabad,South,Nisha Bose,mgr.hyd-banjara@bank.example.com
+branch:kol-saltlake,Salt Lake,Kolkata,East,Zoya Joshi,mgr.kol-saltlake@bank.example.com
+branch:blr-whitefield,Whitefield,Bengaluru,South,Pooja Joshi,mgr.blr-whitefield@bank.example.com
+branch:kochi-mgroad,MG Road,Kochi,South,Saanvi Mehta,mgr.kochi-mgroad@bank.example.com
+branch:cbe-rspuram,RS Puram,Coimbatore,South,Aditya Chatterjee,mgr.cbe-rspuram@bank.example.com
+branch:mum-bkc,Bandra Kurla Complex,Mumbai,West,Arjun Kulkarni,mgr.mum-bkc@bank.example.com
+branch:pune-kothrud,Kothrud,Pune,West,Varun Pillai,mgr.pune-kothrud@bank.example.com
+branch:ahd-cgroad,CG Road,Ahmedabad,West,Farhan Menon,mgr.ahd-cgroad@bank.example.com
+branch:surat-adajan,Adajan,Surat,West,Dev Menon,mgr.surat-adajan@bank.example.com
+branch:ggn-sector29,Sector 29,Gurugram,North,Kabir Pillai,mgr.ggn-sector29@bank.example.com
+branch:jaipur-cscheme,C-Scheme,Jaipur,North,Farhan Verma,mgr.jaipur-cscheme@bank.example.com
+branch:lko-hazratganj,Hazratganj,Lucknow,North,Sunita Pillai,mgr.lko-hazratganj@bank.example.com
+branch:chd-sector17,Sector 17,Chandigarh,North,Ishaan Reddy,mgr.chd-sector17@bank.example.com
+branch:bbsr-saheednagar,Saheed Nagar,Bhubaneswar,East,Aarav Rao,mgr.bbsr-saheednagar@bank.example.com
+branch:patna-boring,Boring Road,Patna,East,Arjun Bose,mgr.patna-boring@bank.example.com
+branch:guwahati-gs,GS Road,Guwahati,East,Ananya Reddy,mgr.guwahati-gs@bank.example.com

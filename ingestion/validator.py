@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from datetime import date
 
+from bank_mcp_server.assertions import validate_check
 from core.models import ExtractedPolicy, ParsedDocument, ValidationIssue
 from knowledge_graph.ontology import CAPABILITIES, EVENT_TYPES, RECORD_FLAGS
 
@@ -100,6 +101,12 @@ def validate_extraction(extraction: ExtractedPolicy, document: ParsedDocument | 
                     add("ERROR", where, f"Events must be in {sorted(EVENT_TYPES)}.", rid)
                 if not check.deadline_days or check.deadline_days <= 0:
                     add("ERROR", where, "deadline_days must be a positive integer.", rid)
+            elif check.kind == "record_assertion":
+                errors, warnings = validate_check(check.view, check.where, check.assertion)
+                for message in errors:
+                    add("ERROR", f"{where}.assert", message, rid)
+                for message in warnings:
+                    add("WARNING", f"{where}.assert", message, rid)
     for index, item in enumerate(extraction.unexecutable):
         where = f"unexecutable[{index}]"
         if document is not None and not _verbatim(item.citation, source):

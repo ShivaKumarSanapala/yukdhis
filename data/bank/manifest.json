@@ -3,13 +3,111 @@
   "seed": 2026,
   "synthetic": true,
   "rows": {
-    "branches": 6,
-    "customers": 120,
-    "loans": 161,
-    "loan_events": 401
+    "branches": 20,
+    "customers": 2500,
+    "loans": 3998,
+    "loan_events": 16387
+  },
+  "asset_classification_mix_active_book": {
+    "STANDARD": 3131,
+    "SMA0": 189,
+    "SUBSTANDARD": 80,
+    "SMA1": 63,
+    "DOUBTFUL": 48,
+    "SMA2": 31,
+    "LOSS": 8
   },
   "planted": {
+    "resolution_plans": {
+      "count": 36,
+      "first_plan": 28,
+      "repeated": 8,
+      "by_branch": {
+        "branch:kochi-mgroad": 14,
+        "branch:bbsr-saheednagar": 11,
+        "branch:patna-boring": 7,
+        "branch:guwahati-gs": 4
+      }
+    },
+    "repeat_restructured_on_accrual": {
+      "count": 5,
+      "paragraph": "139B"
+    },
+    "dpd_over_90_still_standard": {
+      "count": 14,
+      "by_branch": {
+        "branch:patna-boring": 6,
+        "branch:surat-adajan": 5,
+        "branch:jaipur-cscheme": 3
+      }
+    },
+    "sma_band_mistags": {
+      "count": 6,
+      "sma1_reported_as_sma0": 3,
+      "sma2_reported_as_sma1": 3
+    },
+    "npa_provision_shortfall": {
+      "count": 16,
+      "by_branch": {
+        "branch:pune-kothrud": 10,
+        "branch:lko-hazratganj": 6
+      },
+      "by_kind": {
+        "branch:pune-kothrud:SS_SECURED": 6,
+        "branch:pune-kothrud:SS_UNSECURED": 3,
+        "branch:pune-kothrud:DOUBTFUL": 1,
+        "branch:lko-hazratganj:SS_SECURED": 4,
+        "branch:lko-hazratganj:DOUBTFUL": 2
+      },
+      "failing_checks": {
+        "substandard-provision-secured-15": 10,
+        "substandard-provision-unsecured-25": 3,
+        "doubtful-unsecured-portion-100": 3,
+        "doubtful-secured-portion-ageing": 3
+      },
+      "shortfall_inr": 4170133
+    },
+    "kyc_periodic_updation_overdue": {
+      "count": 22,
+      "by_risk_category": {
+        "HIGH": 8,
+        "MEDIUM": 8,
+        "LOW": 6
+      },
+      "by_branch": {
+        "branch:ahd-cgroad": 3,
+        "branch:kochi-mgroad": 3,
+        "branch:pune-kothrud": 3,
+        "branch:hyd-banjara": 3,
+        "branch:blr-whitefield": 2,
+        "branch:jaipur-cscheme": 1,
+        "branch:ggn-sector29": 1,
+        "branch:guwahati-gs": 1,
+        "branch:lko-hazratganj": 1,
+        "branch:bbsr-saheednagar": 1,
+        "branch:blr-koramangala": 1,
+        "branch:cbe-rspuram": 1,
+        "branch:del-cp": 1
+      }
+    },
     "rbi_2023_24_60_document_release_violations": 12,
-    "of_which_koramangala": 7
-  }
+    "of_which_koramangala": 7,
+    "rbi_2023_24_55_rate_reset": {
+      "floating_emi_loans_in_scope": 1410,
+      "borrowers_not_notified_of_reset": 42,
+      "loans_without_emi_or_tenor_choice": 9,
+      "loans_without_reset_statement": 18,
+      "auto_floating_loans_without_fixed_rate_option": 240,
+      "note": "DriveNow Floating lost its fixed-rate switch on 2024-07-01 (product-level control gap, bitemporal demo)"
+    }
+  },
+  "absent_by_design": [
+    "PD",
+    "LGD",
+    "EAD",
+    "ECL staging engine output",
+    "effective interest rate schedules",
+    "macro scenarios",
+    "prudential floor computation"
+  ]
 }
