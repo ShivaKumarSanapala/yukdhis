@@ -7,7 +7,6 @@ import RunsBoard, { FILTERS, type FilterKey } from "./RunsBoard";
 import RunTimeline from "./RunTimeline";
 import RuleReview from "./RuleReview";
 import RunSummary from "./RunSummary";
-import ReportView from "./ReportView";
 import CompareView from "./CompareView";
 import { Skeleton } from "./Motif";
 
@@ -47,7 +46,7 @@ export default function AnalyzePanel({ config, onOpenInReports }: { config: Conf
   const [selected, setSelected] = useState<RunInfo | null>(null);
   const [events, setEvents] = useState<Record<string, RunEvent[]>>({});
   const [report, setReport] = useState<ImpactReport | null>(null);
-  const [view, setView] = useState<"summary" | "report" | "compare">("summary");
+  const [view, setView] = useState<"summary" | "compare">("summary");
   const [pair, setPair] = useState<[ImpactReport, ImpactReport] | null>(null);
   const [prefill, setPrefill] = useState<{ url: string; nonce: number } | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -204,13 +203,10 @@ export default function AnalyzePanel({ config, onOpenInReports }: { config: Conf
               rules={extractedRules(selected, selectedEvents)} onDone={afterReview} />
           )}
           {selected.status === "SUCCEEDED" && report && (
-            <RunSummary run={selected} report={report} onOpen={() => setView("report")} onOpenInReports={() => onOpenInReports(report.report_id)}
+            <RunSummary run={selected} report={report} onOpenInReports={() => onOpenInReports(report.report_id)}
               onCompare={selected.previous_report_id ? () => compare(selected) : undefined} onAnalyseLink={analyseLink} />
           )}
           <div id="run-result">
-            {view === "report" && report && (
-              <><button className="ghost back no-print" onClick={() => setView("summary")}>Hide report</button><ReportView report={report} onChange={setReport} /></>
-            )}
             {view === "compare" && pair && (
               <><button className="ghost back no-print" onClick={() => setView("summary")}>Hide comparison</button><CompareView a={pair[0]} b={pair[1]} /></>
             )}

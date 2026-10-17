@@ -6,8 +6,8 @@ import MetricStrip from "./MetricStrip";
 type Reference = { ref?: string; url?: string; relation?: string };
 
 /** Completion card: overall status, key KPIs and where to go next. */
-export default function RunSummary({ run, report, onOpen, onOpenInReports, onCompare, onAnalyseLink }: {
-  run: RunInfo; report: ImpactReport; onOpen: () => void; onOpenInReports: () => void; onCompare?: () => void;
+export default function RunSummary({ run, report, onOpenInReports, onCompare, onAnalyseLink }: {
+  run: RunInfo; report: ImpactReport; onOpenInReports: () => void; onCompare?: () => void;
   onAnalyseLink?: (url: string) => void;
 }) {
   const s = report.summary;
@@ -34,8 +34,7 @@ export default function RunSummary({ run, report, onOpen, onOpenInReports, onCom
         { label: notApplicable ? "Rules not applicable" : "Products in scope", value: notApplicable || s.products_in_scope },
       ]} />
       <div className="buttons summary-actions">
-        <button className="primary" onClick={onOpen}>Open report</button>
-        <button onClick={onOpenInReports}>Open in Reports</button>
+        <button className="primary" onClick={onOpenInReports}>Open report</button>
         {onCompare && <button onClick={onCompare}>Compare with previous run</button>}
       </div>
       {references.length > 0 && onAnalyseLink && (
