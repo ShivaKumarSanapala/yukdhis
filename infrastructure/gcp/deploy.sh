@@ -179,7 +179,9 @@ services() {
     --set-env-vars="^|^$(common_env | tr ',' '|')|CLOUDSQL_IAM_USER=${API_SA%.gserviceaccount.com}|CORS_ORIGINS=https://${PROJECT_ID}.web.app,https://${PROJECT_ID}.firebaseapp.com" \
     --set-secrets=DLP_WRAPPED_KEY=yukdhis-dlp-wrapped-key:latest
   remember API_URL "$(gcloud run services describe "$API_SERVICE" --region="$REGION" --format='value(status.url)')"
-  gcloud run services update "$API_SERVICE" --region="$REGION" --update-env-vars="SERVICE_AUDIENCE=$API_URL" >/dev/null
+  # Cloud Run serves both URLs; Eventarc and Scheduler may sign for either (auth also accepts the URL the caller used).
+  local api_urls; api_urls="$(gcloud run services describe "$API_SERVICE" --region="$REGION" --format='value(metadata.annotations."run.googleapis.com/urls")' | tr -d '[]"')"
+  gcloud run services update "$API_SERVICE" --region="$REGION" --update-env-vars="^|^SERVICE_AUDIENCE=${api_urls:-$API_URL}" >/dev/null
   # Action engine: private, only identity allowed to read customer contact columns.
   # shellcheck disable=SC2086
   gcloud run deploy "$ACTION_SERVICE" --image="$IMAGE:latest" --region="$REGION" --service-account="$ACTION_SA" $net \
