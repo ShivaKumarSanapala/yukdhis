@@ -145,7 +145,7 @@ def _gemini_extract(document: ParsedDocument, feedback: str,
     """Streams the structured answer so thought summaries show up live; fails clearly when the answer is cut off."""
     from google.genai import types
 
-    from core.llm import genai_client
+    from core.llm import genai_client, retry_stream
 
     settings = get_settings()
     chunks = "\n\n".join(f"<chunk id={c.chunk_id} page={c.page_start}>\n{c.content}\n</chunk>" for c in document.chunks)
@@ -153,13 +153,12 @@ def _gemini_extract(document: ParsedDocument, feedback: str,
                                       document_id=document.document_id, parser=document.parser, chunks=chunks)
     if feedback:
         prompt += "\n\n" + feedback
-    stream = genai_client().models.generate_content_stream(
-        model=settings.reasoning_model, contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.0, seed=0, response_mime_type="application/json", response_schema=ExtractedPolicy,
-            max_output_tokens=MAX_OUTPUT_TOKENS,
-            thinking_config=types.ThinkingConfig(include_thoughts=True, thinking_budget=THINKING_BUDGET)),
-    )
+    config = types.GenerateContentConfig(
+        temperature=0.0, seed=0, response_mime_type="application/json", response_schema=ExtractedPolicy,
+        max_output_tokens=MAX_OUTPUT_TOKENS,
+        thinking_config=types.ThinkingConfig(include_thoughts=True, thinking_budget=THINKING_BUDGET))
+    stream = retry_stream(lambda: genai_client().models.generate_content_stream(
+        model=settings.reasoning_model, contents=prompt, config=config), label="extraction")
     answer, thoughts, finish, last = [], [], "", 0.0
     for chunk in stream:
         for candidate in chunk.candidates or []:
