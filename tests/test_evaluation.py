@@ -18,7 +18,7 @@ from ingestion.templates import match_template  # noqa: E402
 from scripts import eval_extraction  # noqa: E402
 
 CIRCULARS = Path("data/circulars")
-SAMPLES = sorted(p.name for p in CIRCULARS.glob("*.md"))
+SAMPLES = sorted(p.name for p in CIRCULARS.glob("rbi_[0-9]*.md"))
 
 
 def gold(name: str):

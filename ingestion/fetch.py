@@ -90,7 +90,7 @@ def fetch_circular(url: str) -> dict:
         if pdf:
             final_url, content, filename = pdf[0], pdf[1], _pdf_name(pdf[0])
         else:
-            markdown = page.markdown()
+            markdown = crop_page_chrome(page.markdown())
             if len(markdown) < MIN_TEXT_CHARS:
                 raise ValueError("No circular text was found on that page.")
             content = markdown.encode("utf-8")
@@ -229,8 +229,26 @@ def _charset(body: bytes) -> str:
 
 
 # HTML main text -----------------------------------------------------------------
+_SIZE_LINE = re.compile(r"\(\s*\d+\s*kb\s*\)\s*$", re.IGNORECASE)
+_END_LINES = {"Top", "Back to previous page", "Previous Versions", "More Links :"}
+_ARCHIVE = re.compile(r"(?:## )?(?:19|20)\d\d|## Archives|All Months")
+
+
+def crop_page_chrome(markdown: str) -> str:
+    """Drop RBI site chrome around a document: the menu before the "(NNN kb)" download line and the archive and
+    footer lists after "Top". Pages without that layout are returned unchanged (apart from the heading)."""
+    lines = markdown.splitlines()
+    start = next((i + 1 for i, line in enumerate(lines[:80]) if _SIZE_LINE.search(line)), None)
+    if start is None:
+        return markdown
+    end = next((i for i in range(start, len(lines)) if lines[i].strip() in _END_LINES
+                or _ARCHIVE.fullmatch(lines[i].strip())), len(lines))
+    kept = "\n".join(lines[start:end]).strip()  # the <title> is the site's ("Master Directions | ..."), not the circular's
+    return markdown if len(kept) < MIN_TEXT_CHARS else kept + "\n"
+
 class _MainText(HTMLParser):
-    SKIP = {"script", "style", "noscript", "nav", "header", "footer", "form", "iframe", "svg", "button", "select",
+    # No "form": ASP.NET pages (all of rbi.org.in) wrap the whole page in one <form>, so skipping it dropped the text.
+    SKIP = {"script", "style", "noscript", "nav", "header", "footer", "iframe", "svg", "button", "select", "textarea",
             "template"}
     BLOCK = {"p", "div", "li", "tr", "br", "table", "section", "article", "ul", "ol", "blockquote", "td", "th"}
 

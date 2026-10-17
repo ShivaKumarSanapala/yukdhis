@@ -61,10 +61,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Precision/recall of rule extraction against the template gold set.")
     parser.add_argument("--no-llm", action="store_true", help="Score the template against itself")
     parser.add_argument("--json", action="store_true", help="Print the full scores as JSON")
-    parser.add_argument("circulars", nargs="*", type=Path, help="Default: every sample in data/circulars")
+    parser.add_argument("circulars", nargs="*", type=Path, help="Default: the template-backed samples in data/circulars (the gold set)")
     args = parser.parse_args(argv)
     use_llm = extractor.llm_enabled() and not args.no_llm
-    rows = evaluate(args.circulars or sorted(CIRCULARS.glob("*.md")), use_llm)
+    rows = evaluate(args.circulars or sorted(CIRCULARS.glob("rbi_[0-9]*.md")), use_llm)
     print(json.dumps(rows, indent=2) if args.json else "\n".join(_line(r) for r in rows))
     return 1 if any("error" in r for r in rows) else 0
 
