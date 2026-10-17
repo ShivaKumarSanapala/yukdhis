@@ -13,7 +13,7 @@ import {
 
 const SCOPE_DEFAULT = "Scope could not be resolved from the circular's wording; no products assessed.";
 
-export default function ReportView({ report, onChange }: { report: ImpactReport; onChange?: (r: ImpactReport) => void }) {
+export default function ReportView({ report, onChange, embedded }: { report: ImpactReport; onChange?: (r: ImpactReport) => void; embedded?: boolean }) {
   const s = report.summary;
   const overall = overallMeta(s);
   const unexecutable = unexecutableOf(report);
@@ -46,7 +46,7 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
   return (
     <div className="report">
       <p className="print-only">Yukdhis impact report {report.report_id} · printed {new Date().toLocaleString()}</p>
-      <div className="card">
+      {!embedded && <div className="card">
         <div className="report-head">
           <div>
             <h2>{report.policy.title}</h2>
@@ -70,7 +70,8 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
           { label: "Control gaps", value: kpi(s.control_gaps.length), sub: unassessed ? undefined : `${s.loans_exposed_to_control_gaps} loans on gapped products` },
         ]} />
         {msg && <div className="banner" role="status">{msg}</div>}
-      </div>
+      </div>}
+      {embedded && msg && <div className="banner" role="status">{msg}</div>}
 
       {unresolved.length > 0 && (
         <div className="banner warn" role="status">

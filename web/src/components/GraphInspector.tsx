@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Icon from "./Icons";
 import { TYPE_LABEL, chipState, type ChipState, type GEdge, type GNode, type Universe } from "../graph-utils";
 
 const CHIP: Record<ChipState, { label: string; tone: string }> = {
@@ -8,8 +9,9 @@ const show = (v: unknown) => (v === null || v === undefined ? "—" : typeof v =
 const window_ = (e: GEdge) => `${e.valid_from} → ${e.valid_to ?? "open"}`;
 
 /** Right-hand sheet with everything known about one entity: attributes and its relationships grouped by edge type. */
-export default function GraphInspector({ node, universe, asOf, onSelect, onFocus, onExpand, onClose }: {
+export default function GraphInspector({ node, universe, asOf, onSelect, onFocus, onExpand, onClose, onAsk }: {
   node: GNode; universe: Universe; asOf: string; onSelect: (id: string) => void; onFocus: (id: string) => void; onExpand: (id: string) => void; onClose: () => void;
+  onAsk?: (node: { id: string; type: string; name: string }) => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const [copied, setCopied] = useState(false);
@@ -62,7 +64,8 @@ export default function GraphInspector({ node, universe, asOf, onSelect, onFocus
         <button ref={closeRef} className="icon" onClick={onClose} aria-label="Close inspector">✕</button>
       </div>
       <div className="inspector-actions">
-        <button className="primary" onClick={() => onFocus(node.id)}>Focus on this node</button>
+        {onAsk && <button className="primary" onClick={() => onAsk({ id: node.id, type: node.type, name: node.name })}><Icon name="sparkle" size={14} /> Ask assistant about this</button>}
+        <button onClick={() => onFocus(node.id)}>Focus on this node</button>
         <button onClick={() => onExpand(node.id)}>Expand connections</button>
         <button className="ghost" onClick={() => { void navigator.clipboard?.writeText(node.id).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); }}>
           {copied ? "Copied" : "Copy id"}

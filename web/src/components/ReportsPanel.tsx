@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import type { ImpactReport, ReportListItem } from "../types";
 import ReportView from "./ReportView";
@@ -32,13 +33,12 @@ function SortTh({ k, children, num, f, onSort }: { k: SortKey; children: string;
   );
 }
 
-export default function ReportsPanel({ onOpenReportChange, initialReportId }: {
-  onOpenReportChange?: (reportId: string | null) => void; initialReportId?: string | null;
-}) {
+/** Reports tab: the grid with filters and compare bar, and (at /reports/:id) one report full width. Rows open in the chat workspace. */
+export default function ReportsPanel() {
+  const { reportId } = useParams();
+  const navigate = useNavigate();
   const [items, setItems] = useState<ReportListItem[]>([]);
   const [open, setOpen] = useState<ImpactReport | null>(null);
-  const openId = open?.report_id ?? null;
-  useEffect(() => { onOpenReportChange?.(openId); }, [openId, onOpenReportChange]);
   const [picked, setPicked] = useState<string[]>([]);
   const [pair, setPair] = useState<[ImpactReport, ImpactReport] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -49,9 +49,13 @@ export default function ReportsPanel({ onOpenReportChange, initialReportId }: {
   const statusRef = useRef<HTMLDivElement>(null);
   useEffect(() => { try { sessionStorage.setItem(FILTER_KEY, JSON.stringify(f)); } catch { /* private mode */ } }, [f]);
   useEffect(() => { api.reports().then(setItems).catch((e) => setError(e.message)).finally(() => setLoaded(true)); }, []);
-  useEffect(() => {  // "Open in Reports" from the Analyze tab
-    if (initialReportId) api.report(initialReportId).then(setOpen).catch((e) => setError(e.message));
-  }, [initialReportId]);
+  useEffect(() => {  // /reports/:id: the full-width report
+    setPair(null);
+    if (!reportId) { setOpen(null); return; }
+    let live = true;
+    api.report(reportId).then((r) => { if (live) setOpen(r); }).catch((e) => { if (live) setError(e.message); });
+    return () => { live = false; };
+  }, [reportId]);
   useEffect(() => {
     if (!statusOpen) return;
     const close = (e: MouseEvent) => { if (!statusRef.current?.contains(e.target as Node)) setStatusOpen(false); };
@@ -92,7 +96,7 @@ export default function ReportsPanel({ onOpenReportChange, initialReportId }: {
   const sortBy = (sort: SortKey) => setF((p) => ({ ...p, sort, dir: p.sort === sort && p.dir === "desc" ? "asc" : "desc" }));
   const toggleStatus = (s: string) => set({ statuses: f.statuses.includes(s) ? f.statuses.filter((x) => x !== s) : [...f.statuses, s] });
 
-  const openReport = (id: string) => api.report(id).then(setOpen).catch((e) => setError(e.message));
+  const openReport = (id: string) => navigate(`/chat/${encodeURIComponent(id)}`);
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 2 ? [p[1], id] : [...p, id]));
   const compare = async () => {
     setBusy(true); setError("");
@@ -104,7 +108,19 @@ export default function ReportsPanel({ onOpenReportChange, initialReportId }: {
   };
 
   if (pair) return <section><button className="ghost back no-print" onClick={() => setPair(null)}>← All reports</button><CompareView a={pair[0]} b={pair[1]} /></section>;
-  if (open) return <section><button className="ghost back no-print" onClick={() => setOpen(null)}>← All reports</button><ReportView report={open} onChange={setOpen} /></section>;
+  if (reportId && !open && !error) return <div className="card"><Skeleton rows={6} label="Loading report" /></div>;
+  if (reportId && error && !open) return <section><button className="ghost back no-print" onClick={() => navigate("/reports")}>← All reports</button><div className="banner error" role="alert">{error}</div></section>;
+  if (open) {
+    return (
+      <section>
+        <div className="row between no-print">
+          <button className="ghost back" onClick={() => navigate("/reports")}>← All reports</button>
+          <button onClick={() => navigate(`/chat/${encodeURIComponent(open.report_id)}`)}>Open in chat</button>
+        </div>
+        <ReportView report={open} onChange={setOpen} />
+      </section>
+    );
+  }
 
   const pickedItems = items.filter((r) => picked.includes(r.report_id));
   return (
@@ -183,7 +199,7 @@ export default function ReportsPanel({ onOpenReportChange, initialReportId }: {
         </table>
       </div>
       {!loaded && !error && <Skeleton rows={5} label="Loading reports" />}
-      {loaded && !items.length && <EmptyState title="No reports yet" hint="Run an analysis on the Analyze tab and its impact report will appear here." />}
+      {loaded && !items.length && <EmptyState title="No reports yet" hint="Drop a circular into the chat and its impact report will appear here." />}
       {loaded && items.length > 0 && !rows.length && (
         <EmptyState title="No reports match these filters" hint="Widen the date range or clear the filters."><button onClick={clear}>Clear filters</button></EmptyState>
       )}

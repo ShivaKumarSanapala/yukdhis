@@ -6,9 +6,9 @@ import MetricStrip from "./MetricStrip";
 type Reference = { ref?: string; url?: string; relation?: string };
 
 /** Completion card: overall status, key KPIs and where to go next. */
-export default function RunSummary({ run, report, onOpenInReports, onCompare, onAnalyseLink }: {
-  run: RunInfo; report: ImpactReport; onOpenInReports: () => void; onCompare?: () => void;
-  onAnalyseLink?: (url: string) => void;
+export default function RunSummary({ run, report, onOpenInReports, onCompare, onAnalyseLink, expanded, onToggleExpand }: {
+  run: Pick<RunInfo, "run_id">; report: ImpactReport; onOpenInReports: () => void; onCompare?: () => void;
+  onAnalyseLink?: (url: string) => void; expanded?: boolean; onToggleExpand?: () => void;
 }) {
   const s = report.summary;
   const unassessed = ["INCONCLUSIVE", "UPCOMING"].includes(overallKey(s));
@@ -34,7 +34,8 @@ export default function RunSummary({ run, report, onOpenInReports, onCompare, on
         { label: notApplicable ? "Rules not applicable" : "Products in scope", value: notApplicable || s.products_in_scope },
       ]} />
       <div className="buttons summary-actions">
-        <button className="primary" onClick={onOpenInReports}>Open report</button>
+        {onToggleExpand && <button className="primary" aria-expanded={expanded} onClick={onToggleExpand}>{expanded ? "Hide full report" : "Show full report"}</button>}
+        <button className={onToggleExpand ? "" : "primary"} onClick={onOpenInReports}>Open full page in Reports</button>
         {onCompare && <button onClick={onCompare}>Compare with previous run</button>}
       </div>
       {references.length > 0 && onAnalyseLink && (
