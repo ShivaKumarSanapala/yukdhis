@@ -21,6 +21,8 @@ RuleStatus = Literal["PENDING_REVIEW", "APPROVED", "REJECTED", "SUPERSEDED"]
 Modality = Literal["MUST", "MAY", "MUST_NOT"]
 ScopeStatus = Literal["RESOLVED", "UNRESOLVED"]
 CheckStatus = Literal["COMPLIANT", "GAP", "NOT_EVALUATED", "UPCOMING"]
+DocumentType = Literal["circular", "master_direction", "draft_or_consultation", "press_release", "faq", "notification", "other"]
+ReferenceRelation = Literal["amends", "supersedes", "refers_to"]
 # Report-level roll-up (summary["overall_status"]): NON_COMPLIANT | UPCOMING | INCONCLUSIVE | COMPLIANT
 
 
@@ -112,6 +114,34 @@ class ParsedDocument(BaseModel):
         return "\n\n".join(chunk.content for chunk in self.chunks)
 
 
+class DocumentClassification(BaseModel):
+    """What kind of regulatory document this is. Only binding instruments may yield obligations."""
+
+    doc_type: DocumentType
+    confidence: float = Field(ge=0.0, le=1.0)
+    reason: str
+    method: str = "deterministic"
+    signals: list[str] = Field(default_factory=list)
+
+
+class DocumentReference(BaseModel):
+    """Another circular or direction the document cites (surfaced, never fetched automatically)."""
+
+    ref: str
+    url: Optional[str] = None
+    relation: ReferenceRelation = "refers_to"
+
+
+class Applicability(BaseModel):
+    """Whether a rule applies to this bank. ``applicable=None`` means the engine cannot tell."""
+
+    rule_id: str
+    applicable: Optional[bool]
+    reasons: list[str] = Field(default_factory=list)
+    missing_data: list[str] = Field(default_factory=list)
+    domains: list[str] = Field(default_factory=list)
+
+
 class ValidationIssue(BaseModel):
     severity: Literal["ERROR", "WARNING"]
     rule_id: Optional[str] = None
@@ -154,6 +184,7 @@ class BlastRadius(BaseModel):
     queries: list[str]
     scope_status: ScopeStatus = "RESOLVED"
     scope_notes: list[str] = Field(default_factory=list)
+    applicability: Optional[Applicability] = None
 
 
 class CheckResult(BaseModel):
@@ -171,6 +202,7 @@ class CheckResult(BaseModel):
     products_missing_control: list[str] = Field(default_factory=list)
     worklist_id: Optional[str] = None
     evidence: str = ""
+    missing_data: list[str] = Field(default_factory=list)
 
 
 class ProposedAction(BaseModel):

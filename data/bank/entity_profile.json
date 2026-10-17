@@ -1,0 +1,29 @@
+{
+  "tenant_id": "demo-bank",
+  "legal_name": "Yukdhis Demo Bank Ltd (synthetic)",
+  "entity_type": "scheduled_commercial_bank",
+  "regulator": "RBI",
+  "licences": {
+    "authorised_dealer_category": "AD_CATEGORY_I",
+    "ifsc_banking_unit": false,
+    "primary_dealer": false,
+    "small_finance_bank": false,
+    "payments_bank": false
+  },
+  "business_lines": {
+    "retail_lending": "active",
+    "msme_lending": "active",
+    "deposits": "active",
+    "treasury_derivatives": "not_onboarded",
+    "capital_management": "not_onboarded",
+    "liquidity_management": "not_onboarded"
+  },
+  "business_line_values": {
+    "active": "The bank runs this business and Yukdhis has its data.",
+    "not_onboarded": "The bank may run this business, but it is not onboarded in Yukdhis; rules on it cannot be evaluated.",
+    "none": "The bank does not run this business; rules that only concern it do not apply."
+  },
+  "onboarded_data_domains": ["loans", "customers", "branches", "loan_events"],
+  "not_onboarded_data_domains": ["deposits", "treasury_trades", "rbi_reserve_balances", "counterparties", "capital_rwa", "liquidity"],
+  "notes": "Demo profile used by the applicability gate (pipeline/applicability.py). No treasury derivatives desk and no capital/RWA data are onboarded."
+}

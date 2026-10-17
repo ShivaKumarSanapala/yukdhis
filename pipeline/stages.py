@@ -8,27 +8,64 @@ the numbers always come from here.
 
 from __future__ import annotations
 
+import contextlib
+import contextvars
+import hashlib
 import json
+import logging
 import re
 from collections import Counter
 from datetime import date
 from pathlib import Path
-from typing import Any, MutableMapping
+from typing import Any, Callable, Iterator, MutableMapping
 
 from bank_mcp_server.secure_engine import SecureEngine
 from core.app_store import get_app_store, new_id, now
 from core.config import DATA_DIR, get_settings
-from core.models import (BlastRadius, CheckResult, ExtractedPolicy, ImpactReport, ParsedDocument, ProposedAction,
-                         RuleMapping, ValidationIssue)
-from ingestion.documents import parse_document
+from core.models import (Applicability, BlastRadius, CheckResult, ExtractedPolicy, ImpactReport,
+                         ParsedDocument, ProposedAction, Rule, RuleMapping, ValidationIssue)
+from ingestion import extractor
+from ingestion.cache import EXTRACTOR_VERSION, ExtractionCache
+from ingestion.classifier import classify_document
+from ingestion.documents import guess_mime, parse_document
 from ingestion.extractor import extract_policy
+from ingestion.references import announced_instrument, extract_references, pdf_link_uris, self_identifiers
 from knowledge_graph.mapper import PolicyMapper
 from knowledge_graph.store import get_graph_store
 from knowledge_graph.traversal import blast_radius
+from pipeline import applicability as gate
 
+log = logging.getLogger(__name__)
 State = MutableMapping[str, Any]
 SAFE_ID = re.compile(r"^[A-Za-z0-9:._/-]+$")
 MANIFEST = DATA_DIR / "bank" / "manifest.json"
+_EVENT_SINK: contextvars.ContextVar[Callable[[str, str, dict], None] | None] = contextvars.ContextVar(
+    "stage_event_sink", default=None)
+
+
+@contextlib.contextmanager
+def event_sink(emit: Callable[[str, str, dict], None]) -> Iterator[None]:
+    """Route stage events (``document_classified``, ``applicability``) to ``emit(stage, kind, payload)`` in this context."""
+    token = _EVENT_SINK.set(emit)
+    try:
+        yield
+    finally:
+        _EVENT_SINK.reset(token)
+
+
+def _emit(state: State, stage: str, kind: str, payload: dict) -> None:
+    """Record a run event: via the context sink if one is set, else via the run id in state (agentic sessions carry
+    ``run_id``). Stage outputs carry the same data, so the runner's ``stage_completed`` event shows it either way."""
+    try:
+        sink = _EVENT_SINK.get()
+        if sink is not None:
+            sink(stage, kind, payload)
+            return
+        run_id = state.get("run_id") or (state.get("source") or {}).get("run_id")
+        if run_id:
+            get_app_store().add_event(str(run_id), stage, kind, payload)
+    except Exception:  # events are observability; never fail a stage on them
+        log.warning("Could not record %s event", kind, exc_info=True)
 
 
 def default_as_of() -> str:
@@ -53,19 +90,67 @@ def _source_bytes(source: dict) -> bytes:
 # 1. Reader ---------------------------------------------------------------
 def stage_parse(state: State) -> dict:
     source = state["source"]
-    document = parse_document(_source_bytes(source), source["filename"], source.get("gcs_uri") or source.get("display_uri"))
+    content = _source_bytes(source)
+    document = parse_document(content, source["filename"], source.get("gcs_uri") or source.get("display_uri"))
     state["document"] = document.model_dump()
+    state["document_sha256"] = hashlib.sha256(content).hexdigest()
+    state["source_links"] = pdf_link_uris(content) if guess_mime(source["filename"]) == "application/pdf" else []
+    classification = _classify(state, document)
     return {"document_id": document.document_id, "title": document.title, "parser": document.parser,
-            "chunks": len(document.chunks), "headings": sorted({h for c in document.chunks for h in c.headings})[:12]}
+            "chunks": len(document.chunks), "headings": sorted({h for c in document.chunks for h in c.headings})[:12],
+            "document_classification": _classified_payload(classification)}
+
+
+def _classify(state: State, document: ParsedDocument) -> dict:
+    classification = classify_document(document).model_dump()
+    state["document_classification"] = classification
+    _emit(state, "reader", "document_classified", _classified_payload(classification))
+    return classification
+
+
+def _classified_payload(classification: dict) -> dict:
+    return {k: classification.get(k) for k in ("doc_type", "confidence", "reason")}
 
 
 def stage_extract(state: State) -> dict:
+    """Document-type gate, then rule extraction, served from the extraction cache when the same document bytes were
+    extracted before by the same extractor version and model. ``source["refresh_extraction"]`` bypasses the cache."""
     document = ParsedDocument.model_validate(state["document"])
-    extraction, issues, provenance = extract_policy(document)
+    source = state.get("source") or {}
+    classification = state.get("document_classification") or _classify(state, document)
+    references = extract_references(document.text, list(state.get("source_links") or []),
+                                    self_identifiers(document.title, document.text))
+    state["references"] = [r.model_dump() for r in references]
+    announced = announced_instrument(references) if classification.get("doc_type") == "press_release" else None
+    extractor.ensure_binding(classification, announced.model_dump() if announced else None)
+
+    use_llm = extractor.llm_enabled()
+    model = get_settings().reasoning_model if use_llm else "none"
+    sha = state.get("document_sha256") or hashlib.sha256(_source_bytes(source)).hexdigest()
+    refresh = bool(source.get("refresh_extraction"))
+    cache = ExtractionCache()
+    hit = cache.get(sha, model) if use_llm and not refresh else None
+    if hit:
+        extraction = ExtractedPolicy.model_validate(hit["extraction"])
+        extraction.policy.source_uri = document.source_uri
+        issues = [ValidationIssue.model_validate(i) for i in hit.get("issues", [])]
+        provenance = {**hit.get("provenance", {}), "cached": True, "cached_at": hit.get("created_at")}
+    else:
+        extraction, issues, provenance = extract_policy(document, use_llm=use_llm, classification=classification)
+        provenance = {**provenance, "cached": False}
+        if use_llm:  # only model output is cached; templates are deterministic already
+            cache.put(sha, model, {"extraction": extraction.model_dump(), "issues": [i.model_dump() for i in issues],
+                                   "provenance": provenance})
+    provenance.update(extractor_version=EXTRACTOR_VERSION, document_sha256=sha, refreshed=refresh,
+                      document_type=classification.get("doc_type"))
+    own = {extraction.policy.reference.lower()}
+    references = [r for r in references if r.ref.lower() not in own]
+    state["references"] = [r.model_dump() for r in references]
     state["extraction"] = extraction.model_dump()
     state["validation_issues"] = [i.model_dump() for i in issues]
     state["extraction_provenance"] = provenance
-    return {"policy": extraction.policy.model_dump(), "provenance": provenance,
+    return {"policy": extraction.policy.model_dump(), "provenance": provenance, "cached": provenance["cached"],
+            "document_classification": _classified_payload(classification), "references": state["references"],
             "rules": [{"rule_id": r.rule_id, "title": r.title, "effective_date": r.effective_date,
                        "checks": [c.kind for c in r.checks], "citation": r.citation.snippet} for r in extraction.rules],
             "issues": state["validation_issues"]}
@@ -78,10 +163,36 @@ def stage_map(state: State) -> dict:
     supersession = mapper.upsert_policy(extraction.policy)
     mappings = [mapper.map_rule(extraction.policy, rule) for rule in extraction.rules]
     state["mappings"] = [m.model_dump() for m in mappings]
+    assessments = _assess_applicability(state, extraction)
+    for assessment in assessments.values():
+        _emit(state, "mapper", "applicability", _applicability_payload(assessment))
     return {"supersedes": supersession, "mappings": [
         {"rule_id": m.rule_id, "products": m.product_ids, "processes": m.process_ids, "segments": m.segment_ids,
          "controls": m.control_ids, "scope_status": m.scope_status, "scope_notes": m.scope_notes, "edges_written": len(m.edges_written),
-         "resolutions": [r.model_dump() for r in m.resolutions]} for m in mappings]}
+         "resolutions": [r.model_dump() for r in m.resolutions]} for m in mappings],
+        "applicability": [_applicability_payload(a) for a in assessments.values()]}
+
+
+# 2b. Applicability gate (between mapping and evaluation) ------------------------
+def _assess_applicability(state: State, extraction: ExtractedPolicy | None = None) -> dict[str, Applicability]:
+    extraction = extraction or ExtractedPolicy.model_validate(state["extraction"])
+    assessments = gate.assess_rules(extraction.rules, state.get("mappings", []))
+    state["applicability"] = {a.rule_id: a.model_dump() for a in assessments}
+    return {a.rule_id: a for a in assessments}
+
+
+def _applicability(state: State) -> dict[str, Applicability]:
+    """Gate decisions for the current extraction; computed on demand if the mapper stage did not record them."""
+    stored = state.get("applicability")
+    rule_ids = {r["rule_id"] for r in state.get("extraction", {}).get("rules", [])}
+    if not stored or set(stored) != rule_ids:
+        return _assess_applicability(state)
+    return {rid: Applicability.model_validate(a) for rid, a in stored.items()}
+
+
+def _applicability_payload(assessment: Applicability) -> dict:
+    return {"rule_id": assessment.rule_id, "applicable": assessment.applicable, "reasons": assessment.reasons,
+            "missing_data": assessment.missing_data}
 
 
 # 3a. GraphRAG --------------------------------------------------------------
@@ -89,18 +200,23 @@ def stage_blast_radius(state: State, as_of: str | None = None) -> dict:
     as_of = as_of or state.get("as_of") or default_as_of()
     state["as_of"] = as_of
     store = get_graph_store()
+    assessments = _applicability(state) if "extraction" in state else {}
     radii = []
     for mapping in state["mappings"]:
         radius = blast_radius(store, mapping["rule_id"], as_of)
         radius.scope_status = mapping.get("scope_status", "RESOLVED")
         radius.scope_notes = list(mapping.get("scope_notes", []))
+        radius.applicability = assessments.get(mapping["rule_id"])
         if radius.scope_status == "UNRESOLVED":  # fail closed: no products for a rule whose scope could not be resolved
+            radius.products, radius.control_gaps = [], {}
+        if gate.is_gated(radius.applicability):  # not applicable here, or not evaluable: nothing of this bank is in scope
             radius.products, radius.control_gaps = [], {}
         radii.append(radius)
     state["blast_radius"] = [r.model_dump() for r in radii]
     return {"as_of": as_of, "query_language": store.query_language, "rules": [
         {"rule_id": r.rule_id, "scope_status": r.scope_status, "scope_notes": r.scope_notes, "products": [p["name"] for p in r.products], "processes": [p["name"] for p in r.processes],
-         "control_gaps": r.control_gaps, "owners": sorted({o["team"] for o in r.owners})} for r in radii]}
+         "control_gaps": r.control_gaps, "owners": sorted({o["team"] for o in r.owners}),
+         "applicable": r.applicability.applicable if r.applicability else None} for r in radii]}
 
 
 # 3b. Precedents (long-term memory over prior reports and open actions) ------
@@ -135,11 +251,31 @@ def stage_evaluate(state: State) -> dict:
     extraction = ExtractedPolicy.model_validate(state["extraction"])
     radii = {r["rule_id"]: BlastRadius.model_validate(r) for r in state["blast_radius"]}
     engine = SecureEngine()
-    results = [res for rule in extraction.rules for res in engine.evaluate_rule(rule, radii[rule.rule_id], state["as_of"])]
+    assessments = _applicability(state)
+    results: list[CheckResult] = []
+    for rule in extraction.rules:
+        assessment = assessments.get(rule.rule_id)
+        if gate.is_gated(assessment):
+            results += _not_evaluated(rule, radii[rule.rule_id], assessment, state["as_of"])
+        else:
+            results += engine.evaluate_rule(rule, radii[rule.rule_id], state["as_of"])
     state["results"] = [r.model_dump() for r in results]
     return {"results": [{"rule_id": r.rule_id, "check": r.description, "status": r.status, "violations": r.violations,
                          "in_scope": r.in_scope, "penalty_inr": r.penalty_inr, "by_branch": r.by_branch,
-                         "worklist_id": r.worklist_id} for r in results]}
+                         "worklist_id": r.worklist_id, "evidence": r.evidence, "missing_data": r.missing_data}
+                        for r in results]}
+
+
+def _not_evaluated(rule: Rule, radius: BlastRadius, assessment: Applicability, as_of: str) -> list[CheckResult]:
+    """A gated rule runs no query and writes no worklist, so no remediation can follow from it."""
+    text = gate.evidence(assessment)
+    if radius.scope_status == "UNRESOLVED":
+        text = f"Scope could not be resolved: {' '.join(radius.scope_notes) or 'no notes'}. {text}"
+    if rule.effective_date > as_of:
+        text += f" Effective {rule.effective_date}, after the analysis date {as_of}."
+    return [CheckResult(rule_id=rule.rule_id, check_index=index, kind=check.kind, description=check.description,
+                        status="NOT_EVALUATED", evidence=text, missing_data=list(assessment.missing_data))
+            for index, check in enumerate(rule.checks)]
 
 
 # 6. Orchestrator ---------------------------------------------------------------
@@ -149,6 +285,9 @@ def stage_propose(state: State, workflow_id: str, rule_id: str, worklist_id: str
     match = next((r for r in results if r.rule_id == rule_id and (worklist_id is None or r.worklist_id == worklist_id)), None)
     if match is None:
         raise ValueError("rule_id/worklist_id must come from an evaluated result.")
+    assessment = _applicability(state).get(rule_id) if "extraction" in state else None
+    if gate.is_gated(assessment):
+        raise ValueError(f"No action can be proposed for {rule_id}. {gate.evidence(assessment)}")
     owner = owner or _owner_for(state, rule_id)
     action = SecureEngine().propose_workflow(workflow_id, rule_id, worklist_id, match.violations, notice_template, owner)
     state["actions"] = [*state.get("actions", []), action.model_dump()]
@@ -228,6 +367,9 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
     radii = [BlastRadius.model_validate(r) for r in state["blast_radius"]]
     branch_names = SecureEngine().branch_names()
     unresolved = sorted(r.rule_id for r in radii if r.scope_status == "UNRESOLVED")
+    assessments = _applicability(state)
+    gated = {rid for rid, a in assessments.items() if gate.is_gated(a)}
+    actions = [a for a in actions if a.rule_id not in gated]  # belt and braces: gated rules never carry actions
     summary = {
         "rules": len(extraction.rules),
         "checks": len(results),
@@ -241,6 +383,10 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
         "by_branch": dict(Counter(branch_names.get(l["branch_id"], l["branch_id"]) for l in loans.values()).most_common()),
         "overall_status": overall_status(results, unresolved),
         "unresolved_rules": unresolved,
+        "not_applicable_rules": sorted(rid for rid, a in assessments.items() if a.applicable is False),
+        "rules_missing_data": {rid: a.missing_data for rid, a in sorted(assessments.items())
+                               if a.applicable is not True and a.missing_data},
+        "document_type": (state.get("document_classification") or {}).get("doc_type"),
         "privacy_redactions": int(state.get("privacy_redactions", 0)),
     }
     report = ImpactReport(
@@ -258,6 +404,9 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
     body["extraction_provenance"] = state.get("extraction_provenance", {})
     body["data_profile"] = state.get("data_profile", {})
     body["precedents"] = state.get("precedents", {})
+    body["document_classification"] = state.get("document_classification")
+    body["references"] = state.get("references", [])
+    body["applicability"] = [a.model_dump() for a in assessments.values()]
     store.save_report(body)
     state["report_id"] = report.report_id
     state["actions"] = [a.model_dump() for a in actions]
