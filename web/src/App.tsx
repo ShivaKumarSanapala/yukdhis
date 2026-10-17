@@ -20,11 +20,14 @@ export default function App() {
   const [error, setError] = useState("");
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [openReportId, setOpenReportId] = useState<string | null>(null);
+  const [reportToOpen, setReportToOpen] = useState<string | null>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const openInReports = (reportId: string) => { setReportToOpen(reportId); setTab("Reports"); window.scrollTo({ top: 0 }); };
   const onTabKey = (e: KeyboardEvent, i: number) => {
     const next = e.key === "ArrowRight" ? (i + 1) % TABS.length : e.key === "ArrowLeft" ? (i + TABS.length - 1) % TABS.length : e.key === "Home" ? 0 : e.key === "End" ? TABS.length - 1 : -1;
     if (next < 0) return;
     e.preventDefault();
+    setReportToOpen(null);
     setTab(TABS[next]);
     tabRefs.current[next]?.focus();
   };
@@ -59,7 +62,7 @@ export default function App() {
               <button
                 key={t} ref={(el) => { tabRefs.current[i] = el; }}
                 role="tab" id={`tab-${i}`} aria-selected={t === tab} aria-controls="tabpanel" tabIndex={t === tab ? 0 : -1}
-                className={t === tab ? "tab active" : "tab"} onClick={() => setTab(t)} onKeyDown={(e) => onTabKey(e, i)}
+                className={t === tab ? "tab active" : "tab"} onClick={() => { setReportToOpen(null); setTab(t); }} onKeyDown={(e) => onTabKey(e, i)}
               >{t}</button>
             ))}
           </div>
@@ -73,8 +76,8 @@ export default function App() {
       {error && <div className="banner error" role="alert">{error}</div>}
       <main id="main" tabIndex={-1}>
         <div role="tabpanel" id="tabpanel" aria-labelledby={`tab-${TABS.indexOf(tab)}`}>
-        {tab === "Analyze" && config && <AnalyzePanel config={config} />}
-        {tab === "Reports" && <ReportsPanel onOpenReportChange={setOpenReportId} />}
+        {tab === "Analyze" && config && <AnalyzePanel config={config} onOpenInReports={openInReports} />}
+        {tab === "Reports" && <ReportsPanel onOpenReportChange={setOpenReportId} initialReportId={reportToOpen} />}
         {tab === "Knowledge graph" && config && <GraphView defaultAsOf={config.as_of} />}
         {tab === "Privacy shield" && <PrivacyPanel />}
         </div>

@@ -1,14 +1,23 @@
 import { idToken } from "./auth";
 import type {
-  Config, Conversation, ConversationDetail, ImpactReport, ReportListItem, RunEvent, RunInfo, Sample, ToolCallTrace,
+  Config, Conversation, ConversationDetail, ExtractedRule, ImpactReport, ReportListItem, RunEvent, RunInfo, Sample, StartedRuns,
+  ToolCallTrace,
 } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 
+/** Server detail string, or the first FastAPI validation message (422 lists them). */
 async function errorFrom(response: Response): Promise<Error> {
   const body = await response.json().catch(() => ({}));
-  return new Error(typeof body.detail === "string" ? body.detail : `${response.status} ${response.statusText}`);
+  if (typeof body.detail === "string") return new Error(body.detail);
+  const first = Array.isArray(body.detail) ? body.detail[0] : null;
+  if (first?.msg) return new Error(`${(first.loc ?? []).slice(1).join(".")}: ${first.msg}`.replace(/^: /, ""));
+  return new Error(`${response.status} ${response.statusText}`);
 }
+
+const runPath = (id: string) => `/api/runs/${encodeURIComponent(id)}`;
+/** Statuses after which a run's event stream ends (AWAITING_REVIEW resumes as a new stream after approval). */
+export const RUN_FINAL = new Set(["SUCCEEDED", "FAILED", "CANCELLED", "REJECTED", "AWAITING_REVIEW"]);
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await idToken();
@@ -31,15 +40,32 @@ export const api = {
   samples: () => call<Sample[]>("/api/samples"),
   reports: () => call<ReportListItem[]>("/api/reports"),
   report: (id: string) => call<ImpactReport>(`/api/reports/${encodeURIComponent(id)}`),
-  run: (id: string, after = 0) => call<{ run: RunInfo; events: RunEvent[] }>(`/api/runs/${id}?after=${after}`),
-  startRun: (input: { sampleId?: string; file?: File; mode: string; asOf: string }) => {
+  run: (id: string, after = 0) => call<{ run: RunInfo; events: RunEvent[] }>(`${runPath(id)}?after=${after}`),
+  runs: (filters: { status?: string; mine?: boolean; sourceKind?: string; limit?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (filters.status) q.set("status", filters.status);
+    if (filters.mine) q.set("mine", "1");
+    if (filters.sourceKind) q.set("source_kind", filters.sourceKind);
+    q.set("limit", String(filters.limit ?? 30));
+    return call<RunInfo[]>(`/api/runs?${q}`);
+  },
+  /** One run per sample, file, pasted text or URL; all are validated before any starts. */
+  startRuns: (input: { sampleIds?: string[]; files?: File[]; text?: string; url?: string; mode: string; asOf: string; reviewRules?: boolean }) => {
     const form = new FormData();
-    if (input.sampleId) form.set("sample_id", input.sampleId);
-    if (input.file) form.set("file", input.file);
+    input.sampleIds?.forEach((id) => form.append("sample_ids", id));
+    input.files?.forEach((file) => form.append("files", file));
+    if (input.text) form.set("text", input.text);
+    if (input.url) form.set("url", input.url);
     form.set("mode", input.mode);
     if (input.asOf) form.set("as_of", input.asOf);
-    return call<{ run_id: string; mode: string }>("/api/runs", { method: "POST", body: form });
+    if (input.reviewRules) form.set("review_rules", "true");
+    return call<StartedRuns>("/api/runs", { method: "POST", body: form });
   },
+  cancelRun: (id: string) => call<{ run_id: string; status: string }>(`${runPath(id)}/cancel`, { method: "POST" }),
+  reviewRun: (id: string, decision: "APPROVE" | "REJECT", rules?: ExtractedRule[]) =>
+    call<{ run_id: string; status: string }>(`${runPath(id)}/review`, json({ decision, rules })),
+  rerun: (id: string, input: { asOf?: string; mode?: string; reviewRules?: boolean } = {}) =>
+    call<StartedRuns>(`${runPath(id)}/rerun`, json({ as_of: input.asOf || null, mode: input.mode || null, review_rules: Boolean(input.reviewRules) })),
   decide: (actionId: string, decision: "APPROVED" | "REJECTED") =>
     call<{ status: string }>(`/api/actions/${actionId}/decision`, json({ decision })),
   outbox: (actionId: string) =>
@@ -131,51 +157,62 @@ export interface GraphSnapshot {
   edges: { source: string; target: string; type: string; valid_from: string; valid_to: string | null }[];
 }
 
-/** Streams run events over WebSocket; falls back to polling (e.g. behind Firebase Hosting). */
+/**
+ * Streams a run's events over WebSocket and falls back to polling (e.g. behind Firebase Hosting, or when the socket
+ * drops). `onDone` fires once, with the status that ended the stream (see RUN_FINAL). Returns a stop function.
+ */
 export function followRun(runId: string, onEvent: (event: RunEvent) => void, onDone: (status: string) => void): () => void {
   let stopped = false;
+  let finished = false;
+  let polling = false;
   let seq = 0;
+  const finish = (status: string) => {
+    if (finished || stopped) return;
+    finished = true;
+    onDone(status);
+  };
   const deliver = (event: RunEvent) => {
-    if (event.seq && event.seq <= seq) return;
+    if (stopped || (event.seq && event.seq <= seq)) return;
     if (event.seq) seq = event.seq;
     onEvent(event);
   };
   const poll = async () => {
-    while (!stopped) {
+    if (polling) return;
+    polling = true;
+    while (!stopped && !finished) {
       try {
         const { run, events } = await api.run(runId, seq);
         events.forEach(deliver);
-        if (run.status === "SUCCEEDED" || run.status === "FAILED") return onDone(run.status);
+        if (RUN_FINAL.has(run.status)) return finish(run.status);
       } catch {
         /* transient; retry */
       }
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 1500));
     }
   };
   const wsBase = API_BASE ? API_BASE.replace(/^http/, "ws") : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
   let socket: WebSocket | null = null;
   try {
-    socket = new WebSocket(`${wsBase}/ws/runs/${runId}`);
+    socket = new WebSocket(`${wsBase}/ws/runs/${encodeURIComponent(runId)}`);
     socket.onopen = async () => {
       const token = await idToken();
       if (token) socket?.send(JSON.stringify({ token }));
     };
     socket.onmessage = (message) => {
       const event = JSON.parse(message.data);
-      if (event.kind === "closed") {
-        stopped = true;
-        onDone(event.status);
-      } else deliver(event);
+      if (event.kind === "closed") finish(event.status);
+      else deliver(event);
     };
-    socket.onerror = () => {
-      socket = null;
-      void poll();
-    };
+    socket.onerror = () => void poll();
+    socket.onclose = () => { if (!finished && !stopped) void poll(); };
   } catch {
     void poll();
   }
   return () => {
     stopped = true;
-    socket?.close();
+    if (socket) {
+      socket.onclose = null;
+      socket.close();
+    }
   };
 }

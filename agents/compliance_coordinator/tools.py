@@ -17,6 +17,7 @@ from bank_mcp_server.secure_engine import SecureEngine
 from knowledge_graph.gql_guard import GqlRejected, validate_gql
 from knowledge_graph.store import get_graph_store
 from pipeline import stages
+from pipeline.deterministic import GRAPH_TRAVERSAL_LOCK
 
 log = logging.getLogger(__name__)
 MAX_TOOL_CALLS_PER_TURN = 40
@@ -96,7 +97,8 @@ def traverse_blast_radius(as_of: str, tool_context: ToolContext) -> dict:
         as_of: ISO date for bitemporal traversal; empty string for the analysis reference date.
     """
     _need(tool_context.state, "mappings", "rules are not mapped to the graph yet")
-    return stages.stage_blast_radius(tool_context.state, as_of or None)
+    with GRAPH_TRAVERSAL_LOCK:  # parallel runs share the graph store's query log
+        return stages.stage_blast_radius(tool_context.state, as_of or None)
 
 
 @_guarded
