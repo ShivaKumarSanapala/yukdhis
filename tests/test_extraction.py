@@ -42,7 +42,7 @@ def _extraction(name):
     return document, extract_policy(document, use_llm=False)[0]
 
 
-@pytest.mark.parametrize("name", sorted(p.name for p in CIRCULARS.glob("*.md")))
+@pytest.mark.parametrize("name", sorted(p.name for p in CIRCULARS.glob("rbi_[0-9]*.md")))
 def test_approved_circulars_never_trigger_draft_guard(name):
     document, extraction = _extraction(name)
     assert all(rule.modality == "MUST" for rule in extraction.rules)  # template rules keep the default

@@ -211,3 +211,24 @@ def test_network_errors_are_user_safe(net):
         fetch_circular(PDF_URL)
     with pytest.raises(ValueError, match="resolve"):
         fetch_circular("https://m.rbi.org.in/x.pdf")
+
+
+def test_aspnet_page_inside_a_form_keeps_its_text_and_drops_site_chrome(net):
+    """rbi.org.in wraps every page in one ASP.NET <form>; the menu and archive lists are not the circular."""
+    dns, routes, _ = net
+    dns["www.rbi.org.in"] = PUBLIC_IP
+    page = b"""<html><head><title>Master Directions | Official Website of Reserve Bank of India</title></head><body>
+    <form id="form1" method="post"><div>Home About Us Notifications Master Directions</div>
+    <table><tr><td><a href="https://rbidocs.rbi.org.in/rdocs/notification/PDFs/MD398.PDF">PDF</a> ( 871 kb )</td></tr>
+    <tr><td>Reserve Bank of India (Commercial Banks - Asset Classification, Provisioning and Income Recognition)
+    Directions, 2026</td></tr><tr><td>RBI/DOR/2026-27/398</td></tr>
+    <tr><td>A bank shall recognise lifetime expected credit losses for Stage 2 and Stage 3 assets.</td></tr>
+    <tr><td>Top</td></tr><tr><td>Previous Versions</td></tr><tr><td>2026</td></tr><tr><td>2025</td></tr></table>
+    <input type="hidden" name="__VIEWSTATE" value="x"/><select><option>2025</option></select></form></body></html>"""
+    routes[PAGE_URL] = lambda: httpx.Response(200, headers={"content-type": "text/html"}, content=page)
+    routes["https://rbidocs.rbi.org.in/rdocs/notification/PDFs/MD398.PDF"] = lambda: httpx.Response(
+        200, headers={"content-type": "text/html"}, content=b"<html>bot challenge</html>")  # rbidocs' JS challenge
+    dns["rbidocs.rbi.org.in"] = PUBLIC_IP
+    text = Path(fetch_circular(PAGE_URL)["path"]).read_text()
+    assert "lifetime expected credit losses for Stage 2" in text and "RBI/DOR/2026-27/398" in text
+    assert "About Us" not in text and "Previous Versions" not in text and "\n2025" not in text

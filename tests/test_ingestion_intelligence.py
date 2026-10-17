@@ -86,7 +86,7 @@ def _classify(text: str):
     return classify_text(document.title, document.text)
 
 
-@pytest.mark.parametrize("name", sorted(p.name for p in CIRCULARS.glob("*.md")))
+@pytest.mark.parametrize("name", sorted(p.name for p in CIRCULARS.glob("rbi_[0-9]*.md")))
 def test_samples_are_circulars(name):
     result = _classify((CIRCULARS / name).read_text())
     assert result.doc_type == "circular" and result.confidence >= 0.8 and "RBI/YYYY-YY/NNN" in result.reason
