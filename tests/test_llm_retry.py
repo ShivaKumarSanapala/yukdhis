@@ -68,3 +68,15 @@ def test_adk_model_retries_429_before_any_response(monkeypatch):
         return [r async for r in model.generate_content_async(object(), stream=True)]
 
     assert asyncio.run(collect()) == ["response"] and len(attempts) == 2
+
+
+def test_embeddings_stay_regional_when_gemini_goes_global(monkeypatch):
+    from dataclasses import replace
+
+    from core import config
+
+    settings = replace(config.get_settings(), project="p", location="us-central1", gemini_location="global")
+    monkeypatch.setattr(llm, "get_settings", lambda: settings)
+    made = []
+    monkeypatch.setattr(llm, "_client", lambda location: made.append(location) or location)
+    assert llm.genai_client() == "global" and llm.regional_genai_client() == "us-central1"
