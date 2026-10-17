@@ -1,4 +1,4 @@
-import type { Check, ImpactReport, Radius, Rule, Summary, Unexecutable } from "./types";
+import type { Check, ImpactReport, Radius, ReportListItem, Rule, Summary, Unexecutable } from "./types";
 
 /** Tone maps to a pill/status colour class; the text label is always shown as well. */
 export type Tone = "ok" | "bad" | "warn" | "info" | "neutral";
@@ -17,6 +17,26 @@ const CHECK: Record<string, StatusMeta> = {
   NOT_EVALUATED: { label: "NOT EVALUATED", tone: "warn", hint: "This check could not be evaluated. It is not a pass." },
   UPCOMING: { label: "UPCOMING", tone: "info", hint: "The rule takes effect after the analysis date." },
 };
+
+/** Summary CSV for the report list: one row per report (no per-check detail). */
+export function reportListCsv(items: ReportListItem[]): string {
+  const head = ["report_id", "policy", "created_at", "mode", "overall_status", "rules", "checks_with_gaps", "loans_with_violations", "customers_with_violations", "penalty_inr"];
+  const rows = items.map((r) => [r.report_id, r.title, r.created_at, r.mode, overallMeta(r.summary).label, r.summary.rules, r.summary.gaps,
+    r.summary.loans_with_violations, r.summary.customers_with_violations, Math.round(r.summary.statutory_penalty_inr ?? 0)]);
+  return [head, ...rows].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
+}
+
+export function downloadReportList(items: ReportListItem[]) {
+  const blob = new Blob(["\uFEFF", reportListCsv(items)], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "yukdhis-reports-selected.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 const humanise = (value: string) => value.replaceAll("_", " ");
 

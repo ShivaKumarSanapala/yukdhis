@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { EmptyState } from "./Motif";
+import { formatDateTime } from "../format";
 import type { RunInfo } from "../types";
 import { SOURCE_LABEL, canCancel, canRerun, elapsed, isActive, runStatusMeta, runTitle, stageLabel } from "../run-utils";
 
@@ -34,14 +36,15 @@ function RunRow({ run, selected, now, busy, h }: { run: RunInfo; selected: boole
       <div className="run-meta muted">
         <span>{SOURCE_LABEL[run.source_kind ?? ""] ?? run.source_kind ?? "Upload"}</span>
         <span>by {run.is_mine ? "you" : run.created_by ?? "unknown"}</span>
-        {run.as_of && <span>as of {run.as_of}</span>}
+        {run.as_of && <span>as of {formatDateTime(run.as_of)}</span>}
+        {run.created_at && <span><time dateTime={run.created_at} title={run.created_at}>{formatDateTime(run.created_at)}</time></span>}
         <span>{run.mode}</span>
         {stage && <span>{stage}</span>}
         {elapsed(run, now) && <span>{isActive(run) && run.status === "QUEUED" ? "waiting " : ""}{elapsed(run, now)}</span>}
       </div>
       <div className="buttons run-actions">
         <button onClick={() => h.onOpen(run)} aria-label={`Open ${title}`}>Open</button>
-        {canCancel(run) && <button className="ghost" disabled={busy} onClick={() => h.onCancel(run)} aria-label={`Cancel ${title}`}>Cancel</button>}
+        {canCancel(run) && <button className="danger" disabled={busy} onClick={() => h.onCancel(run)} aria-label={`Cancel ${title}`}>Cancel</button>}
         {canRerun(run) && run.status !== "SUCCEEDED" && <button disabled={busy} onClick={() => h.onRerun(run)} aria-label={`Retry ${title}`}>Retry</button>}
         {canRerun(run) && <button disabled={busy} aria-expanded={dateOpen} onClick={() => setDateOpen((o) => !o)}>Re-run with another date</button>}
         {run.report_id && run.previous_report_id && <button onClick={() => h.onCompare(run)}>Compare with previous run</button>}
@@ -90,7 +93,8 @@ export default function RunsBoard({ runs, inbox, selectedId, now, busyId, filter
         <ul className="run-list" aria-label="Analysis runs">
           {runs.map((r) => <RunRow key={r.run_id} run={r} selected={r.run_id === selectedId} now={now} busy={busyId === r.run_id} h={h} />)}
         </ul>
-      ) : <p className="muted">No runs{filter !== "all" || mine ? " match this filter" : " yet: start an analysis above"}.</p>}
+      ) : <EmptyState title={filter !== "all" || mine ? "No runs match this filter" : "No runs yet"}
+          hint={filter !== "all" || mine ? "Try another filter." : "Start an analysis above to see its agent pipeline here."} />}
     </section>
   );
 }

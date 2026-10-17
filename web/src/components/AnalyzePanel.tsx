@@ -9,6 +9,7 @@ import RuleReview from "./RuleReview";
 import RunSummary from "./RunSummary";
 import ReportView from "./ReportView";
 import CompareView from "./CompareView";
+import { Skeleton } from "./Motif";
 
 const MAX_FOLLOW = 4;            // live event streams besides the selected run; the rest are refreshed by list polling
 const SELECTED_KEY = "yukdhis.analyze.selectedRun";
@@ -192,9 +193,9 @@ export default function AnalyzePanel({ config, onOpenInReports }: { config: Conf
             <h2 className="detail-title">{runTitle(selected)}</h2>
             <div className="buttons">
               {followed && isActive(followed) && followed.is_mine && (
-                <button className="ghost" disabled={busyId === followed.run_id || followed.status === "CANCEL_REQUESTED"} onClick={() => cancel(followed)}>Cancel run</button>
+                <button className="danger" disabled={busyId === followed.run_id || followed.status === "CANCEL_REQUESTED"} onClick={() => cancel(followed)}>Cancel run</button>
               )}
-              <button className="link" onClick={() => setSelectedId(null)}>Close</button>
+              <button className="ghost" onClick={() => setSelectedId(null)}>Close</button>
             </div>
           </div>
           <RunTimeline run={selected} events={selectedEvents} />
@@ -208,15 +209,15 @@ export default function AnalyzePanel({ config, onOpenInReports }: { config: Conf
           )}
           <div id="run-result">
             {view === "report" && report && (
-              <><button className="link no-print" onClick={() => setView("summary")}>Hide report</button><ReportView report={report} onChange={setReport} /></>
+              <><button className="ghost back no-print" onClick={() => setView("summary")}>Hide report</button><ReportView report={report} onChange={setReport} /></>
             )}
             {view === "compare" && pair && (
-              <><button className="link no-print" onClick={() => setView("summary")}>Hide comparison</button><CompareView a={pair[0]} b={pair[1]} /></>
+              <><button className="ghost back no-print" onClick={() => setView("summary")}>Hide comparison</button><CompareView a={pair[0]} b={pair[1]} /></>
             )}
           </div>
         </div>
       )}
-      {selectedId && !selected && !error && <p className="muted" role="status">Loading run…</p>}
+      {selectedId && !selected && !error && <div className="card"><Skeleton rows={4} label="Loading run" /></div>}
     </section>
   );
 }

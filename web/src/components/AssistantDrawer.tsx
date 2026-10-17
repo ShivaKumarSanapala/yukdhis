@@ -2,6 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Keyboar
 import { api, streamChat } from "../api";
 import type { ChatMessage, Conversation } from "../types";
 import ChatMessageView from "./ChatMessageView";
+import Icon from "./Icons";
+import { EmptyState } from "./Motif";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -156,7 +158,7 @@ export default function AssistantDrawer({ open, onOpenChange, llmReady, reportId
     <>
       {!open && (
         <button ref={fabRef} className="assistant-fab no-print" onClick={() => onOpenChange(true)} aria-haspopup="dialog" aria-label="Open compliance assistant">
-          <span aria-hidden="true">✦</span> Assistant
+          <Icon name="sparkle" size={15} /> Assistant
         </button>
       )}
       {open && (
@@ -170,7 +172,7 @@ export default function AssistantDrawer({ open, onOpenChange, llmReady, reportId
               </div>
               <button aria-expanded={showList} aria-controls="assistant-conversations" onClick={() => setShowList(!showList)} aria-label="Show conversations">History</button>
               <button onClick={newChat} aria-label="Start a new chat">New</button>
-              <button className="icon" onClick={() => onOpenChange(false)} aria-label="Close assistant">✕</button>
+              <button className="icon" onClick={() => onOpenChange(false)} aria-label="Close assistant"><Icon name="close" size={16} /></button>
             </div>
             {error && <div className="banner error" role="alert">{error}</div>}
             {showList ? (
@@ -195,8 +197,8 @@ export default function AssistantDrawer({ open, onOpenChange, llmReady, reportId
                           <small className="muted">{new Date(c.updated_at).toLocaleString()}{c.message_count ? ` · ${c.message_count} messages` : ""}</small>
                         </button>
                       )}
-                      <button className="icon" onClick={() => setEditing({ id: c.conversation_id, title: c.title })} aria-label={`Rename ${c.title}`}>✎</button>
-                      <button className="icon ghost" onClick={() => void remove(c)} aria-label={`Delete ${c.title}`}>🗑</button>
+                      <button className="icon" onClick={() => setEditing({ id: c.conversation_id, title: c.title })} aria-label={`Rename ${c.title}`}><Icon name="edit" size={14} /></button>
+                      <button className="icon danger" onClick={() => void remove(c)} aria-label={`Delete ${c.title}`}><Icon name="trash" size={14} /></button>
                     </li>
                   ))}
                 </ul>
@@ -204,7 +206,7 @@ export default function AssistantDrawer({ open, onOpenChange, llmReady, reportId
             ) : (
               <div ref={threadRef} className="thread" role="log" aria-label="Conversation" aria-live="polite" aria-busy={streaming} onScroll={onScroll}>
                 {!messages.length && (
-                  <p className="muted empty-thread">Ask about impact reports, rule scope, branches or penalties. Answers cite the report, rule and tool behind every figure.</p>
+                  <EmptyState title="Ask the compliance assistant" hint="Ask about impact reports, rule scope, branches or penalties. Answers cite the report, rule and tool behind every figure." />
                 )}
                 {messages.map((m) => <ChatMessageView key={m.message_id} message={m} />)}
               </div>
@@ -219,7 +221,7 @@ export default function AssistantDrawer({ open, onOpenChange, llmReady, reportId
                   onChange={(e) => setText(e.target.value)} onKeyDown={onComposerKey}
                 />
                 {streaming
-                  ? <button className="ghost" onClick={stop} aria-label="Stop generating">Stop</button>
+                  ? <button className="danger" onClick={stop} aria-label="Stop generating">Stop</button>
                   : <button className="primary" onClick={() => void send()} disabled={!llmReady || !text.trim()}>Send</button>}
               </div>
               <small className="muted">Enter to send · Shift+Enter for a new line</small>

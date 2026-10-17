@@ -2,6 +2,8 @@ import { useState } from "react";
 import { api } from "../api";
 import type { Action, ImpactReport } from "../types";
 import BarList from "./BarList";
+import MetricStrip from "./MetricStrip";
+import { formatDateTime } from "../format";
 import { CheckPill, ModalityBadge, OverallBadge } from "./StatusBadges";
 import {
   downloadCsv, inr, isMeasured, isUnresolved, modalityOf, overallKey, overallMeta, printReport, radiusFor, ruleTitle, short, unexecutableOf,
@@ -47,9 +49,9 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
         <div className="report-head">
           <div>
             <h2>{report.policy.title}</h2>
-            <p className="muted">{report.policy.issuer} · {report.policy.reference} · effective {report.policy.effective_date} · analysed as of {report.as_of} · {report.mode}</p>
+            <p className="meta mono">{report.policy.issuer} · {report.policy.reference} · effective {formatDateTime(report.policy.effective_date)} · as of {formatDateTime(report.as_of)} · {report.mode} · {report.report_id} · generated <time dateTime={report.generated_at} title={report.generated_at}>{formatDateTime(report.generated_at)}</time></p>
           </div>
-          <div className="head-side">
+          <div className="head-side toolbar">
             <div role="status" aria-label="Overall status"><OverallBadge summary={s} large /></div>
             <div className="buttons no-print">
               <button onClick={() => downloadCsv(report)}>Download CSV</button>
@@ -58,14 +60,14 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
           </div>
         </div>
         {overall.hint && <p className={`muted status-hint ${overall.tone}`}>{overall.hint}{unassessed && " Figures below are shown as — because nothing was assessed."}</p>}
-        <div className="kpis">
-          <Kpi label="Loans with violations" value={kpi(s.loans_with_violations)} />
-          <Kpi label="Customers affected" value={kpi(s.customers_with_violations)} />
-          <Kpi label="Statutory penalty exposure" value={kpi(inr(s.statutory_penalty_inr))} />
-          <Kpi label="Control gaps" value={kpi(s.control_gaps.length)} />
-          <Kpi label="Loans on gapped products" value={kpi(s.loans_exposed_to_control_gaps)} />
-          <Kpi label="Products in blast radius" value={s.products_in_scope} />
-        </div>
+        <MetricStrip metrics={[
+          { label: "Rules", value: s.rules, sub: `${s.products_in_scope} products in blast radius` },
+          { label: "Checks with gaps", value: kpi(s.gaps) },
+          { label: "Loans with violations", value: kpi(s.loans_with_violations) },
+          { label: "Customers affected", value: kpi(s.customers_with_violations) },
+          { label: "Penalty exposure", value: kpi(inr(s.statutory_penalty_inr)) },
+          { label: "Control gaps", value: kpi(s.control_gaps.length), sub: unassessed ? undefined : `${s.loans_exposed_to_control_gaps} loans on gapped products` },
+        ]} />
         {msg && <div className="banner" role="status">{msg}</div>}
       </div>
 
@@ -130,35 +132,35 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
       <div className="card">
         <h3>Rules and checks</h3>
         {report.rules.map((rule) => (
-          <div key={rule.rule_id} className="rule">
+          <section key={rule.rule_id} className="rule" aria-label={rule.title}>
             <div className="rule-head">
               <div>
                 <b>{rule.title}</b> <span className={`pill risk-${rule.penalty_risk}`}>{rule.penalty_risk}</span> <ModalityBadge modality={modalityOf(rule)} />
                 {isUnresolved(radiusFor(report, rule.rule_id)) && <> <span className="pill warn" title="Scope could not be resolved">SCOPE UNRESOLVED</span></>}
-                <blockquote>“{rule.citation.snippet}”</blockquote>
               </div>
               <div className="buttons no-print">
                 <button onClick={() => review(rule.rule_id, "APPROVED")}>Approve rule</button>
-                <button className="ghost" onClick={() => review(rule.rule_id, "REJECTED")}>Reject</button>
+                <button className="danger" onClick={() => review(rule.rule_id, "REJECTED")}>Reject</button>
               </div>
             </div>
+            <blockquote>“{rule.citation.snippet}”</blockquote>
             <div className="table-wrap" tabIndex={0} role="region" aria-label={`Checks for ${rule.title}`}>
             <table>
-              <thead><tr><th scope="col">Check</th><th scope="col">Status</th><th scope="col">Violations / in scope</th><th scope="col">Penalty</th><th scope="col">Evidence</th></tr></thead>
+              <thead><tr><th scope="col">Check</th><th scope="col">Status</th><th scope="col" className="num">Violations / in scope</th><th scope="col" className="num">Penalty</th><th scope="col">Evidence</th></tr></thead>
               <tbody>
                 {report.results.filter((r) => r.rule_id === rule.rule_id).map((r) => (
                   <tr key={r.check_index}>
-                    <td>{r.description}<br /><small className="muted">{r.kind}</small></td>
+                    <td>{r.description}<br /><small className="muted mono">{r.kind}</small></td>
                     <td><CheckPill status={r.status} /></td>
-                    <td>{isMeasured(r.status) ? `${r.violations} / ${r.in_scope}` : "—"}</td>
-                    <td>{isMeasured(r.status) && r.penalty_inr ? inr(r.penalty_inr) : "—"}</td>
+                    <td className="num">{isMeasured(r.status) ? `${r.violations} / ${r.in_scope}` : "—"}</td>
+                    <td className="num">{isMeasured(r.status) && r.penalty_inr ? inr(r.penalty_inr) : "—"}</td>
                     <td><small>{r.evidence}</small>{r.products_missing_control.length > 0 && <small><br />missing on: {r.products_missing_control.map(short).join(", ")}</small>}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             </div>
-          </div>
+          </section>
         ))}
       </div>
 
@@ -171,11 +173,11 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
           return (
           <div key={a.action_id} className="action">
             <div className="action-head">
-              <span><b>{a.workflow_id.replaceAll("_", " ")}</b> · {a.target_count} target(s) · owner {a.owner} · <small>{short(a.rule_id)}</small></span>
+              <span><b>{a.workflow_id.replaceAll("_", " ")}</b> <span className="muted"> · <span className="mono">{a.target_count}</span> target(s) · owner {a.owner} · </span><small className="mono muted">{short(a.rule_id)}</small></span>
               {a.status === "PENDING_APPROVAL" ? (
                 <span className="buttons no-print">
                   <button className="primary" disabled={busy === a.action_id || blocked} aria-describedby={blocked ? reasonId : undefined} onClick={() => decide(a, "APPROVED")}>Approve & dispatch</button>
-                  <button className="ghost" disabled={busy === a.action_id} onClick={() => decide(a, "REJECTED")}>Reject</button>
+                  <button className="danger" disabled={busy === a.action_id} onClick={() => decide(a, "REJECTED")}>Reject</button>
                 </span>
               ) : <span className={`pill ${a.status === "REJECTED" ? "bad" : "ok"}`}>{a.status}{a.decided_by ? ` · ${a.decided_by}` : ""}</span>}
             </div>
@@ -193,18 +195,14 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
         })}
       </div>
 
-      <div className="card">
-        <h3>Audit trail</h3>
+      <details className="card audit" open>
+        <summary><h3>Audit trail</h3></summary>
         <p className="muted">Extraction: {String(report.extraction_provenance?.method ?? "")} {report.extraction_provenance?.gemini_agreement !== undefined && `· Gemini agreement ${Math.round(Number(report.extraction_provenance.gemini_agreement) * 100)}%`}</p>
         {report.data_profile?.executed_sql && <><p><b>Guarded SQL executed</b></p><pre>{report.data_profile.executed_sql}</pre></>}
         {report.blast_radius?.[0] && report.blast_radius[0].queries?.length > 0 && <><p><b>Graph queries ({report.blast_radius[0].query_language})</b></p><pre>{report.blast_radius[0].queries.join("\n\n")}</pre></>}
         {report.validation_issues.length > 0 && <ul>{report.validation_issues.map((v, i) => <li key={i}><span className="pill warn">{v.severity}</span> {v.message}</li>)}</ul>}
         <ul className="muted">{report.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
-      </div>
+      </details>
     </div>
   );
-}
-
-function Kpi({ label, value }: { label: string; value: string | number }) {
-  return <div className="kpi"><div className="kpi-value">{value}</div><div className="kpi-label">{label}</div></div>;
 }

@@ -1,5 +1,6 @@
 import type { RunEvent, ToolCallTrace } from "../types";
-import { STAGES } from "../run-utils";
+import { useId, useState } from "react";
+import { STAGES, fmtDuration, stageOutcome, stageStates, stageTimings, type StageState } from "../run-utils";
 import { Thinking, ToolCall } from "./ChatMessageView";
 import Markdown from "./Markdown";
 
@@ -87,36 +88,77 @@ function canonicalisedText(p: Record<string, any>): string {
 
 const LABELS = new Map([...STAGES, ["pipeline", "Pipeline"] as [string, string]]);
 
-/** Live view of what each pipeline agent is thinking and which tools it calls (inputs and outputs). */
-export default function AgentActivity({ events, live, activeStage }: { events: RunEvent[]; live: boolean; activeStage?: string | null }) {
-  const stages = activityByStage(events, live);
-  if (!stages.size) return live ? <p className="muted activity-wait" role="status">Waiting for the first agent to start…</p> : null;
-  const order = [...STAGES.map(([id]) => id), ...[...stages.keys()].filter((s) => !LABELS.has(s) || s === "pipeline")];
+const STATE_TEXT: Record<StageState, string> = {
+  pending: "not started", active: "in progress", done: "done", failed: "failed", cancelled: "cancelled here", paused: "paused for review",
+};
+const DOT: Record<StageState, string> = { pending: "pending", active: "info live", done: "ok", failed: "bad", cancelled: "warn", paused: "warn" };
+
+function Step({ id, name, sub, state, outcome, time, items, live, open, onToggle }: {
+  id: string; name: string; sub: string; state: StageState; outcome: string; time: string; items: Item[]; live: boolean;
+  open: boolean; onToggle: () => void;
+}) {
+  const panel = useId();
+  const expandable = items.length > 0;
+  const tools = items.filter((i) => i.kind === "tool").length;
+  const note = state === "failed" ? "Failed here" : state === "cancelled" ? "Cancelled here" : state === "paused" ? "Waiting for review" : "";
+  const head = (
+    <>
+      <span className={`dot ${DOT[state]}`} aria-hidden="true" />
+      <span className="step-name">{name}<span className="sr-only">: {STATE_TEXT[state]}</span></span>
+      <span className="step-sub mono">{sub}</span>
+      <span className="step-outcome">
+        {outcome}{outcome && note ? " · " : ""}{note && <b>{note}</b>}
+        {expandable && tools > 0 && <span className="step-tools mono"> · {tools} tool call{tools === 1 ? "" : "s"}</span>}
+      </span>
+      <span className="step-time mono">{time}</span>
+      <span className="chevron step-chev" aria-hidden="true">{expandable ? (open ? "▾" : "▸") : ""}</span>
+    </>
+  );
+  return (
+    <li className={`step ${state}`} data-stage={id}>
+      {expandable
+        ? <button className="step-head" aria-expanded={open} aria-controls={panel} onClick={onToggle}>{head}</button>
+        : <div className="step-head static">{head}</div>}
+      {expandable && open && (
+        <div id={panel} className="step-body" aria-live={state === "active" ? "polite" : undefined}>
+          {items.map((item) => {
+            if (item.kind === "thinking") return <Thinking key={item.key} text={item.text} live={live && !item.done} label={`${item.agent} thinking`} />;
+            if (item.kind === "tool") return <ul key={item.key} className="tool-calls"><ToolCall call={item.call} /></ul>;
+            if (item.kind === "message") return <div key={item.key} className="activity-message"><span className="agent-tag mono">{item.agent}</span><Markdown text={item.text} /></div>;
+            return <p key={item.key} className={`activity-note ${item.tone ?? ""}`}>{item.text}</p>;
+          })}
+        </div>
+      )}
+    </li>
+  );
+}
+
+/** CI/CD-style stepper: one row per pipeline stage with status dot, one-line outcome and duration; rows expand to the
+ *  agent's thinking, tool calls (input/output) and messages. The active stage is open by default. */
+export default function AgentActivity({ events, live, activeStage, status }: { events: RunEvent[]; live: boolean; activeStage?: string | null; status: string }) {
+  const [manual, setManual] = useState<Record<string, boolean>>({});
+  const activity = activityByStage(events, live);
+  const states = stageStates(events, status);
+  const { per } = stageTimings(events);
+  const extra = [...activity.keys()].filter((s) => !STAGES.some(([id]) => id === s));
+  const rows = [...STAGES.map(([id, label]) => ({ id, label })), ...extra.map((id) => ({ id, label: LABELS.get(id) ?? id }))];
+  if (!events.length && live) return <p className="muted activity-wait" role="status">Waiting for the first agent to start…</p>;
   return (
     <section className="agent-activity" aria-label="Agent activity">
-      <h3>Agent activity</h3>
-      {order.filter((s, i) => stages.has(s) && order.indexOf(s) === i).map((stage) => {
-        const items = stages.get(stage)!;
-        const current = live && stage === activeStage;
-        const tools = items.filter((i) => i.kind === "tool").length;
-        return (
-          <details key={stage} className="activity-stage" open={current || undefined}>
-            <summary>
-              <b>{(LABELS.get(stage) ?? stage).split(" · ")[0]}</b>
-              <span className="muted"> · {tools} tool call{tools === 1 ? "" : "s"}</span>
-              {current && <span className="pill info" role="status">working…</span>}
-            </summary>
-            <div className="activity-items" aria-live={current ? "polite" : undefined}>
-              {items.map((item) => {
-                if (item.kind === "thinking") return <Thinking key={item.key} text={item.text} live={live && !item.done} label={`${item.agent} thinking`} />;
-                if (item.kind === "tool") return <ul key={item.key} className="tool-calls"><ToolCall call={item.call} /></ul>;
-                if (item.kind === "message") return <div key={item.key} className="activity-message"><span className="muted">{item.agent}:</span><Markdown text={item.text} /></div>;
-                return <p key={item.key} className={`activity-note ${item.tone ?? ""}`}>{item.text}</p>;
-              })}
-            </div>
-          </details>
-        );
-      })}
+      <ol className="steps" aria-label="Pipeline stages">
+        {rows.map(({ id, label }) => {
+          const state: StageState = states.get(id) ?? (id === "pipeline" && status === "FAILED" ? "failed" : "pending");
+          const [name, ...rest] = label.split(" · ");
+          const current = state === "active" || (live && id === activeStage);
+          const open = manual[id] ?? (current || state === "failed");
+          const ms = per.get(id);
+          const time = ms === undefined ? "" : `${fmtDuration(ms)}${state === "active" ? " so far" : ""}`;
+          return (
+            <Step key={id} id={id} name={name} sub={rest.join(" · ")} state={state} outcome={stageOutcome(id, events)} time={time}
+              items={activity.get(id) ?? []} live={live} open={open} onToggle={() => setManual({ ...manual, [id]: !open })} />
+          );
+        })}
+      </ol>
     </section>
   );
 }

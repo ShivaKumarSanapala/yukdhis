@@ -46,7 +46,7 @@ export default function RuleReview({ run, rules, onDone }: { run: RunInfo; rules
                 <label className="grow">Rule {i + 1} title
                   <input value={r.title} disabled={off} onChange={(e) => edit(r.rule_id, { title: e.target.value })} aria-invalid={!r.title.trim()} />
                 </label>
-                <button type="button" className={off ? "" : "ghost"} onClick={() => toggle(r.rule_id)} aria-pressed={off}>
+                <button type="button" className={off ? "" : "danger"} onClick={() => toggle(r.rule_id)} aria-pressed={off}>
                   {off ? "Restore rule" : "Remove rule"}
                 </button>
               </div>
@@ -72,7 +72,7 @@ export default function RuleReview({ run, rules, onDone }: { run: RunInfo; rules
         <button className="primary" disabled={!run.is_mine || Boolean(busy) || !kept.length || Boolean(invalid)} onClick={() => decide("APPROVE")}>
           {busy === "APPROVE" ? "Continuing…" : `Approve ${kept.length} rule${kept.length === 1 ? "" : "s"} and continue`}
         </button>
-        <button className="ghost" disabled={!run.is_mine || Boolean(busy)} onClick={() => decide("REJECT")}>{busy === "REJECT" ? "Rejecting…" : "Reject run"}</button>
+        <button className="danger" disabled={!run.is_mine || Boolean(busy)} onClick={() => decide("REJECT")}>{busy === "REJECT" ? "Rejecting…" : "Reject run"}</button>
         {!kept.length && <span className="muted">Keep at least one rule, or reject the run.</span>}
         {invalid && <span className="muted">Each kept rule needs a title and a valid date.</span>}
       </div>

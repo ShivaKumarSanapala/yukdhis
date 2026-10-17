@@ -92,7 +92,7 @@ export default function NewAnalysis({ config, samples, prefillUrl, onStarted }: 
   return (
     <div className="card controls no-print">
       <h2>New analysis</h2>
-      <div role="tablist" aria-label="Circular source" className="subtabs">
+      <div role="tablist" aria-label="Circular source" className="segmented">
         {SOURCES.map((s, i) => (
           <button key={s} ref={(el) => { tabRefs.current[i] = el; }} role="tab" id={`src-${i}`} aria-selected={s === source} aria-controls="src-panel"
             tabIndex={s === source ? 0 : -1} className={s === source ? "tab active" : "tab"} onClick={() => setSource(s)} onKeyDown={(e) => onTabKey(e, i)}>{s}</button>

@@ -1,16 +1,21 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { api } from "./api";
 import { authEnabled, logOut, signIn, watchUser } from "./auth";
 import type { Config } from "./types";
 import AnalyzePanel from "./components/AnalyzePanel";
 import ReportsPanel from "./components/ReportsPanel";
-import GraphView from "./components/GraphView";
 import PrivacyPanel from "./components/PrivacyPanel";
-import AssistantDrawer from "./components/AssistantDrawer";
+import { Skeleton } from "./components/Motif";
+
+const GraphView = lazy(() => import("./components/GraphView"));
+const AssistantDrawer = lazy(() => import("./components/AssistantDrawer"));
+import Icon from "./components/Icons";
+import { Motif } from "./components/Motif";
 
 const TABS = ["Analyze", "Reports", "Knowledge graph", "Privacy shield"] as const;
 type Tab = (typeof TABS)[number];
+const ICONS: Record<Tab, string> = { Analyze: "analyze", Reports: "reports", "Knowledge graph": "graph", "Privacy shield": "shield" };
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -21,16 +26,9 @@ export default function App() {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [openReportId, setOpenReportId] = useState<string | null>(null);
   const [reportToOpen, setReportToOpen] = useState<string | null>(null);
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const openInReports = (reportId: string) => { setReportToOpen(reportId); setTab("Reports"); window.scrollTo({ top: 0 }); };
-  const onTabKey = (e: KeyboardEvent, i: number) => {
-    const next = e.key === "ArrowRight" ? (i + 1) % TABS.length : e.key === "ArrowLeft" ? (i + TABS.length - 1) % TABS.length : e.key === "Home" ? 0 : e.key === "End" ? TABS.length - 1 : -1;
-    if (next < 0) return;
-    e.preventDefault();
-    setReportToOpen(null);
-    setTab(TABS[next]);
-    tabRefs.current[next]?.focus();
-  };
+  const [menuOpen, setMenuOpen] = useState(false);
+  const go = (t: Tab) => { setReportToOpen(null); setTab(t); setMenuOpen(false); };
 
   useEffect(() => watchUser((u) => { setUser(u); setReady(true); }), []);
   useEffect(() => {
@@ -40,8 +38,9 @@ export default function App() {
   if (authEnabled && ready && !user) {
     return (
       <main className="signin" id="main">
+        <Motif className="signin-motif" width={216} height={76} />
         <h1>Yukdhis</h1>
-        <p>Autonomous Compliance Engineer for banking</p>
+        <p className="muted">Autonomous Compliance Engineer for banking</p>
         <button className="primary" onClick={() => signIn()}>Sign in with Google</button>
       </main>
     );
@@ -51,45 +50,56 @@ export default function App() {
     <>
     <div className="app" inert={assistantOpen}>
       <a className="skip-link" href="#main">Skip to content</a>
-      <header className="no-print">
-        <div className="brand">
-          <strong>Yukdhis</strong>
-          <span>Autonomous Compliance Engineer</span>
-        </div>
-        <nav aria-label="Sections">
-          <div role="tablist" aria-label="Sections" className="tablist">
-            {TABS.map((t, i) => (
-              <button
-                key={t} ref={(el) => { tabRefs.current[i] = el; }}
-                role="tab" id={`tab-${i}`} aria-selected={t === tab} aria-controls="tabpanel" tabIndex={t === tab ? 0 : -1}
-                className={t === tab ? "tab active" : "tab"} onClick={() => { setReportToOpen(null); setTab(t); }} onKeyDown={(e) => onTabKey(e, i)}
-              >{t}</button>
-            ))}
+      <aside className={`sidebar no-print${menuOpen ? " open" : ""}`}>
+        <div className="sidebar-head">
+          <Motif className="sidebar-motif" width={232} height={84} />
+          <div className="brand">
+            <span className="brand-mark" aria-hidden="true"><Icon name="graph" size={15} /></span>
+            <div><strong>Yukdhis</strong><span>Autonomous Compliance Engineer</span></div>
           </div>
-        </nav>
-        <div className="who">
-          {config && <span className="pill">{config.tenant_id}</span>}
-          {config && <span className={config.llm_ready ? "pill ok" : "pill warn"} role="status">{config.llm_ready ? config.reasoning_model : "LLM offline"}</span>}
-          {authEnabled && <button className="link" onClick={() => logOut()}>Sign out</button>}
+          <button className="menu-btn icon" aria-expanded={menuOpen} aria-controls="sidebar-body" aria-label="Menu" onClick={() => setMenuOpen(!menuOpen)}>
+            <Icon name={menuOpen ? "close" : "menu"} size={18} />
+          </button>
         </div>
-      </header>
-      {error && <div className="banner error" role="alert">{error}</div>}
-      <main id="main" tabIndex={-1}>
-        <div role="tabpanel" id="tabpanel" aria-labelledby={`tab-${TABS.indexOf(tab)}`}>
-        {tab === "Analyze" && config && <AnalyzePanel config={config} onOpenInReports={openInReports} />}
-        {tab === "Reports" && <ReportsPanel onOpenReportChange={setOpenReportId} initialReportId={reportToOpen} />}
-        {tab === "Knowledge graph" && config && <GraphView defaultAsOf={config.as_of} />}
-        {tab === "Privacy shield" && <PrivacyPanel />}
+        <div id="sidebar-body" className="sidebar-body">
+          <nav aria-label="Sections">
+            <ul className="nav-list">
+              {TABS.map((t) => (
+                <li key={t}>
+                  <button className={t === tab ? "nav-item active" : "nav-item"} aria-current={t === tab ? "page" : undefined} onClick={() => go(t)}>
+                    <Icon name={ICONS[t]} size={16} /><span>{t}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div className="who">
+            {config && <span className="pill neutral mono" title="Tenant">{config.tenant_id}</span>}
+            {config && <span className={config.llm_ready ? "pill ok" : "pill warn"} role="status">{config.llm_ready ? config.reasoning_model : "LLM offline"}</span>}
+            {authEnabled && <button className="ghost signout" onClick={() => logOut()}><Icon name="signout" size={14} /> Sign out</button>}
+          </div>
         </div>
-      </main>
-      <footer className="no-print">
-        Gemini 2.5 Pro on Vertex AI · Google ADK · Spanner Graph · Cloud SQL · Document AI · Cloud DLP + Gemma · Cloud Run · Firebase
-        {config && <span> · backends: {Object.entries(config.backends).map(([k, v]) => `${k}=${v}`).join(", ")}</span>}
-      </footer>
+      </aside>
+      <div className="content">
+        {error && <div className="banner error" role="alert">{error}</div>}
+        <main id="main" tabIndex={-1}>
+          <h1 className="sr-only">{tab}</h1>
+          {tab === "Analyze" && config && <AnalyzePanel config={config} onOpenInReports={openInReports} />}
+          {tab === "Reports" && <ReportsPanel onOpenReportChange={setOpenReportId} initialReportId={reportToOpen} />}
+          {tab === "Knowledge graph" && config && <Suspense fallback={<div className="card"><Skeleton rows={6} label="Loading graph" /></div>}><GraphView defaultAsOf={config.as_of} /></Suspense>}
+          {tab === "Privacy shield" && <PrivacyPanel />}
+        </main>
+        <footer className="no-print">
+          Gemini 2.5 Pro on Vertex AI · Google ADK · Spanner Graph · Cloud SQL · Document AI · Cloud DLP + Gemma · Cloud Run · Firebase
+          {config && <span className="mono"> · backends: {Object.entries(config.backends).map(([k, v]) => `${k}=${v}`).join(", ")}</span>}
+        </footer>
+      </div>
     </div>
     {config && (
-      <AssistantDrawer open={assistantOpen} onOpenChange={setAssistantOpen} llmReady={config.llm_ready}
-        reportId={tab === "Reports" ? openReportId : null} />
+      <Suspense fallback={null}>
+        <AssistantDrawer open={assistantOpen} onOpenChange={setAssistantOpen} llmReady={config.llm_ready}
+          reportId={tab === "Reports" ? openReportId : null} />
+      </Suspense>
     )}
     </>
   );
