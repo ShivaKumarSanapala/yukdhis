@@ -16,13 +16,13 @@ import logging
 from core.config import get_settings
 from core.models import ExtractedPolicy, ParsedDocument, ValidationIssue
 from ingestion.templates import match_template
-from ingestion.validator import DRAFT_MESSAGE, has_errors, validate_extraction
+from ingestion.validator import DRAFT_MESSAGE, has_errors, non_binding_message, validate_extraction
 from knowledge_graph.ontology import CAPABILITIES, EVENT_TYPES, RECORD_FLAGS
 
 log = logging.getLogger(__name__)
 MAX_ATTEMPTS = 2
-NO_BINDING_MESSAGE = ("No binding obligations were found: this document appears to be an announcement or a draft. "
-                      "Upload the final Directions.")
+NO_BINDING_MESSAGE = non_binding_message()
+NON_BINDING_TYPES = {"draft_or_consultation", "press_release"}
 
 EXTRACTION_PROMPT = """You are the Reader agent of a banking compliance engine. Convert the regulatory circular
 below into machine-executable rules. Extract ONLY binding obligations from the operative text of a FINAL
@@ -43,12 +43,25 @@ DOCUMENT {document_id} ({parser})
 """
 
 
-def extract_policy(document: ParsedDocument, use_llm: bool | None = None) -> tuple[ExtractedPolicy, list[ValidationIssue], dict]:
-    """Return (extraction, issues, provenance)."""
+def llm_enabled() -> bool:
+    settings = get_settings()
+    return settings.agent_mode == "agentic" and settings.is_gcp_llm_ready
+
+
+def ensure_binding(classification: dict | None, announced: dict | None = None) -> None:
+    """Document-type gate: drafts, consultations and press releases never produce obligations."""
+    if classification and classification.get("doc_type") in NON_BINDING_TYPES:
+        raise ValueError(non_binding_message(classification, announced))
+
+
+def extract_policy(document: ParsedDocument, use_llm: bool | None = None, classification: dict | None = None,
+                   announced: dict | None = None) -> tuple[ExtractedPolicy, list[ValidationIssue], dict]:
+    """Return (extraction, issues, provenance). ``classification`` (a DocumentClassification dict) gates non-binding documents."""
+    ensure_binding(classification, announced)
     settings = get_settings()
     template = match_template(document)
     reference = template(document) if template else None
-    use_llm = settings.agent_mode == "agentic" and settings.is_gcp_llm_ready if use_llm is None else use_llm
+    use_llm = llm_enabled() if use_llm is None else use_llm
     provenance: dict = {"template": template.__name__ if template else None, "model": None, "attempts": 0}
 
     if not use_llm:
@@ -81,7 +94,7 @@ def extract_policy(document: ParsedDocument, use_llm: bool | None = None) -> tup
         return reference, validate_extraction(reference, document) + notes, provenance
     errors = [i for i in issues if i.severity == "ERROR"]
     if extraction is not None and errors and all(i.message in (DRAFT_MESSAGE, "No rules extracted.") for i in errors):
-        raise ValueError(NO_BINDING_MESSAGE)
+        raise ValueError(non_binding_message(classification, announced))
     if extraction is None or errors:
         raise ValueError("Extraction failed validation: " + "; ".join(i.message for i in issues if i.severity == "ERROR"))
     provenance["method"] = "gemini-structured-output"

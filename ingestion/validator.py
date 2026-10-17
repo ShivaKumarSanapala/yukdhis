@@ -20,6 +20,27 @@ DRAFT_PATTERN = re.compile(
     r"|exposure\s+draft|had\s+issued\s+draft|stakeholders)", re.IGNORECASE)
 
 
+NO_BINDING_PREFIX = "No binding obligations were found"
+
+
+def non_binding_message(classification: dict | None = None, announced: dict | None = None) -> str:
+    """User-facing reason a document yields no obligations (shared by the doc-type gate and the draft-citation check)."""
+    doc_type = (classification or {}).get("doc_type")
+    reason = (classification or {}).get("reason", "").rstrip(".")
+    if doc_type == "press_release":
+        message = f"{NO_BINDING_PREFIX}: this document is an RBI press release, not a binding instrument ({reason})."
+        if announced and announced.get("url"):
+            label = announced.get("ref") if announced.get("ref") != announced.get("url") else "the instrument"
+            message += f" It announces {label}: {announced['url']}. Analyse that document instead."
+        else:
+            message += " Upload or fetch the Directions or circular it announces."
+        return message
+    if doc_type == "draft_or_consultation":
+        return (f"{NO_BINDING_PREFIX}: this document is a draft or consultation paper ({reason}). "
+                "Upload the final Directions once they are issued.")
+    return f"{NO_BINDING_PREFIX}: this document appears to be an announcement or a draft. Upload the final Directions."
+
+
 def _is_date(value: str | None) -> bool:
     try:
         date.fromisoformat(value or "")
