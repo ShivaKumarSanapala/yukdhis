@@ -1,0 +1,29 @@
+{
+  "pack_id": "liquidity_management",
+  "version": "1.0.0",
+  "title": "Liquidity management: LCR, NSFR, CRR, SLR (signals only)",
+  "domain": "liquidity_management",
+  "business_line": "liquidity_management",
+  "requires_data_domains": [
+    "liquidity"
+  ],
+  "applicability_signals": [
+    {
+      "name": "liquidity",
+      "label": "liquidity ratios (LCR, NSFR, CRR, SLR)",
+      "order": 60,
+      "keywords": [
+        "\\bliquidity coverage ratio\\b",
+        "\\blcr\\b",
+        "\\bnsfr\\b",
+        "\\bnet stable funding\\b",
+        "\\bcash reserve ratio\\b",
+        "\\bstatutory liquidity ratio\\b"
+      ],
+      "business_line": "liquidity_management",
+      "data_domains": [
+        "liquidity"
+      ]
+    }
+  ]
+}

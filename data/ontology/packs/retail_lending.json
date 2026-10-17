@@ -1,0 +1,178 @@
+{
+  "pack_id": "retail_lending",
+  "version": "1.0.0",
+  "title": "Retail lending: floating-rate resets and release of property documents",
+  "domain": "retail_lending",
+  "business_line": "retail_lending",
+  "requires_data_domains": [
+    "loans",
+    "customers"
+  ],
+  "capabilities": {
+    "borrower_notification": {
+      "control": "control:borrower-notification",
+      "description": "Borrower is told, before the next reset, the impact of a benchmark-rate reset on EMI or tenor.",
+      "process": "process:borrower-notification",
+      "synonyms": []
+    },
+    "emi_or_tenor_choice": {
+      "control": "control:emi-tenor-choice",
+      "description": "Borrower may choose between an EMI increase, a tenor extension or a combination after a reset.",
+      "process": "process:rate-reset",
+      "synonyms": []
+    },
+    "fixed_rate_option": {
+      "control": "control:fixed-rate-option",
+      "description": "Borrower may switch a floating-rate loan to a fixed rate at reset.",
+      "process": "process:rate-reset",
+      "synonyms": []
+    },
+    "reset_statement": {
+      "control": "control:reset-statement",
+      "description": "Statement with principal, interest, EMI, tenor and APR issued to the borrower at each reset.",
+      "process": "process:borrower-notification",
+      "synonyms": []
+    },
+    "document_release_sla": {
+      "control": "control:document-release-sla",
+      "description": "Original property documents are released within 30 days of full repayment.",
+      "process": "process:collateral-release",
+      "synonyms": []
+    },
+    "delay_compensation": {
+      "control": "control:delay-compensation",
+      "description": "Statutory compensation is paid automatically for each day of delay in releasing documents.",
+      "process": "process:collateral-release",
+      "synonyms": []
+    },
+    "document_collection_choice": {
+      "control": "control:document-collection-choice",
+      "description": "Borrower may choose where original documents are collected.",
+      "process": "process:document-custody",
+      "synonyms": []
+    }
+  },
+  "record_flags": {
+    "borrower_notified": "Borrower was told the EMI/tenor impact of the last reset.",
+    "has_fixed_rate_option": "Loan offers a switch to a fixed rate.",
+    "has_emi_tenor_choice": "Borrower may choose EMI increase or tenor extension.",
+    "statement_available": "Reset statement with principal, interest and APR issued."
+  },
+  "event_types": [
+    "DOCUMENTS_RELEASED",
+    "LOAN_CLOSED",
+    "LOAN_DISBURSED",
+    "RATE_RESET",
+    "RATE_RESET_NOTICE_SENT"
+  ],
+  "event_processes": {
+    "LOAN_CLOSED": "process:loan-closure",
+    "DOCUMENTS_RELEASED": "process:collateral-release",
+    "RATE_RESET": "process:rate-reset",
+    "RATE_RESET_NOTICE_SENT": "process:borrower-notification"
+  },
+  "product_attributes": [
+    "rate_type",
+    "instalment_based",
+    "secured",
+    "collateral_type",
+    "category"
+  ],
+  "views": {
+    "vw_compliance_impact": {
+      "description": "One row per loan. Opaque refs only; no names, contact or account numbers.",
+      "columns": {
+        "loan_ref": "opaque loan reference",
+        "customer_ref": "opaque customer reference",
+        "product_id": "canonical product node id",
+        "segment_id": "customer segment node id",
+        "branch_id": "branch node id",
+        "status": "ACTIVE | CLOSED",
+        "rate_type": "FLOATING | FIXED",
+        "emi_amount": "INR",
+        "outstanding_balance": "INR",
+        "sanctioned_on": "date",
+        "closed_on": "date or null",
+        "rate_reset_due": "date or null",
+        "borrower_notified": "boolean - Borrower was told the EMI/tenor impact of the last reset.",
+        "has_fixed_rate_option": "boolean - Loan offers a switch to a fixed rate.",
+        "has_emi_tenor_choice": "boolean - Borrower may choose EMI increase or tenor extension.",
+        "statement_available": "boolean - Reset statement with principal, interest and APR issued."
+      },
+      "data_domain": "loans"
+    },
+    "vw_loan_events": {
+      "description": "Operational event log per loan, tokenized.",
+      "columns": {
+        "loan_ref": "opaque loan reference",
+        "customer_ref": "opaque customer reference",
+        "product_id": "canonical product node id",
+        "branch_id": "branch node id",
+        "segment_id": "customer segment node id",
+        "event_type": "DOCUMENTS_RELEASED|LOAN_CLOSED|LOAN_DISBURSED|RATE_RESET|RATE_RESET_NOTICE_SENT",
+        "occurred_on": "date"
+      },
+      "data_domain": "loan_events"
+    },
+    "vw_branch_directory": {
+      "description": "Branch metadata without manager contact details.",
+      "columns": {
+        "branch_id": "branch node id",
+        "branch_name": "name",
+        "city": "city",
+        "region": "region"
+      },
+      "data_domain": "branches"
+    }
+  },
+  "glossary": {
+    "personal loans": {
+      "category": "RETAIL_LOAN"
+    },
+    "retail loans": {
+      "category": "RETAIL_LOAN"
+    },
+    "loans to individuals": {
+      "category": "RETAIL_LOAN"
+    },
+    "emi based loans": {
+      "instalment_based": true
+    },
+    "equated instalment loans": {
+      "instalment_based": true
+    },
+    "floating rate loans": {
+      "rate_type": "FLOATING"
+    },
+    "secured loans": {
+      "secured": true
+    },
+    "movable immovable property": {
+      "secured": true
+    }
+  },
+  "workflows": {
+    "SEND_BORROWER_NOTICE": "Customer Communications sends a templated notice to each borrower in the worklist.",
+    "BRANCH_MANAGER_ALERT": "Alert branch managers with the per-branch worklist.",
+    "PRODUCT_CONTROL_CHANGE": "Raise a change request with the product owner to add a missing control.",
+    "COMPENSATION_PAYOUT_REVIEW": "Finance reviews and approves statutory delay compensation."
+  },
+  "applicability_signals": {
+    "name": "loans",
+    "label": "lending",
+    "order": 90,
+    "keywords": [
+      "\\bloans?\\b",
+      "\\bborrowers?\\b",
+      "\\bemis?\\b",
+      "\\badvances\\b",
+      "\\blenders?\\b",
+      "\\bcredit facilit(?:y|ies)\\b",
+      "\\bequated (?:monthly )?instalments?\\b"
+    ],
+    "business_line": "retail_lending",
+    "data_domains": [
+      "loans"
+    ]
+  }
+}

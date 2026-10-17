@@ -1,0 +1,37 @@
+{
+  "pack_id": "capital_adequacy",
+  "version": "1.0.0",
+  "title": "Capital adequacy: CVA, RWA, CET1, CRAR, capital charge (signals only)",
+  "domain": "capital_adequacy",
+  "business_line": "capital_management",
+  "requires_data_domains": [
+    "capital_rwa"
+  ],
+  "applicability_signals": [
+    {
+      "name": "capital",
+      "label": "capital adequacy (CVA, RWA, CET1, CRAR)",
+      "order": 50,
+      "keywords": [
+        "\\bcredit valuation adjustment\\b",
+        "\\b(?:ba-|sa-)?cva\\b",
+        "\\brisk[- ]weighted assets?\\b",
+        "\\brwas?\\b",
+        "\\bcet\\s?1\\b",
+        "\\bcommon equity tier\\s?(?:1|i)\\b",
+        "\\btier\\s?(?:1|i|2|ii) capital\\b",
+        "\\bcrar\\b",
+        "\\bcapital adequacy\\b",
+        "\\bcapital charge\\b",
+        "\\bcapital to risk\\b",
+        "\\bsa-ccr\\b",
+        "\\bleverage ratio\\b",
+        "\\bbasel iii\\b"
+      ],
+      "business_line": "capital_management",
+      "data_domains": [
+        "capital_rwa"
+      ]
+    }
+  ]
+}

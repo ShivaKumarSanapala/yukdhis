@@ -5,7 +5,7 @@ used to become two controls and a spurious control gap. For each extracted capab
 
 1. **Exact or synonym** (no LLM call): the capability is an ontology id, its ``control:<slug>`` node already
    exists, or its words equal a candidate's name or a recorded synonym.
-2. **Candidates**: the top ``TOP_K`` of the ontology ``CAPABILITIES`` plus the Control nodes in the graph, scored
+2. **Candidates**: the top ``TOP_K`` of the enabled packs' capabilities plus the Control nodes in the graph, scored
    with the entity resolver's lexical synonym score (plus an acronym-aware variant) and, on GCP, its Vertex AI
    embedding score.
 3. **Gemini** (fast model, structured output, temperature 0) decides ``MATCH | NEW | AMBIGUOUS`` from the check
@@ -23,6 +23,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Callable, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -30,7 +31,7 @@ from pydantic import BaseModel, Field
 from core.config import get_settings
 from core.models import ControlDecision
 from knowledge_graph.entity_resolution import EntityResolver, lexical_score
-from knowledge_graph.ontology import CAPABILITIES
+from knowledge_graph.ontology import get_ontology
 from knowledge_graph.store import GraphStore
 
 log = logging.getLogger(__name__)
@@ -88,8 +89,8 @@ def llm_enabled() -> bool:
     return settings.agent_mode == "agentic" and settings.is_gcp_llm_ready
 
 
-def slug_control_id(capability: str) -> str:
-    return CAPABILITIES.get(capability, f"control:{capability.strip().lower().replace('_', '-').replace(' ', '-')}")
+def slug_control_id(capability: str, tenant_id: str | None = None) -> str:
+    return get_ontology(tenant_ids=(tenant_id,) if tenant_id else ()).capabilities.get(capability, f"control:{capability.strip().lower().replace('_', '-').replace(' ', '-')}")
 
 
 def _words(text: str) -> str:
@@ -180,7 +181,7 @@ class ControlCanonicaliser:
             return exact
         ranked = self._rank(capability, description, candidates)
         summary = [c.summary() for c in ranked]
-        new_id = slug_control_id(capability)
+        new_id = slug_control_id(capability, self.store.tenant_id)
         if self.chooser is not None and ranked:
             request = {"term": capability, "check_description": description, "citation": (citation or "")[:CITATION_CHARS],
                        "candidates": [{**c.summary(), "synonyms": c.synonyms[:10], "description": c.description[:300]}
@@ -194,17 +195,22 @@ class ControlCanonicaliser:
             return self._guard(capability, choice, ranked, summary, new_id)
         return self._fallback(capability, ranked, summary, new_id, "No LLM")
 
+    def _vocabulary(self):
+        return get_ontology(tenant_ids=(self.store.tenant_id,))  # enabled packs plus this tenant's overlay
+
     def candidates(self) -> list[Candidate]:
         nodes = {n["id"]: n for n in self.store.nodes("Control")}
         pool: dict[str, Candidate] = {}
-        for capability, control_id in CAPABILITIES.items():
+        for capability, spec in self._vocabulary().capability_specs.items():  # enabled packs, incl. promoted tenant vocabulary
+            control_id = spec.control
             node = nodes.get(control_id) or {"name": _words(capability).title(), "attributes": {}}
             attrs = node.get("attributes", {})
-            pool[control_id] = Candidate(control_id, node["name"], "ontology", capability, list(attrs.get("synonyms", [])),
-                                         str(attrs.get("description", "")))
+            synonyms = list(dict.fromkeys([*attrs.get("synonyms", []), *spec.synonyms]))
+            pool[control_id] = Candidate(control_id, node["name"], "ontology", capability, synonyms,
+                                         str(attrs.get("description") or spec.description))
         for control_id, node in nodes.items():
             attrs = node.get("attributes", {})
-            if control_id in pool or attrs.get("merged_into"):
+            if control_id in pool or attrs.get("merged_into") or attrs.get("rejected"):  # rejected: kept for audit only
                 continue
             pool[control_id] = Candidate(control_id, node["name"], "graph", attrs.get("capability"),
                                          list(attrs.get("synonyms", [])), str(attrs.get("description", "")))
@@ -213,10 +219,11 @@ class ControlCanonicaliser:
     # steps --------------------------------------------------------------------------------------------------
     def _exact(self, capability: str, candidates: list[Candidate], exclude: set[str]) -> ControlDecision | None:
         by_id = {c.id: c for c in candidates}
-        if capability in CAPABILITIES and CAPABILITIES[capability] not in exclude:
-            return ControlDecision(term=capability, control_id=CAPABILITIES[capability], decision="EXACT",
+        known = self._vocabulary().capabilities
+        if capability in known and known[capability] not in exclude:
+            return ControlDecision(term=capability, control_id=known[capability], decision="EXACT",
                                    method="ontology-id", confidence=1.0)
-        slug = slug_control_id(capability)
+        slug = slug_control_id(capability, self.store.tenant_id)
         if slug not in exclude:
             node = self.store.node(slug)
             if node and node["type"] == "Control":
@@ -302,6 +309,7 @@ class ControlCanonicaliser:
             self.store.upsert_node(decision.control_id, "Control", _words(capability).title(), {
                 "needs_review": True, "created_by": "mapper", "capability": capability,
                 "description": description, "canonicalisation": decision.method,
+                "first_seen": datetime.now(timezone.utc).isoformat(timespec="seconds"), "source_rule": decision.rule_id,
             })
             return
         if decision.decision == "MATCH" and node:

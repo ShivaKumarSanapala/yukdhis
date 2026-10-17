@@ -1,0 +1,47 @@
+{
+  "pack_id": "deposits_kyc",
+  "version": "1.0.0",
+  "title": "Deposits and KYC: deposit accounts, KYC, AML, CDD, CKYC (signals only)",
+  "domain": "deposits_kyc",
+  "business_line": "deposits",
+  "requires_data_domains": [
+    "deposits",
+    "customers"
+  ],
+  "applicability_signals": [
+    {
+      "name": "deposits",
+      "label": "deposit accounts",
+      "order": 70,
+      "keywords": [
+        "\\b(?:term|fixed|recurring|savings|current) deposits?\\b",
+        "\\bdepositors?\\b",
+        "\\bdeposit accounts?\\b",
+        "\\bsavings (?:bank )?accounts?\\b"
+      ],
+      "business_line": "deposits",
+      "data_domains": [
+        "deposits"
+      ]
+    },
+    {
+      "name": "kyc_aml",
+      "label": "KYC / AML / customer due diligence",
+      "order": 75,
+      "keywords": [
+        "\\bkyc\\b",
+        "\\bckyc(?:r)?\\b",
+        "\\baml\\b",
+        "\\bcdd\\b",
+        "\\bknow your customer\\b",
+        "\\banti[- ]money laundering\\b",
+        "\\bcustomer due diligence\\b",
+        "\\bcombating (?:of )?financing of terrorism\\b"
+      ],
+      "business_line": "deposits",
+      "data_domains": [
+        "deposits"
+      ]
+    }
+  ]
+}
