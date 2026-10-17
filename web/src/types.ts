@@ -16,6 +16,8 @@ export interface Summary {
   loans_with_violations: number; customers_with_violations: number; loans_exposed_to_control_gaps: number;
   statutory_penalty_inr: number; control_gaps: string[]; by_branch: Record<string, number>;
   overall_status: string; privacy_redactions: number;
+  /** Newer reports only: rule ids whose scope could not be resolved. */
+  unresolved_rules?: string[];
 }
 export interface Check {
   rule_id: string; check_index: number; kind: string; description: string; status: string;
@@ -26,12 +28,17 @@ export interface Rule {
   rule_id: string; title: string; description: string; effective_date: string; penalty_risk: string; status: string;
   confidence: number; citation: { snippet: string; chunk_id?: string; page?: number };
   checks: { kind: string; description: string }[];
+  /** Newer reports only; absent means MUST. */
+  modality?: "MUST" | "MAY" | "MUST_NOT" | string;
 }
 export interface Radius {
   rule_id: string; as_of: string; products: { id: string; name: string; owner: string | null }[];
   processes: { id: string; name: string; bian_domain: string; owner: string | null }[];
   controls_required: string[]; control_gaps: Record<string, string[]>; owners: { owner_of: string; team: string }[];
   segments: { id: string; name: string }[]; paths: string[][]; query_language: string; queries: string[];
+  /** Newer reports only; absent means the scope was resolved. */
+  scope_status?: "RESOLVED" | "UNRESOLVED" | string;
+  scope_notes?: string[];
 }
 export interface Action {
   action_id: string; workflow_id: string; rule_id: string; worklist_id: string | null; target_count: number;
