@@ -151,7 +151,10 @@ def _gemini_classify(document: ParsedDocument) -> DocumentClassification:
     response = genai_client().models.generate_content(
         model=settings.fast_model, contents=CLASSIFY_PROMPT.format(title=document.title[:300], text=document.text[:6000]),
         config=types.GenerateContentConfig(temperature=0.0, seed=0, response_mime_type="application/json",
-                                           response_schema=DocumentClassification, max_output_tokens=512),
+                                           response_schema=DocumentClassification, max_output_tokens=1024,
+                                           # thinking tokens count against the output limit (512 truncated the JSON)
+                                           thinking_config=types.ThinkingConfig(
+                                               thinking_budget=0 if "flash" in settings.fast_model else 128)),
     )
     parsed = getattr(response, "parsed", None)
     result = parsed if isinstance(parsed, DocumentClassification) else DocumentClassification.model_validate(json.loads(response.text))

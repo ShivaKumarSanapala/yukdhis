@@ -20,10 +20,17 @@ def static(text: str):
 
 
 def llm_options(reasoning: bool = False) -> dict:
+    """Model settings; thought summaries are on so the run timeline can show what each agent is thinking.
+
+    Thinking tokens count against ``max_output_tokens``, so the budget is capped well below it."""
+    from google.adk.planners import BuiltInPlanner
+
     settings = get_settings()
     return {
         "model": settings.reasoning_model if reasoning else settings.fast_model,
-        "generate_content_config": types.GenerateContentConfig(temperature=0.1, max_output_tokens=4096),
+        "generate_content_config": types.GenerateContentConfig(temperature=0.1, max_output_tokens=8192),
+        "planner": BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True,
+                                                                       thinking_budget=2048 if reasoning else 1024)),
         "before_model_callback": mask_pii_before_model,
     }
 

@@ -10,8 +10,11 @@ Cross-check: when the circular matches an approved template, the template is
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import json
 import logging
+import time
 
 from core.config import get_settings
 from core.models import ExtractedPolicy, ParsedDocument, ValidationIssue
@@ -55,8 +58,10 @@ def ensure_binding(classification: dict | None, announced: dict | None = None) -
 
 
 def extract_policy(document: ParsedDocument, use_llm: bool | None = None, classification: dict | None = None,
-                   announced: dict | None = None) -> tuple[ExtractedPolicy, list[ValidationIssue], dict]:
-    """Return (extraction, issues, provenance). ``classification`` (a DocumentClassification dict) gates non-binding documents."""
+                   announced: dict | None = None, report: Report | None = None) -> tuple[ExtractedPolicy, list[ValidationIssue], dict]:
+    """Return (extraction, issues, provenance). ``classification`` (a DocumentClassification dict) gates non-binding documents.
+
+    ``report(kind, payload)`` receives live progress: ``thinking`` (Gemini thought summaries) and ``extraction_retry``."""
     ensure_binding(classification, announced)
     settings = get_settings()
     template = match_template(document)
@@ -74,10 +79,11 @@ def extract_policy(document: ParsedDocument, use_llm: bool | None = None, classi
     for attempt in range(1, MAX_ATTEMPTS + 1):
         provenance["attempts"] = attempt
         try:
-            extraction = _gemini_extract(document, feedback)
+            extraction = _gemini_extract(document, feedback, _attempt_reporter(report, attempt))
         except Exception as error:
             log.warning("Gemini extraction failed (attempt %s): %s", attempt, error)
             issues = [ValidationIssue(severity="ERROR", field="model", message=f"Gemini extraction failed: {error}")]
+            _report(report, "extraction_retry", {"attempt": attempt, "of": MAX_ATTEMPTS, "error": str(error)[:500]})
             continue
         issues = validate_extraction(extraction, document)
         if not has_errors(issues):
@@ -101,7 +107,32 @@ def extract_policy(document: ParsedDocument, use_llm: bool | None = None, classi
     return extraction, issues, provenance
 
 
-def _gemini_extract(document: ParsedDocument, feedback: str) -> ExtractedPolicy:
+Report = Callable[[str, dict], None]
+# Thinking tokens count against max_output_tokens on Gemini 2.5: 8192 truncated the JSON of a 35-page circular.
+MAX_OUTPUT_TOKENS, THINKING_BUDGET = 32768, 4096
+PROGRESS_EVERY_S = 1.5
+
+
+def _report(report: Report | None, kind: str, payload: dict) -> None:
+    if report is None:
+        return
+    try:
+        report(kind, payload)
+    except Exception:  # progress is observability only
+        log.warning("Could not report %s", kind, exc_info=True)
+
+
+def _attempt_reporter(report: Report | None, attempt: int) -> Callable[[str, int, bool], None] | None:
+    if report is None:
+        return None
+    return lambda thoughts, chars, done: _report(report, "thinking", {
+        "agent": "Rule extractor (Gemini)", "stream": f"extract-{attempt}", "text": thoughts[-8000:],
+        "answer_chars": chars, "done": done})
+
+
+def _gemini_extract(document: ParsedDocument, feedback: str,
+                    progress: Callable[[str, int, bool], None] | None = None) -> ExtractedPolicy:
+    """Streams the structured answer so thought summaries show up live; fails clearly when the answer is cut off."""
     from google.genai import types
 
     from core.llm import genai_client
@@ -112,14 +143,31 @@ def _gemini_extract(document: ParsedDocument, feedback: str) -> ExtractedPolicy:
                                       document_id=document.document_id, parser=document.parser, chunks=chunks)
     if feedback:
         prompt += "\n\n" + feedback
-    response = genai_client().models.generate_content(
+    stream = genai_client().models.generate_content_stream(
         model=settings.reasoning_model, contents=prompt,
-        config=types.GenerateContentConfig(temperature=0.0, seed=0, response_mime_type="application/json",
-                                           response_schema=ExtractedPolicy, max_output_tokens=8192),
+        config=types.GenerateContentConfig(
+            temperature=0.0, seed=0, response_mime_type="application/json", response_schema=ExtractedPolicy,
+            max_output_tokens=MAX_OUTPUT_TOKENS,
+            thinking_config=types.ThinkingConfig(include_thoughts=True, thinking_budget=THINKING_BUDGET)),
     )
-    if getattr(response, "parsed", None) is not None:
-        return response.parsed
-    return ExtractedPolicy.model_validate(json.loads(response.text))
+    answer, thoughts, finish, last = [], [], "", 0.0
+    for chunk in stream:
+        for candidate in chunk.candidates or []:
+            finish = str(candidate.finish_reason or finish)
+            for part in (candidate.content.parts if candidate.content else None) or []:
+                if part.text:
+                    (thoughts if part.thought else answer).append(part.text)
+        if progress and time.monotonic() - last >= PROGRESS_EVERY_S:
+            last = time.monotonic()
+            progress("".join(thoughts), sum(map(len, answer)), False)
+    if progress:
+        progress("".join(thoughts), sum(map(len, answer)), True)
+    if "MAX_TOKENS" in finish:
+        raise ValueError(f"the model's answer was cut off at the output limit ({MAX_OUTPUT_TOKENS} tokens)")
+    text = "".join(answer).strip()
+    if not text:
+        raise ValueError(f"the model returned no answer (finish reason {finish or 'unknown'})")
+    return ExtractedPolicy.model_validate(json.loads(text))
 
 
 def _agreement(candidate: ExtractedPolicy, reference: ExtractedPolicy) -> float:

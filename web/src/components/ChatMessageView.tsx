@@ -5,7 +5,7 @@ import Markdown from "./Markdown";
 const pretty = (value: unknown) => (typeof value === "string" ? value : JSON.stringify(value, null, 2));
 const STATUS_PILL: Record<string, string> = { ok: "ok", error: "bad", running: "info", cancelled: "neutral" };
 
-function Thinking({ text, live }: { text: string; live: boolean }) {
+export function Thinking({ text, live, label = "Thinking" }: { text: string; live: boolean; label?: string }) {
   const [manual, setManual] = useState<boolean | null>(null);
   const open = manual ?? live; // streams open, collapses once the answer starts unless the user toggled it
   const id = useId();
@@ -13,14 +13,14 @@ function Thinking({ text, live }: { text: string; live: boolean }) {
     <div className="trace-block">
       <button className="trace-toggle" aria-expanded={open} aria-controls={id} onClick={() => setManual(!open)}>
         <span className="chevron" aria-hidden="true">{open ? "▾" : "▸"}</span>
-        {live ? "Thinking…" : "Thinking"}
+        {live ? `${label}…` : label}
       </button>
       {open && <div id={id} className="thinking-text"><Markdown text={text} /></div>}
     </div>
   );
 }
 
-function ToolCall({ call }: { call: ToolCallTrace }) {
+export function ToolCall({ call }: { call: ToolCallTrace }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const output = call.output as { truncated?: boolean; chars?: number; preview?: string } | undefined;
