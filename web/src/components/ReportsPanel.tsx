@@ -8,9 +8,11 @@ import { overallKey } from "../report-utils";
 
 const time = (value: string) => { const t = Date.parse(value); return Number.isNaN(t) ? 0 : t; };
 
-export default function ReportsPanel() {
+export default function ReportsPanel({ onOpenReportChange }: { onOpenReportChange?: (reportId: string | null) => void }) {
   const [items, setItems] = useState<ReportListItem[]>([]);
   const [open, setOpen] = useState<ImpactReport | null>(null);
+  const openId = open?.report_id ?? null;
+  useEffect(() => { onOpenReportChange?.(openId); }, [openId, onOpenReportChange]);
   const [picked, setPicked] = useState<string[]>([]);
   const [pair, setPair] = useState<[ImpactReport, ImpactReport] | null>(null);
   const [busy, setBusy] = useState(false);

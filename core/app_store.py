@@ -3,6 +3,9 @@
 SQLite locally, Cloud SQL for PostgreSQL (``CLOUDSQL_APP_DB``) on GCP.
 Worklists hold opaque loan/customer references only; they let the LLM refer
 to "the 12 loans" by ``worklist_id`` without ever seeing the rows.
+Assistant conversations and messages (with each answer's thinking/tool trace)
+are always read and written with the owning tenant + user in the predicate.
+New tables are created by ``metadata.create_all`` on existing databases.
 """
 
 from __future__ import annotations
@@ -13,7 +16,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import (Column, Integer, MetaData, String, Table, Text, create_engine, insert, select, update)
+from sqlalchemy import (Column, Index, Integer, MetaData, String, Table, Text, create_engine, delete, func, insert, select,
+                        update)
 
 from core.config import Settings, get_settings
 
@@ -48,10 +52,35 @@ outbox = Table("outbox", metadata,
 processed_objects = Table("processed_objects", metadata,
                           Column("uri", String(1024), primary_key=True), Column("run_id", String(64)),
                           Column("created_at", String(40)))
+# Assistant chat memory: one ADK session per conversation (session_id), every row scoped to tenant + user.
+conversations = Table("conversations", metadata,
+                      Column("conversation_id", String(64), primary_key=True), Column("tenant_id", String(64)),
+                      Column("user_id", String(128)), Column("title", String(200)), Column("session_id", String(128)),
+                      Column("created_at", String(40)), Column("updated_at", String(40)),
+                      Index("ix_conversations_owner", "tenant_id", "user_id", "updated_at"))
+chat_messages = Table("chat_messages", metadata,
+                      Column("id", Integer, primary_key=True, autoincrement=True),
+                      Column("message_id", String(64), unique=True), Column("conversation_id", String(64), index=True),
+                      Column("tenant_id", String(64)), Column("user_id", String(128)), Column("role", String(16)),
+                      Column("content", Text), Column("trace", Text), Column("status", String(16)),
+                      Column("created_at", String(40)))
+CHAT_STATUSES = {"complete", "stopped", "error"}
 
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def now_ms() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+
+
+def _json(text: str | None, default: Any) -> Any:
+    try:
+        value = json.loads(text) if text else default
+    except (TypeError, ValueError):
+        return default
+    return value if isinstance(value, type(default)) else default
 
 
 def new_id(prefix: str) -> str:
@@ -217,6 +246,86 @@ class AppStore:
             return True
         except Exception:  # primary-key collision: already processed
             return False
+
+    # assistant conversations (always scoped to tenant + user; never by id alone) ----------
+    def _owned(self, user_id: str):
+        return (conversations.c.tenant_id == self.tenant_id) & (conversations.c.user_id == user_id)
+
+    @staticmethod
+    def _conversation(row: Any) -> dict:
+        return {"conversation_id": row["conversation_id"], "title": row["title"] or "Untitled conversation",
+                "session_id": row["session_id"] or row["conversation_id"], "created_at": row["created_at"],
+                "updated_at": row["updated_at"] or row["created_at"]}
+
+    def create_conversation(self, user_id: str, title: str) -> dict:
+        conversation_id, ts = new_id("conv"), now_ms()
+        with self.engine.begin() as conn:
+            conn.execute(insert(conversations).values(conversation_id=conversation_id, tenant_id=self.tenant_id,
+                                                      user_id=user_id, title=title[:200], session_id=conversation_id,
+                                                      created_at=ts, updated_at=ts))
+        return self.get_conversation(conversation_id, user_id) or {}
+
+    def get_conversation(self, conversation_id: str, user_id: str) -> dict | None:
+        with self.engine.connect() as conn:
+            row = conn.execute(select(conversations).where(conversations.c.conversation_id == conversation_id,
+                                                           self._owned(user_id))).mappings().first()
+        return self._conversation(row) if row else None
+
+    def list_conversations(self, user_id: str, limit: int = 100) -> list[dict]:
+        counts = (select(chat_messages.c.conversation_id, func.count().label("n"))
+                  .where(chat_messages.c.tenant_id == self.tenant_id, chat_messages.c.user_id == user_id)
+                  .group_by(chat_messages.c.conversation_id).subquery())
+        query = (select(conversations, counts.c.n).outerjoin(counts, counts.c.conversation_id == conversations.c.conversation_id)
+                 .where(self._owned(user_id)).order_by(conversations.c.updated_at.desc()).limit(limit))
+        with self.engine.connect() as conn:
+            rows = conn.execute(query).mappings().all()
+        return [{**self._conversation(r), "message_count": int(r["n"] or 0)} for r in rows]
+
+    def rename_conversation(self, conversation_id: str, user_id: str, title: str) -> dict | None:
+        with self.engine.begin() as conn:
+            result = conn.execute(update(conversations).where(conversations.c.conversation_id == conversation_id,
+                                                              self._owned(user_id)).values(title=title[:200]))
+        return self.get_conversation(conversation_id, user_id) if result.rowcount == 1 else None
+
+    def delete_conversation(self, conversation_id: str, user_id: str) -> bool:
+        with self.engine.begin() as conn:
+            result = conn.execute(delete(conversations).where(conversations.c.conversation_id == conversation_id,
+                                                              self._owned(user_id)))
+            if result.rowcount != 1:
+                return False
+            conn.execute(delete(chat_messages).where(chat_messages.c.conversation_id == conversation_id,
+                                                     chat_messages.c.tenant_id == self.tenant_id,
+                                                     chat_messages.c.user_id == user_id))
+        return True
+
+    def add_chat_message(self, conversation_id: str, user_id: str, role: str, content: str,
+                         trace: dict | None = None, status: str = "complete") -> dict:
+        """Append to a conversation the caller has already resolved via ``get_conversation``."""
+        message = {"message_id": new_id("msg"), "conversation_id": conversation_id, "role": role, "content": content,
+                   "trace": trace or {}, "status": status if status in CHAT_STATUSES else "complete", "created_at": now_ms()}
+        with self.engine.begin() as conn:
+            conn.execute(insert(chat_messages).values(
+                message_id=message["message_id"], conversation_id=conversation_id, tenant_id=self.tenant_id,
+                user_id=user_id, role=role, content=content, trace=json.dumps(message["trace"], default=str),
+                status=message["status"], created_at=message["created_at"]))
+            conn.execute(update(conversations).where(conversations.c.conversation_id == conversation_id,
+                                                     self._owned(user_id)).values(updated_at=message["created_at"]))
+        return message
+
+    def chat_messages(self, conversation_id: str, user_id: str, limit: int = 500) -> list[dict]:
+        with self.engine.connect() as conn:
+            rows = conn.execute(select(chat_messages).where(
+                chat_messages.c.conversation_id == conversation_id, chat_messages.c.tenant_id == self.tenant_id,
+                chat_messages.c.user_id == user_id).order_by(chat_messages.c.id).limit(limit)).mappings().all()
+        out = []
+        for r in rows:
+            trace = _json(r["trace"], {})
+            out.append({"message_id": r["message_id"], "conversation_id": r["conversation_id"],
+                        "role": r["role"] if r["role"] in {"user", "assistant"} else "assistant",
+                        "content": r["content"] or "", "status": r["status"] or "complete", "created_at": r["created_at"],
+                        "trace": {"thinking": str(trace.get("thinking") or ""),
+                                  "tool_calls": [t for t in trace.get("tool_calls") or [] if isinstance(t, dict)]}})
+        return out
 
 
 _STORE: AppStore | None = None

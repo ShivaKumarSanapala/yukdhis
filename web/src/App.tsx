@@ -7,9 +7,9 @@ import AnalyzePanel from "./components/AnalyzePanel";
 import ReportsPanel from "./components/ReportsPanel";
 import GraphView from "./components/GraphView";
 import PrivacyPanel from "./components/PrivacyPanel";
-import ChatPanel from "./components/ChatPanel";
+import AssistantDrawer from "./components/AssistantDrawer";
 
-const TABS = ["Analyze", "Reports", "Knowledge graph", "Privacy shield", "Assistant"] as const;
+const TABS = ["Analyze", "Reports", "Knowledge graph", "Privacy shield"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function App() {
@@ -18,6 +18,8 @@ export default function App() {
   const [config, setConfig] = useState<Config | null>(null);
   const [tab, setTab] = useState<Tab>("Analyze");
   const [error, setError] = useState("");
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [openReportId, setOpenReportId] = useState<string | null>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const onTabKey = (e: KeyboardEvent, i: number) => {
     const next = e.key === "ArrowRight" ? (i + 1) % TABS.length : e.key === "ArrowLeft" ? (i + TABS.length - 1) % TABS.length : e.key === "Home" ? 0 : e.key === "End" ? TABS.length - 1 : -1;
@@ -43,7 +45,8 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <>
+    <div className="app" inert={assistantOpen}>
       <a className="skip-link" href="#main">Skip to content</a>
       <header className="no-print">
         <div className="brand">
@@ -71,10 +74,9 @@ export default function App() {
       <main id="main" tabIndex={-1}>
         <div role="tabpanel" id="tabpanel" aria-labelledby={`tab-${TABS.indexOf(tab)}`}>
         {tab === "Analyze" && config && <AnalyzePanel config={config} />}
-        {tab === "Reports" && <ReportsPanel />}
+        {tab === "Reports" && <ReportsPanel onOpenReportChange={setOpenReportId} />}
         {tab === "Knowledge graph" && config && <GraphView defaultAsOf={config.as_of} />}
         {tab === "Privacy shield" && <PrivacyPanel />}
-        {tab === "Assistant" && <ChatPanel enabled={Boolean(config?.llm_ready)} />}
         </div>
       </main>
       <footer className="no-print">
@@ -82,5 +84,10 @@ export default function App() {
         {config && <span> · backends: {Object.entries(config.backends).map(([k, v]) => `${k}=${v}`).join(", ")}</span>}
       </footer>
     </div>
+    {config && (
+      <AssistantDrawer open={assistantOpen} onOpenChange={setAssistantOpen} llmReady={config.llm_ready}
+        reportId={tab === "Reports" ? openReportId : null} />
+    )}
+    </>
   );
 }
