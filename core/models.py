@@ -18,6 +18,10 @@ CollateralType = Literal["IMMOVABLE", "MOVABLE", "NONE"]
 ProductCategory = Literal["RETAIL_LOAN", "MSME_LOAN", "CARD", "DEPOSIT"]
 RiskLevel = Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 RuleStatus = Literal["PENDING_REVIEW", "APPROVED", "REJECTED", "SUPERSEDED"]
+Modality = Literal["MUST", "MAY", "MUST_NOT"]
+ScopeStatus = Literal["RESOLVED", "UNRESOLVED"]
+CheckStatus = Literal["COMPLIANT", "GAP", "NOT_EVALUATED", "UPCOMING"]
+# Report-level roll-up (summary["overall_status"]): NON_COMPLIANT | UPCOMING | INCONCLUSIVE | COMPLIANT
 
 
 class SourceCitation(BaseModel):
@@ -65,6 +69,7 @@ class Rule(BaseModel):
     segments: list[str] = Field(default_factory=list, description="Customer segment phrases, e.g. 'individual borrowers'.")
     checks: list[ComplianceCheck]
     penalty_risk: RiskLevel = "MEDIUM"
+    modality: Modality = Field(default="MUST", description="MUST = obligation, MAY = permission or option for the bank, MUST_NOT = prohibition.")
     citation: SourceCitation
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     status: RuleStatus = "PENDING_REVIEW"
@@ -131,6 +136,8 @@ class RuleMapping(BaseModel):
     resolutions: list[EntityMatch]
     edges_written: list[dict]
     verification_query: str
+    scope_status: ScopeStatus = "RESOLVED"
+    scope_notes: list[str] = Field(default_factory=list)
 
 
 class BlastRadius(BaseModel):
@@ -145,6 +152,8 @@ class BlastRadius(BaseModel):
     paths: list[list[str]]
     query_language: str
     queries: list[str]
+    scope_status: ScopeStatus = "RESOLVED"
+    scope_notes: list[str] = Field(default_factory=list)
 
 
 class CheckResult(BaseModel):
@@ -152,7 +161,7 @@ class CheckResult(BaseModel):
     check_index: int
     kind: CheckKind
     description: str
-    status: Literal["COMPLIANT", "GAP", "NOT_EVALUATED"]
+    status: CheckStatus
     in_scope: int = 0
     violations: int = 0
     exposure_inr: float = 0.0

@@ -36,7 +36,7 @@ SequentialAgent compliance_pipeline
 
 All counts come from deterministic code. The LLM routes, reasons, writes guarded queries and drafts. Every
 request to Gemini passes an ADK `before_model_callback` that masks PII (Cloud DLP + Gemma, reversible via
-KMS-wrapped crypto-deterministic tokens). See [docs/architecture.md](docs/architecture.md).
+KMS-wrapped crypto-deterministic tokens). See [docs/design.md](docs/design.md) for the single source-of-truth design: data stores, bank model, agents and Google Cloud infrastructure.
 
 ## Layout
 

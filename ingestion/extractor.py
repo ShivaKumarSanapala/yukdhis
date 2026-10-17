@@ -16,14 +16,20 @@ import logging
 from core.config import get_settings
 from core.models import ExtractedPolicy, ParsedDocument, ValidationIssue
 from ingestion.templates import match_template
-from ingestion.validator import has_errors, validate_extraction
+from ingestion.validator import DRAFT_MESSAGE, has_errors, validate_extraction
 from knowledge_graph.ontology import CAPABILITIES, EVENT_TYPES, RECORD_FLAGS
 
 log = logging.getLogger(__name__)
 MAX_ATTEMPTS = 2
+NO_BINDING_MESSAGE = ("No binding obligations were found: this document appears to be an announcement or a draft. "
+                      "Upload the final Directions.")
 
 EXTRACTION_PROMPT = """You are the Reader agent of a banking compliance engine. Convert the regulatory circular
-below into machine-executable rules. Rules must be grounded: each citation.snippet is copied VERBATIM
+below into machine-executable rules. Extract ONLY binding obligations from the operative text of a FINAL
+instrument. A press release, announcement, FAQ, or any document that only describes a draft or proposal has
+NO binding rules: return an empty rules list. Set each rule's modality: MUST for an obligation, MAY for a
+permission or option available to the bank (e.g. "may", "allowing banks to choose"), MUST_NOT for a prohibition.
+Rules must be grounded: each citation.snippet is copied VERBATIM
 from the text. Use ISO dates. Express every obligation as checks:
 - control_required: capability one of {capabilities} (or a new snake_case capability if none fits)
 - record_flag: record_field one of {flags}; expected = compliant value
@@ -73,7 +79,10 @@ def extract_policy(document: ParsedDocument, use_llm: bool | None = None) -> tup
             severity="WARNING", field="cross_check",
             message=f"Gemini matched {agreement:.0%} of the approved template's checks; template used as source of truth.")]
         return reference, validate_extraction(reference, document) + notes, provenance
-    if extraction is None or has_errors(issues):
+    errors = [i for i in issues if i.severity == "ERROR"]
+    if extraction is not None and errors and all(i.message in (DRAFT_MESSAGE, "No rules extracted.") for i in errors):
+        raise ValueError(NO_BINDING_MESSAGE)
+    if extraction is None or errors:
         raise ValueError("Extraction failed validation: " + "; ".join(i.message for i in issues if i.severity == "ERROR"))
     provenance["method"] = "gemini-structured-output"
     return extraction, issues, provenance
@@ -92,7 +101,7 @@ def _gemini_extract(document: ParsedDocument, feedback: str) -> ExtractedPolicy:
         prompt += "\n\n" + feedback
     response = genai_client().models.generate_content(
         model=settings.reasoning_model, contents=prompt,
-        config=types.GenerateContentConfig(temperature=0.0, response_mime_type="application/json",
+        config=types.GenerateContentConfig(temperature=0.0, seed=0, response_mime_type="application/json",
                                            response_schema=ExtractedPolicy, max_output_tokens=8192),
     )
     if getattr(response, "parsed", None) is not None:

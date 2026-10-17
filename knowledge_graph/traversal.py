@@ -20,7 +20,11 @@ def blast_radius(store: GraphStore, rule_id: str, as_of: str | date | None = Non
     by_type: dict[str, list[dict]] = {}
     for edge in hop1:
         by_type.setdefault(edge["edge_type"], []).append(edge["node"])
-    products = by_type.get("GOVERNS", [])
+    rule_node = store.node(rule_id)
+    rule_attrs = (rule_node or {}).get("attributes", {})
+    scope_status = rule_attrs.get("scope_status", "RESOLVED")
+    # An UNRESOLVED rule governs nothing, even if an earlier run left GOVERNS edges behind.
+    products = [] if scope_status == "UNRESOLVED" else by_type.get("GOVERNS", [])
     processes = {p["id"]: p for p in by_type.get("APPLIES_TO", [])}
     required = sorted(c["id"] for c in by_type.get("REQUIRES", []))
     product_ids = [p["id"] for p in products]
@@ -53,5 +57,6 @@ def blast_radius(store: GraphStore, rule_id: str, as_of: str | date | None = Non
         control_gaps={pid: missing for pid, missing in gaps.items() if missing},
         owners=sorted(owners.values(), key=lambda o: o["owner_of"]),
         segments=[{"id": s["id"], "name": s["name"]} for s in by_type.get("TARGETS", [])],
+        scope_status=scope_status, scope_notes=list(rule_attrs.get("scope_notes", [])),
         paths=paths, query_language=store.query_language, queries=list(store.query_log),
     )

@@ -42,6 +42,7 @@ class PolicyMapper:
         resolutions: list[EntityMatch] = []
         filters = {attr: getattr(rule.scope, attr) for attr in PRODUCT_ATTRIBUTES if getattr(rule.scope, attr) is not None}
         resolved_products: set[str] = set()
+        unresolved_products: list[str] = []
         for term in rule.scope.product_terms:
             glossary = self._glossary(term)
             if glossary:
@@ -51,9 +52,21 @@ class PolicyMapper:
                 continue
             matches = self.resolver.resolve(term, products, "Product")
             resolutions += matches
-            resolved_products |= {m.node_id for m in matches if m.node_id}
-        candidates = [p for p in products if not resolved_products or p["id"] in resolved_products]
-        product_ids = sorted(p["id"] for p in candidates if all(p["attributes"].get(k) == v for k, v in filters.items()))
+            found = {m.node_id for m in matches if m.node_id}
+            resolved_products |= found
+            if not found:
+                unresolved_products.append(term)
+        scope_notes: list[str] = []
+        scope_status = "RESOLVED"
+        if unresolved_products:
+            scope_notes.append(f"Unresolved product term(s): {', '.join(repr(t) for t in unresolved_products)}.")
+        if rule.scope.product_terms and not resolved_products and not filters:
+            # Fail closed: wording that matched nothing must never widen to every product.
+            scope_status = "UNRESOLVED"
+            product_ids: list[str] = []
+        else:
+            candidates = [p for p in products if not resolved_products or p["id"] in resolved_products]
+            product_ids = sorted(p["id"] for p in candidates if all(p["attributes"].get(k) == v for k, v in filters.items()))
 
         process_nodes = self.store.nodes("Process")
         process_ids: set[str] = set()
@@ -74,8 +87,10 @@ class PolicyMapper:
             matches = self.resolver.resolve(term, segment_nodes, "CustomerSegment")
             resolutions += matches
             segment_ids |= {m.node_id for m in matches if m.node_id}
-        if not segment_ids:
+        if not rule.segments:
             segment_ids = {e["node"]["id"] for e in self.store.neighbours(product_ids, ["ELIGIBLE_FOR"], rule.effective_date, "in")}
+        elif not segment_ids:
+            scope_notes.append(f"Unresolved segment term(s): {', '.join(repr(t) for t in rule.segments)}; no segments targeted.")
 
         control_ids: set[str] = set()
         for check in rule.checks:
@@ -90,6 +105,7 @@ class PolicyMapper:
             "description": rule.description, "effective_date": rule.effective_date, "status": rule.status,
             "penalty_risk": rule.penalty_risk, "confidence": rule.confidence,
             "checks": [c.model_dump(exclude_none=True) for c in rule.checks],
+            "scope_status": scope_status, "scope_notes": scope_notes,
             "citation": rule.citation.model_dump(exclude_none=True),
         })
         provenance = {"status": rule.status, "document_id": rule.citation.document_id, "snippet": rule.citation.snippet[:240]}
@@ -104,6 +120,7 @@ class PolicyMapper:
             rule_id=rule.rule_id, product_ids=product_ids, process_ids=sorted(process_ids),
             segment_ids=sorted(segment_ids), control_ids=sorted(control_ids), resolutions=resolutions,
             edges_written=written, verification_query=verification_gql(rule.rule_id),
+            scope_status=scope_status, scope_notes=scope_notes,
         )
 
     @staticmethod

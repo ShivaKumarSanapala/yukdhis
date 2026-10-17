@@ -15,9 +15,12 @@ from functools import lru_cache
 
 from core.config import get_settings
 from core.models import EntityMatch
+from knowledge_graph.ontology import REGULATED_ENTITY_TERMS
 
 log = logging.getLogger(__name__)
-THRESHOLD = 0.55
+LEXICAL_THRESHOLD = 0.55
+EMBEDDING_THRESHOLD = 0.75  # an embedding of 0.571 once mapped "commercial banks" to a retail segment
+_QUALIFIERS = {"all", "the", "scheduled", "eligible", "such", "certain", "select"}
 _STOP = {"the", "a", "an", "of", "and", "or", "all", "to", "on", "for", "based", "loans", "loan", "by", "rate", "s"}
 _PLURAL = re.compile(r"(?<=[a-z])s\b")
 
@@ -44,6 +47,11 @@ def lexical_score(term: str, candidates: list[str]) -> float:
     return round(best, 3)
 
 
+def is_regulated_entity_term(term: str) -> bool:
+    words = [w for w in re.findall(r"[a-z0-9]+", term.lower()) if w not in _QUALIFIERS]
+    return " ".join(words) in REGULATED_ENTITY_TERMS
+
+
 class EntityResolver:
     def __init__(self, use_embeddings: bool | None = None) -> None:
         settings = get_settings()
@@ -51,14 +59,18 @@ class EntityResolver:
         self.model = settings.embedding_model
 
     def resolve(self, term: str, nodes: list[dict], node_type: str) -> list[EntityMatch]:
+        if node_type in {"CustomerSegment", "Product"} and is_regulated_entity_term(term):
+            return [EntityMatch(term=term, node_id=None, node_type=node_type, score=0.0, method="regulated-entity-term")]
         scored: list[EntityMatch] = []
         embed_scores = self._embedding_scores(term, nodes) if self.use_embeddings else {}
         for node in nodes:
             names = [node["name"], *node["attributes"].get("synonyms", [])]
             lex = lexical_score(term, names)
             emb = embed_scores.get(node["id"], 0.0)
-            score, method = (emb, "vertex-embedding") if emb > lex else (lex, "lexical-synonym")
-            if score >= THRESHOLD:
+            options = [(s, m) for s, m, floor in ((lex, "lexical-synonym", LEXICAL_THRESHOLD),
+                                                  (emb, "vertex-embedding", EMBEDDING_THRESHOLD)) if s >= floor]
+            if options:
+                score, method = max(options)
                 scored.append(EntityMatch(term=term, node_id=node["id"], node_type=node_type, score=score, method=method))
         scored.sort(key=lambda m: (-m.score, m.node_id))
         if not scored:
