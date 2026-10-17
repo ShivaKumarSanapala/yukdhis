@@ -11,6 +11,7 @@ missing.
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -23,6 +24,11 @@ RUNTIME_DIR = Path(os.getenv("YUKDHIS_RUNTIME_DIR", str(ROOT / ".data")))
 def _env(name: str, default: str | None = None) -> str | None:
     value = os.getenv(name)
     return value if value not in (None, "") else default
+
+
+def split_list(value: str | None) -> tuple[str, ...]:
+    """Split a ``;``, ``,`` or whitespace separated env value (``;`` survives gcloud's comma-separated env lists)."""
+    return tuple(item for item in re.split(r"[;,\s]+", value or "") if item)
 
 
 def _backend(name: str, default: str) -> str:
@@ -56,6 +62,7 @@ class Settings:
     cloudsql_operational_db: str
     cloudsql_app_db: str
     cloudsql_iam_user: str | None
+    app_db_grantees: tuple[str, ...]  # other app DB users that must share tables this identity creates
     documentai_processor: str | None  # projects/.../locations/.../processors/...
     dlp_kms_key: str | None
     dlp_wrapped_key_b64: str | None
@@ -106,6 +113,7 @@ def get_settings() -> Settings:
         cloudsql_operational_db=_env("CLOUDSQL_OPERATIONAL_DB", "bank_ops") or "bank_ops",
         cloudsql_app_db=_env("CLOUDSQL_APP_DB", "yukdhis_app") or "yukdhis_app",
         cloudsql_iam_user=_env("CLOUDSQL_IAM_USER"),
+        app_db_grantees=split_list(_env("APP_DB_GRANTEES")),
         documentai_processor=_env("DOCUMENTAI_PROCESSOR"),
         dlp_kms_key=_env("DLP_KMS_KEY"),
         dlp_wrapped_key_b64=_env("DLP_WRAPPED_KEY"),
