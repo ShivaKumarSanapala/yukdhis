@@ -1,4 +1,4 @@
-import type { Check, ImpactReport, Radius, Rule, Summary } from "./types";
+import type { Check, ImpactReport, Radius, Rule, Summary, Unexecutable } from "./types";
 
 /** Tone maps to a pill/status colour class; the text label is always shown as well. */
 export type Tone = "ok" | "bad" | "warn" | "info" | "neutral";
@@ -51,6 +51,20 @@ export const radiusFor = (report: ImpactReport, ruleId: string) => (report.blast
 export const unresolvedRadii = (report: ImpactReport) => (report.blast_radius ?? []).filter(isUnresolved);
 export const ruleTitle = (report: ImpactReport, ruleId: string) => report.rules.find((r) => r.rule_id === ruleId)?.title ?? ruleId.split(":").pop() ?? ruleId;
 
+/** Obligations that cannot be machine-checked, read defensively: old reports lack the field, and items may be partial. */
+export function unexecutableOf(report: ImpactReport): Unexecutable[] {
+  const raw = (report as { unexecutable?: unknown }).unexecutable;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+    .map((item) => ({
+      citation: typeof item.citation === "string" ? item.citation : "",
+      reason: typeof item.reason === "string" ? item.reason : "",
+      missing_data: Array.isArray(item.missing_data) ? item.missing_data.filter((d): d is string => typeof d === "string") : [],
+    }))
+    .filter((item) => item.citation || item.reason);
+}
+
 export const inr = (n: number) => `₹${Math.round(n ?? 0).toLocaleString("en-IN")}`;
 export const short = (id: string) => id.split(":").pop() ?? id;
 
@@ -69,9 +83,11 @@ const CSV_HEADER = [
   "rule_title", "rule_modality", "scope_status", "check_index", "check_kind", "check_description", "check_status",
   "in_scope", "violations", "exposure_inr", "penalty_inr", "evidence",
   "action_workflow", "action_owner", "action_target_count", "action_status",
+  "citation", "reason", "missing_data",
 ];
 
-/** One CSV: a CHECK row per check and an ACTION row per remediation action. Excludes approver identities and notice bodies. */
+/** One CSV: a CHECK row per check, an ACTION row per remediation action and an UNEXECUTABLE row per obligation that
+ * cannot be machine-checked. Excludes approver identities and notice bodies. */
 export function reportCsv(report: ImpactReport): string {
   const overall = overallMeta(report.summary).label;
   const base = [report.report_id, report.policy.title, report.as_of, overall];
@@ -84,6 +100,7 @@ export function reportCsv(report: ImpactReport): string {
       c.check_index, c.kind, c.description, c.status,
       measured ? c.in_scope : "", measured ? c.violations : "", measured ? Math.round(c.exposure_inr) : "", measured ? Math.round(c.penalty_inr) : "", c.evidence,
       "", "", "", "",
+      "", "", "",
     ]);
   }
   for (const a of report.actions) {
@@ -91,6 +108,15 @@ export function reportCsv(report: ImpactReport): string {
       "ACTION", ...base, ruleTitle(report, a.rule_id), "", radiusFor(report, a.rule_id)?.scope_status ?? "",
       "", "", "", "", "", "", "", "", "",
       a.workflow_id, a.owner, a.target_count, a.status,
+      "", "", "",
+    ]);
+  }
+  for (const u of unexecutableOf(report)) {
+    rows.push([
+      "UNEXECUTABLE", ...base, "", "", "",
+      "", "", "", "NOT_MACHINE_CHECKABLE", "", "", "", "", "",
+      "", "", "", "",
+      u.citation, u.reason, u.missing_data.join("; "),
     ]);
   }
   return [CSV_HEADER, ...rows].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";

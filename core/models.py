@@ -53,6 +53,10 @@ class ComplianceCheck(BaseModel):
     kind: CheckKind
     description: str
     capability: Optional[str] = Field(default=None, description="control_required: capability id, e.g. fixed_rate_option.")
+    capability_description: Optional[str] = Field(
+        default=None, description="control_required: one sentence on what the capability does, in the circular's terms.")
+    control_id: Optional[str] = Field(
+        default=None, description="Canonical Control node id. Set by the mapper after canonicalisation; leave empty.")
     record_field: Optional[str] = Field(default=None, description="record_flag: boolean field on vw_compliance_impact.")
     expected: Optional[bool] = Field(default=None, description="record_flag: the compliant value.")
     trigger_event: Optional[str] = Field(default=None, description="event_deadline: event that starts the clock.")
@@ -88,9 +92,19 @@ class Policy(BaseModel):
     supersedes: list[str] = Field(default_factory=list)
 
 
+class UnexecutableObligation(BaseModel):
+    """A binding obligation that no available check kind or data can test. Reported, never turned into a fake check."""
+
+    citation: str = Field(description="The obligation's text, copied VERBATIM from the source.")
+    reason: str = Field(description="Why no available check kind or data can test it.")
+    missing_data: list[str] = Field(default_factory=list, description="Data that would be needed to test it.")
+
+
 class ExtractedPolicy(BaseModel):
     policy: Policy
     rules: list[Rule]
+    unexecutable: list[UnexecutableObligation] = Field(
+        default_factory=list, description="Obligations that cannot be expressed with the available checks or data.")
 
 
 class DocumentChunk(BaseModel):
@@ -157,6 +171,22 @@ class EntityMatch(BaseModel):
     method: str
 
 
+class ControlDecision(BaseModel):
+    """How one extracted capability was resolved to a canonical Control node (L7)."""
+
+    rule_id: Optional[str] = None
+    check_index: Optional[int] = None
+    term: str
+    control_id: str
+    decision: Literal["EXACT", "SYNONYM", "MATCH", "NEW"]
+    method: str
+    confidence: float = 0.0
+    needs_review: bool = False
+    rationale: str = ""
+    model_decision: Optional[str] = None  # MATCH | NEW | AMBIGUOUS as returned by Gemini, when it was asked
+    candidates: list[dict] = Field(default_factory=list)
+
+
 class RuleMapping(BaseModel):
     rule_id: str
     product_ids: list[str]
@@ -168,6 +198,7 @@ class RuleMapping(BaseModel):
     verification_query: str
     scope_status: ScopeStatus = "RESOLVED"
     scope_notes: list[str] = Field(default_factory=list)
+    control_decisions: list[ControlDecision] = Field(default_factory=list)
 
 
 class BlastRadius(BaseModel):
@@ -231,3 +262,4 @@ class ImpactReport(BaseModel):
     narrative: str = ""
     limitations: list[str] = Field(default_factory=list)
     validation_issues: list[ValidationIssue] = Field(default_factory=list)
+    unexecutable: list[UnexecutableObligation] = Field(default_factory=list)

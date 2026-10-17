@@ -90,6 +90,9 @@ export function stageOutcome(stage: string, events: RunEvent[]): string {
     } else if (stage === "mapper" && Array.isArray(o.mappings)) {
       const unresolved = o.mappings.filter((m: Out) => m.scope_status === "UNRESOLVED").length;
       parts.push(unresolved ? `scope unresolved for ${plural(unresolved, "rule")}` : `${plural(o.mappings.length, "rule")} mapped`);
+      const decisions = o.mappings.flatMap((m: Out) => (Array.isArray(m.control_decisions) ? m.control_decisions : []));
+      const created = new Set(decisions.filter((d: Out) => d?.decision === "NEW").map((d: Out) => d.control_id)).size;
+      if (created) parts.push(`${plural(created, "new control")} pending review`);
     } else if (stage === "graphrag" && Array.isArray(o.rules)) {
       const products = new Set(o.rules.flatMap((r: Out) => r.products ?? []));
       const gaps = o.rules.reduce((n: number, r: Out) => n + Object.keys(r.control_gaps ?? {}).length, 0);

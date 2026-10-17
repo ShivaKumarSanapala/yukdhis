@@ -78,6 +78,10 @@ class EntityResolver:
         top = scored[0].score
         return [m for m in scored if m.score >= top - 0.05]
 
+    def embedding_scores(self, term: str, nodes: list[dict]) -> dict[str, float]:
+        """Cosine similarity per node id; empty when embeddings are off (local backend) or unavailable."""
+        return self._embedding_scores(term, nodes) if self.use_embeddings and nodes else {}
+
     def _embedding_scores(self, term: str, nodes: list[dict]) -> dict[str, float]:
         try:
             vectors = _embed(self.model, (term, *(f"{n['name']}: {', '.join(n['attributes'].get('synonyms', []))}" for n in nodes)))

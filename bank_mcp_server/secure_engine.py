@@ -93,7 +93,8 @@ class SecureEngine:
             bad = [r for r in rows if bool(r[check.record_field]) != bool(check.expected)]
             return self._finish(base, rule, rows, bad, f"{check.record_field} != {check.expected} on vw_compliance_impact")
         if check.kind == "control_required":
-            control = CAPABILITIES.get(check.capability or "", f"control:{(check.capability or '').replace('_', '-')}")
+            # The mapper stamps the canonical control id; older extractions fall back to the capability's own id.
+            control = check.control_id or CAPABILITIES.get(check.capability or "", f"control:{(check.capability or '').replace('_', '-')}")
             missing = sorted(pid for pid, gaps in radius.control_gaps.items() if control in gaps)
             rows = self._loans(product_ids, status)
             bad = [r for r in rows if r["product_id"] in missing]

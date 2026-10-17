@@ -61,6 +61,9 @@ export function activityByStage(events: RunEvent[], live: boolean): Map<string, 
         push(e.stage, { kind: "note", key: `note-${e.seq}`, tone: "warn",
           text: `Extraction attempt ${p.attempt} of ${p.of} failed: ${p.error}${p.attempt < p.of ? " — retrying" : ""}` });
         break;
+      case "control_canonicalised":
+        push(e.stage, { kind: "note", key: `note-${e.seq}`, tone: p.needs_review ? "warn" : undefined, text: canonicalisedText(p) });
+        break;
       case "document_classified":
         push(e.stage, { kind: "note", key: `note-${e.seq}`, text: `Classified as ${String(p.doc_type).replaceAll("_", " ")} (${Math.round(Number(p.confidence ?? 0) * 100)}%)${p.reason ? `: ${p.reason}` : ""}` });
         break;
@@ -73,6 +76,13 @@ export function activityByStage(events: RunEvent[], live: boolean): Map<string, 
   }
   if (!live) open.forEach((item) => { item.call = { ...item.call, status: item.call.output === undefined ? "cancelled" : item.call.status }; });
   return stages;
+}
+
+/** "maintain_ferr → control:maintain-ferr (MATCH via gemini, 93%)", plus a review flag. */
+function canonicalisedText(p: Record<string, any>): string {
+  const pct = typeof p.confidence === "number" && p.confidence > 0 ? `, ${Math.round(p.confidence * 100)}%` : "";
+  const review = p.needs_review ? " — needs review" : "";
+  return `Control “${String(p.term ?? "")}” → ${String(p.control_id ?? "")} (${String(p.decision ?? "")} via ${String(p.method ?? "")}${pct})${review}`;
 }
 
 const LABELS = new Map([...STAGES, ["pipeline", "Pipeline"] as [string, string]]);

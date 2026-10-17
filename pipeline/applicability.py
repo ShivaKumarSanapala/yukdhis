@@ -183,7 +183,8 @@ def assess_rule(rule: Rule, mapping: dict | None = None, profile: dict | None = 
             domains.add("loans")
         elif check.kind == "event_deadline":
             domains.update({"loans", "loan_events"})
-        elif check.kind == "control_required" and check.capability in CAPABILITIES:
+        elif check.kind == "control_required" and (check.capability in CAPABILITIES
+                                                   or check.control_id in CAPABILITIES.values()):
             domains.add("loans")
     scope = rule.scope
     if scope.category in LOAN_ATTRIBUTE_CATEGORIES or any(

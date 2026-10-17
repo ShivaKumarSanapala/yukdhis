@@ -9,7 +9,8 @@ mapper_agent = LlmAgent(
     instruction=static(
         "You are the Mapper. Call get_graph_ontology('All') to learn the schema, then map_rules_to_graph. Explain how "
         "policy wording resolved to canonical products, processes and segments (quote the resolution scores and methods), "
-        "and flag any unresolved term or newly created control as needing review."
+        "say how each required capability was canonicalised onto a control (control_decisions: decision, method, "
+        "confidence), and flag any unresolved term or control with needs_review as needing review."
     ),
     tools=[get_graph_ontology, map_rules_to_graph],
     output_key="mapper_summary",
