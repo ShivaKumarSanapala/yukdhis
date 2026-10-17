@@ -188,6 +188,46 @@ def request_cancel(run: dict) -> str:
     return "CANCEL_REQUESTED"
 
 
+INTERRUPTED = "Interrupted: the server restarted while this run was in progress. Re-run it."
+_REAPED_AT = 0.0
+
+
+def reap_stale_runs(force: bool = False) -> list[str]:
+    """Fail active runs whose executing instance is gone (deploys replace instances; in-process runs die with them).
+
+    Cheap enough to call on reads; throttled to once a minute per instance unless ``force``.
+    """
+    global _REAPED_AT
+    if not force and time.monotonic() - _REAPED_AT < 60:
+        return []
+    _REAPED_AT = time.monotonic()
+    store, reaped = get_app_store(), []
+    for run_id in store.stale_active_runs(STALE_AFTER_S):
+        if run_id in _LOCAL:  # still executing here: its watcher keeps heart-beating
+            continue
+        if store.transition_run(run_id, ACTIVE, "FAILED", error=INTERRUPTED, finished_at=now(), current_stage=None,
+                                queued_position=None):
+            store.add_event(run_id, "pipeline", "run_failed", {"error": INTERRUPTED, "interrupted": True})
+            _log("WARNING", "run_interrupted", run_id=run_id)
+            reaped.append(run_id)
+    return reaped
+
+
+def interrupt_local_runs() -> list[str]:
+    """On instance shutdown (SIGTERM from a deploy or scale-in): mark the runs executing here as interrupted."""
+    store, interrupted = get_app_store(), []
+    for run_id, local in list(_LOCAL.items()):
+        if local.task is None or local.task.done():
+            continue
+        if store.transition_run(run_id, ACTIVE, "FAILED", error=INTERRUPTED, finished_at=now(), current_stage=None,
+                                queued_position=None):
+            store.add_event(run_id, "pipeline", "run_failed", {"error": INTERRUPTED, "interrupted": True})
+            interrupted.append(run_id)
+    if interrupted:
+        _log("WARNING", "runs_interrupted", run_ids=interrupted)
+    return interrupted
+
+
 def _cancel_local(local: _Local) -> None:
     if local.cancel.is_set():
         return

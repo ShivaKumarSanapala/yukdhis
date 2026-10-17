@@ -9,6 +9,7 @@ local: Markdown/plain-text circulars chunked on structural boundaries
 from __future__ import annotations
 
 import hashlib
+import io
 import mimetypes
 import re
 from pathlib import Path
@@ -89,9 +90,42 @@ def _chunk(doc_id: str, index: int, headings: list[str], body: str) -> DocumentC
                          headings=headings)
 
 
+# Document AI online (synchronous) processing accepts at most 30 pages per request for the layout parser.
+DOCAI_PAGES_PER_REQUEST = 30
+MAX_PDF_PAGES = 300
+
+
+def pdf_parts(content: bytes, per_part: int = DOCAI_PAGES_PER_REQUEST, max_pages: int = MAX_PDF_PAGES) -> list[tuple[int, bytes]]:
+    """Split a PDF into ``(first_page_offset, bytes)`` parts of at most ``per_part`` pages (one part if it fits)."""
+    from pypdf import PdfReader, PdfWriter
+    from pypdf.errors import PdfReadError
+
+    try:
+        reader = PdfReader(io.BytesIO(content))
+        if reader.is_encrypted and not reader.decrypt(""):
+            raise ValueError("The PDF is password-protected; upload an unprotected copy.")
+        total = len(reader.pages)
+    except PdfReadError as error:
+        raise ValueError(f"The PDF could not be read: {error}") from error
+    if total > max_pages:
+        raise ValueError(f"The PDF has {total} pages; the limit is {max_pages}. Upload the relevant part of the circular.")
+    if total <= per_part:
+        return [(0, content)]
+    parts = []
+    for start in range(0, total, per_part):
+        writer = PdfWriter()
+        for index in range(start, min(start + per_part, total)):
+            writer.add_page(reader.pages[index])
+        buffer = io.BytesIO()
+        writer.write(buffer)
+        parts.append((start, buffer.getvalue()))
+    return parts
+
+
 def _document_ai(content: bytes, mime: str, doc_id: str, uri: str, filename: str, settings: Settings) -> ParsedDocument:
     settings.require("documentai_processor")
     from google.api_core.client_options import ClientOptions
+    from google.api_core.exceptions import InvalidArgument
     from google.cloud import documentai
 
     location = settings.documentai_processor.split("/locations/")[1].split("/")[0]
@@ -99,14 +133,25 @@ def _document_ai(content: bytes, mime: str, doc_id: str, uri: str, filename: str
         client_options=ClientOptions(api_endpoint=f"{location}-documentai.googleapis.com"))
     options = documentai.ProcessOptions(layout_config=documentai.ProcessOptions.LayoutConfig(
         chunking_config=documentai.ProcessOptions.LayoutConfig.ChunkingConfig(chunk_size=500, include_ancestor_headings=True)))
-    request = documentai.ProcessRequest(name=settings.documentai_processor, process_options=options,
-                                        raw_document=documentai.RawDocument(content=content, mime_type=mime))
-    document = client.process_document(request=request).document
-    chunks = [
-        DocumentChunk(chunk_id=f"{doc_id}:{chunk.chunk_id or index}", content=chunk.content,
-                      page_start=chunk.page_span.page_start or None, page_end=chunk.page_span.page_end or None)
-        for index, chunk in enumerate(document.chunked_document.chunks)
-    ]
+    parts = pdf_parts(content) if mime == "application/pdf" else [(0, content)]
+    chunks: list[DocumentChunk] = []
+    for part_index, (offset, part) in enumerate(parts):
+        request = documentai.ProcessRequest(name=settings.documentai_processor, process_options=options,
+                                            raw_document=documentai.RawDocument(content=part, mime_type=mime))
+        try:
+            document = client.process_document(request=request).document
+        except InvalidArgument as error:
+            if "pages exceed the limit" in str(error):
+                raise ValueError(f"{filename} has more pages than Document AI accepts in one request "
+                                 f"({DOCAI_PAGES_PER_REQUEST}). Export it as PDF (PDFs are split automatically).") from error
+            raise
+        prefix = f"{doc_id}:" if len(parts) == 1 else f"{doc_id}:p{part_index}-"  # single part keeps the old ids
+        chunks += [
+            DocumentChunk(chunk_id=f"{prefix}{chunk.chunk_id or index}", content=chunk.content,
+                          page_start=(chunk.page_span.page_start + offset) if chunk.page_span.page_start else None,
+                          page_end=(chunk.page_span.page_end + offset) if chunk.page_span.page_end else None)
+            for index, chunk in enumerate(document.chunked_document.chunks)
+        ]
     if not chunks:
         raise ValueError("Document AI returned no text chunks.")
     first = chunks[0].content.strip().splitlines()[0][:200]

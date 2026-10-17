@@ -30,7 +30,7 @@ from api.adk_runtime import ASSISTANT_APP, assistant_runner, memory_service, ses
 from api.auth import User, current_user, verify_firebase_token, verify_service_caller
 from api.chat import auto_title, build_prompt, single_error, sse_response, stream_turn
 from api.runs import (PAUSED, RUN_STATUSES, TERMINAL, WATCHER_USER, RunLimitExceeded, choose_mode, ensure_capacity,
-                      reject_run, request_cancel, resume_run, sha256_of, start_run)
+                      interrupt_local_runs, reap_stale_runs, reject_run, request_cancel, resume_run, sha256_of, start_run)
 from bank_mcp_server.remediation import dispatch, request_dispatch
 from core.app_store import SOURCE_KINDS, get_app_store
 from core.config import DATA_DIR, ROOT, get_settings
@@ -94,6 +94,23 @@ async def security_middleware(request: Request, call_next):
         print(json.dumps({"severity": "ERROR" if status >= 500 else "INFO", "event": "http_request", "request_id": request_id,
                           "method": request.method, "path": request.url.path, "status": status,
                           "latency_ms": round((time.perf_counter() - started) * 1000, 1)}), flush=True)
+
+
+@app.on_event("startup")
+def _reap_on_startup() -> None:
+    try:
+        reap_stale_runs(force=True)
+    except Exception:  # noqa: BLE001 - startup must not fail because the store is briefly unavailable
+        log.warning("Could not reap stale runs at startup", exc_info=True)
+
+
+@app.on_event("shutdown")
+def _interrupt_on_shutdown() -> None:
+    """Cloud Run sends SIGTERM before replacing an instance: in-process runs cannot survive it, so say so."""
+    try:
+        interrupt_local_runs()
+    except Exception:  # noqa: BLE001
+        log.warning("Could not mark local runs as interrupted", exc_info=True)
 
 
 @app.exception_handler(Exception)
@@ -284,12 +301,14 @@ def runs(status: str | None = None, mine: bool = False, source_kind: str | None 
         raise HTTPException(422, f"Unknown status: {', '.join(unknown)}")
     if source_kind and source_kind not in SOURCE_KINDS:
         raise HTTPException(422, "Unknown source_kind")
+    reap_stale_runs()  # runs orphaned by a deploy or crash show as FAILED (interrupted) instead of running forever
     rows = get_app_store().list_runs(limit, statuses or None, user.user_id if mine else None, source_kind)
     return [_public_run(r, user) for r in rows]
 
 
 @app.get("/api/runs/{run_id}")
 def run_status(run_id: str, after: int = 0, user: User = Depends(current_user)) -> dict:
+    reap_stale_runs()
     run = _visible_run(run_id)
     return {"run": _public_run(run, user), "events": get_app_store().events(run_id, after)}
 

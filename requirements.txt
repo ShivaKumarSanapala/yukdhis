@@ -5,6 +5,7 @@ google-genai>=2.29,<3
 google-cloud-spanner>=3.56,<4
 google-cloud-dlp>=3.30,<4
 google-cloud-documentai>=3.0,<4
+pypdf>=5,<7  # split PDFs over the Document AI online page limit
 google-cloud-storage>=2.18,<4
 google-cloud-pubsub>=2.25,<3
 google-cloud-aiplatform>=1.100,<3

@@ -12,6 +12,7 @@ Run locally:  adk web agents      (or)      adk run agents/compliance_coordinato
 
 from google.adk.agents import ParallelAgent, SequentialAgent
 
+from .sub_agents._common import skip_when_halted
 from .sub_agents import (data_analyst_agent, evaluator_agent, graphrag_agent, mapper_agent, orchestrator_agent,
                          precedent_agent, reader_agent)
 
@@ -20,6 +21,9 @@ impact_investigation = ParallelAgent(
     description="Runs the GraphRAG blast-radius traversal and the precedent memory search concurrently.",
     sub_agents=[graphrag_agent, precedent_agent],
 )
+
+for _agent in (mapper_agent, impact_investigation, data_analyst_agent, evaluator_agent, orchestrator_agent):
+    _agent.before_agent_callback = skip_when_halted  # stop after a Reader failure instead of analysing nothing
 
 root_agent = SequentialAgent(
     name="compliance_pipeline",
