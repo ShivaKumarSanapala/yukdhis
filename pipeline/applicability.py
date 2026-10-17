@@ -9,6 +9,10 @@ mapper's resolved products, and the bank's entity profile
 * ``applicable = False`` - the rule targets a licence, entity type or business the bank does not have;
 * ``applicable = None``  - cannot tell: the business or its data domain is not onboarded (``missing_data`` lists what is needed).
 
+The keyword signals that tie a rule to a business line, data domain or licence are declared by the ontology packs
+(``applicability_signals`` in ``data/ontology/packs/*.json``), for every pack whether or not the bank enabled it, so a
+rule on an un-onboarded business is still recognised and gated.
+
 Only ``True`` rules are evaluated. The others become ``NOT_EVALUATED`` with the
 reasons as evidence, and get no remediation actions.
 """
@@ -17,16 +21,15 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable
 
-from core.config import DATA_DIR
 from core.models import Applicability, Rule
-from knowledge_graph.ontology import CAPABILITIES
+from knowledge_graph import packs
+from knowledge_graph.ontology import get_ontology
 
-PROFILE_PATH = DATA_DIR / "bank" / "entity_profile.json"
+PROFILE_PATH = packs.PROFILE_PATH
 
 DOMAIN_LABELS = {
     "loans": "loan book (vw_compliance_impact)",
@@ -48,53 +51,14 @@ BUSINESS_LINE_LABELS = {
 }
 
 
-@dataclass(frozen=True)
-class Signal:
-    name: str
-    label: str
-    pattern: re.Pattern
-    business_line: Optional[str] = None
-    domains: tuple[str, ...] = ()
-    licence: Optional[str] = None  # profile["licences"] key that must be truthy
-
-
 def _rx(pattern: str) -> re.Pattern:
     return re.compile(pattern, re.IGNORECASE)
 
 
-SIGNALS: tuple[Signal, ...] = (
-    Signal("nddc", "INR non-deliverable derivative contracts (NDDCs)",
-           _rx(r"\bnon[- ]deliverable\b|\bnddcs?\b"), "treasury_derivatives", ("treasury_trades", "counterparties"),
-           licence="ifsc_banking_unit"),
-    Signal("ifsc_banking_unit", "IFSC Banking Unit activity",
-           _rx(r"\bifsc banking units?\b|\bibus?\b|\bgift city\b|\binternational financial services centres?\b"),
-           licence="ifsc_banking_unit"),
-    Signal("ferr", "Foreign Exchange Risk Reserve",
-           _rx(r"\bforeign exchange risk reserve\b|\bferr\b"), "treasury_derivatives", ("treasury_trades", "rbi_reserve_balances")),
-    Signal("fx_derivatives", "FX / derivative contracts",
-           _rx(r"\bderivatives?\b|\b(?:fx|foreign exchange|forex|currency) (?:forwards?|swaps?|options?|contracts?)\b"
-               r"|\bforeign currency against (?:the )?(?:inr|rupee)\b|\b(?:cross[- ]currency|interest rate) swaps?\b"
-               r"|\bnotional\b|\bhedg(?:e|es|ed|ing)\b"),
-           "treasury_derivatives", ("treasury_trades",)),
-    Signal("capital", "capital adequacy (CVA, RWA, CET1, CRAR)",
-           _rx(r"\bcredit valuation adjustment\b|\b(?:ba-|sa-)?cva\b|\brisk[- ]weighted assets?\b|\brwas?\b|\bcet\s?1\b"
-               r"|\bcommon equity tier\s?(?:1|i)\b|\btier\s?(?:1|i|2|ii) capital\b|\bcrar\b|\bcapital adequacy\b"
-               r"|\bcapital charge\b|\bcapital to risk\b|\bsa-ccr\b|\bleverage ratio\b|\bbasel iii\b"),
-           "capital_management", ("capital_rwa",)),
-    Signal("liquidity", "liquidity ratios (LCR, NSFR, CRR, SLR)",
-           _rx(r"\bliquidity coverage ratio\b|\blcr\b|\bnsfr\b|\bnet stable funding\b|\bcash reserve ratio\b"
-               r"|\bstatutory liquidity ratio\b"),
-           "liquidity_management", ("liquidity",)),
-    Signal("deposits", "deposit accounts",
-           _rx(r"\b(?:term|fixed|recurring|savings|current) deposits?\b|\bdepositors?\b|\bdeposit accounts?\b"
-               r"|\bsavings (?:bank )?accounts?\b"),
-           "deposits", ("deposits",)),
-    Signal("msme_loans", "MSME lending", _rx(r"\bmsmes?\b|\bmicro,? small and medium\b"), "msme_lending", ("loans",)),
-    Signal("loans", "lending",
-           _rx(r"\bloans?\b|\bborrowers?\b|\bemis?\b|\badvances\b|\blenders?\b|\bcredit facilit(?:y|ies)\b"
-               r"|\bequated (?:monthly )?instalments?\b"),
-           "retail_lending", ("loans",)),
-)
+def signals(pack_dir: Path | None = None) -> tuple[packs.PackSignal, ...]:
+    """Keyword signals declared by the ontology packs (every pack, enabled or not), in a stable order."""
+    return packs.applicability_signals(pack_dir)
+
 
 # Regulated-entity classes other than this bank's. Stripped before looking for wording that covers the bank.
 OTHER_ENTITIES = {
@@ -163,7 +127,7 @@ def assess_rule(rule: Rule, mapping: dict | None = None, profile: dict | None = 
                                   f"{_pretty(held) if held else 'not an Authorised Dealer'}.")
 
     # Keyword signals -> licences, business lines and data domains.
-    matched = [s for s in SIGNALS if s.pattern.search(text)]
+    matched = [s for s in signals() if s.pattern.search(text)]
     for signal in matched:
         if signal.licence and not licences.get(signal.licence):
             not_applicable.append(f"Rule concerns {signal.label}, which needs an {_pretty(signal.licence)}; "
@@ -177,15 +141,18 @@ def assess_rule(rule: Rule, mapping: dict | None = None, profile: dict | None = 
                 reasons.append(f"Rule concerns {signal.label}; the bank's {line} is not onboarded.")
         domains.update(signal.domains)
 
-    # Ontology signals: the check vocabulary and product attribute filters all run on the loan book.
+    # Ontology signals: a check on a pack's vocabulary runs on the data domains that pack is evaluated on.
+    ontology = get_ontology(profile)
     for check in rule.checks:
         if check.kind == "record_flag":
-            domains.add("loans")
+            domains.update(_domains(ontology.flag_domains, [check.record_field]))
         elif check.kind == "event_deadline":
-            domains.update({"loans", "loan_events"})
-        elif check.kind == "control_required" and (check.capability in CAPABILITIES
-                                                   or check.control_id in CAPABILITIES.values()):
-            domains.add("loans")
+            domains.update(_domains(ontology.event_domains, [check.trigger_event, check.required_event]))
+        elif check.kind == "control_required":
+            capability = check.capability if check.capability in ontology.capabilities else ontology.control_capability(
+                check.control_id or "")
+            if capability:
+                domains.update(ontology.capability_domains.get(capability, ()))
     scope = rule.scope
     if scope.category in LOAN_ATTRIBUTE_CATEGORIES or any(
             getattr(scope, a) is not None for a in ("rate_type", "instalment_based", "secured", "collateral_type")):
@@ -233,6 +200,12 @@ def evidence(assessment: Applicability) -> str:
     if assessment.missing_data:
         text += f" Missing data: {'; '.join(assessment.missing_data)}."
     return text
+
+
+def _domains(by_item: dict[str, frozenset[str]], items: list[str | None]) -> set[str]:
+    """Data domains of the named vocabulary items; every item's domains when none is recognised."""
+    known = [by_item[item] for item in items if item in by_item]
+    return set().union(*(known or by_item.values()))
 
 
 def _pretty(code: str | None) -> str:

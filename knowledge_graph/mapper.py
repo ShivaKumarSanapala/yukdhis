@@ -13,9 +13,7 @@ from __future__ import annotations
 from core.models import ControlDecision, EntityMatch, Policy, Rule, RuleMapping
 from knowledge_graph.canonicaliser import ControlCanonicaliser
 from knowledge_graph.entity_resolution import EntityResolver, lexical_score
-from knowledge_graph.ontology import (
-    CAPABILITIES, CAPABILITY_PROCESSES, EVENT_PROCESSES, PRODUCT_ATTRIBUTES, REGULATORY_GLOSSARY,
-)
+from knowledge_graph.ontology import POLICY_KINDS, Ontology, get_ontology
 from knowledge_graph.store import GraphStore
 
 GLOSSARY_THRESHOLD = 0.9
@@ -30,10 +28,18 @@ class PolicyMapper:
 
     def upsert_policy(self, policy: Policy) -> list[dict]:
         written = []
+        kind = getattr(policy, "kind", None) or "regulatory"  # `Policy.kind` is added by the models owner; regulatory until then
+        if kind not in POLICY_KINDS:
+            raise ValueError(f"Policy.kind must be one of {POLICY_KINDS}, got {kind!r}")
         self.store.upsert_node(policy.policy_id, "Policy", policy.title, {
             "issuer": policy.issuer, "reference": policy.reference, "issued_on": policy.issued_on,
-            "effective_date": policy.effective_date, "source_uri": policy.source_uri,
+            "effective_date": policy.effective_date, "source_uri": policy.source_uri, "kind": kind,
         })
+        # Circular lineage that does not retire the earlier text: AMENDS (changes it) and REFERS_TO (cites it).
+        for edge_type, attribute in (("AMENDS", "amends"), ("REFERS_TO", "refers_to")):
+            for other in getattr(policy, attribute, None) or []:
+                self.store.upsert_edge(policy.policy_id, other, edge_type, policy.effective_date)
+                written.append({"source": policy.policy_id, "type": edge_type, "target": other})
         for old in policy.supersedes:
             self.store.upsert_edge(policy.policy_id, old, "SUPERSEDES", policy.effective_date)
             written.append({"source": policy.policy_id, "type": "SUPERSEDES", "target": old})
@@ -45,11 +51,13 @@ class PolicyMapper:
     def map_rule(self, policy: Policy, rule: Rule) -> RuleMapping:
         products = self.store.nodes("Product")
         resolutions: list[EntityMatch] = []
-        filters = {attr: getattr(rule.scope, attr) for attr in PRODUCT_ATTRIBUTES if getattr(rule.scope, attr) is not None}
+        vocabulary = get_ontology(tenant_ids=(self.store.tenant_id,))
+        filters = {attr: getattr(rule.scope, attr) for attr in vocabulary.product_attributes
+                   if getattr(rule.scope, attr) is not None}
         resolved_products: set[str] = set()
         unresolved_products: list[str] = []
         for term in rule.scope.product_terms:
-            glossary = self._glossary(term)
+            glossary = self._glossary(term, vocabulary)
             if glossary:
                 filters.update({k: v for k, v in glossary.items() if k not in filters})
                 resolutions.append(EntityMatch(term=term, node_id=None, node_type="AttributeFilter",
@@ -74,7 +82,7 @@ class PolicyMapper:
             product_ids = sorted(p["id"] for p in candidates if all(p["attributes"].get(k) == v for k, v in filters.items()))
 
         control_ids, decisions = self._controls(rule)
-        canonical_capability = {control: capability for capability, control in CAPABILITIES.items()}
+        canonical_capability = {control: capability for capability, control in vocabulary.capabilities.items()}
 
         process_nodes = self.store.nodes("Process")
         process_ids: set[str] = set()
@@ -84,11 +92,11 @@ class PolicyMapper:
             process_ids |= {m.node_id for m in matches if m.node_id}
         for check in rule.checks:
             for event in (check.trigger_event, check.required_event):
-                if event in EVENT_PROCESSES:
-                    process_ids.add(EVENT_PROCESSES[event])
+                if event in vocabulary.event_processes:
+                    process_ids.add(vocabulary.event_processes[event])
             capability = canonical_capability.get(check.control_id or "", check.capability)
-            if capability in CAPABILITY_PROCESSES:
-                process_ids.add(CAPABILITY_PROCESSES[capability])
+            if capability in vocabulary.capability_processes:
+                process_ids.add(vocabulary.capability_processes[capability])
 
         segment_nodes = self.store.nodes("CustomerSegment")
         segment_ids: set[str] = set()
@@ -139,9 +147,9 @@ class PolicyMapper:
         return control_ids, decisions
 
     @staticmethod
-    def _glossary(term: str) -> dict | None:
+    def _glossary(term: str, vocabulary: Ontology | None = None) -> dict | None:
         best, filters = 0.0, None
-        for phrase, attrs in REGULATORY_GLOSSARY.items():
+        for phrase, attrs in (vocabulary or get_ontology()).glossary.items():
             score = lexical_score(term, [phrase])
             if score > best:
                 best, filters = score, attrs

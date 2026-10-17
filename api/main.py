@@ -38,8 +38,10 @@ from core.models import ExtractedPolicy, Rule
 from ingestion.documents import DOCAI_TYPES, TEXT_TYPES, archive_to_gcs, document_id_for, guess_mime
 from ingestion.validator import validate_extraction
 from ingestion.watcher import eligible, list_incoming, source_for
+from knowledge_graph.governance import describe_ontology
 from knowledge_graph.mapper import review_rule
 from knowledge_graph.ontology import ontology_summary
+from knowledge_graph.packs import PackError
 from knowledge_graph.store import get_graph_store
 from knowledge_graph.traversal import blast_radius
 from pipeline.deterministic import GRAPH_TRAVERSAL_LOCK
@@ -513,6 +515,15 @@ def graph(as_of: str | None = None, user: User = Depends(current_user)) -> dict:
 @app.get("/api/graph/ontology")
 def ontology(user: User = Depends(current_user)) -> dict:
     return ontology_summary()
+
+
+@app.get("/api/ontology")
+def ontology_packs(user: User = Depends(current_user)) -> dict:
+    """Enabled ontology packs with versions and counts, the merged vocabulary and pending LLM proposals (read-only)."""
+    try:
+        return describe_ontology(get_graph_store())
+    except PackError as error:
+        raise HTTPException(status_code=500, detail=f"Ontology packs are invalid: {error}") from error
 
 
 @app.get("/api/graph/blast-radius")

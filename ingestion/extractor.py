@@ -21,7 +21,7 @@ from core.models import ExtractedPolicy, ParsedDocument, ValidationIssue
 from ingestion.evaluation import score_extraction
 from ingestion.templates import match_template
 from ingestion.validator import DRAFT_MESSAGE, has_errors, non_binding_message, validate_extraction
-from knowledge_graph.ontology import CAPABILITIES, EVENT_TYPES, RECORD_FLAGS
+from knowledge_graph.ontology import get_ontology
 
 log = logging.getLogger(__name__)
 MAX_ATTEMPTS = 2
@@ -149,7 +149,9 @@ def _gemini_extract(document: ParsedDocument, feedback: str,
 
     settings = get_settings()
     chunks = "\n\n".join(f"<chunk id={c.chunk_id} page={c.page_start}>\n{c.content}\n</chunk>" for c in document.chunks)
-    prompt = EXTRACTION_PROMPT.format(capabilities=sorted(CAPABILITIES), flags=sorted(RECORD_FLAGS), events=sorted(EVENT_TYPES),
+    vocabulary = get_ontology(tenant_ids=(settings.tenant_id,))  # enabled ontology packs, read at call time
+    prompt = EXTRACTION_PROMPT.format(capabilities=sorted(vocabulary.capabilities), flags=sorted(vocabulary.record_flags),
+                                      events=sorted(vocabulary.event_types),
                                       document_id=document.document_id, parser=document.parser, chunks=chunks)
     if feedback:
         prompt += "\n\n" + feedback

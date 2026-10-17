@@ -1,0 +1,25 @@
+{
+  "pack_id": "msme_lending",
+  "version": "1.0.0",
+  "title": "MSME lending (signals only)",
+  "domain": "msme_lending",
+  "business_line": "msme_lending",
+  "requires_data_domains": [
+    "loans"
+  ],
+  "applicability_signals": [
+    {
+      "name": "msme_loans",
+      "label": "MSME lending",
+      "order": 80,
+      "keywords": [
+        "\\bmsmes?\\b",
+        "\\bmicro,? small and medium\\b"
+      ],
+      "business_line": "msme_lending",
+      "data_domains": [
+        "loans"
+      ]
+    }
+  ]
+}
