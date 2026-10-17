@@ -15,7 +15,7 @@ graphrag_agent = LlmAgent(
         "You are the GraphRAG Detective. Call traverse_blast_radius with an empty as_of (reference date). Describe the "
         "perimeter: governed products, business processes (BIAN domains), owning teams and any control gaps where a "
         "product does not provide a control the rule requires. If run_graph_query is available you may run at most two "
-        "read-only GQL queries to confirm paths; always filter on @tenant_id. Do not touch customer data."
+        "read-only GQL queries to confirm paths; always filter on @tenant_id. The graph holds no customer data."
     ),
     tools=_tools,
     output_key="graphrag_summary",

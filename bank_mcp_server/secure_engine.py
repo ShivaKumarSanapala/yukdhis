@@ -8,6 +8,7 @@ dual-entry audit log: the LLM's intent and the exact query executed.
 
 from __future__ import annotations
 
+import json
 import re
 import time
 from collections import Counter
@@ -21,9 +22,9 @@ from sqlalchemy import bindparam, text
 from bank_mcp_server.assertions import AssertionRejected, compile_assertion
 from bank_mcp_server.operational_store import analyst_engine
 from bank_mcp_server.sql_guard import SqlRejected, validate_sql
-from bank_mcp_server.view_catalog import sanitized_views, view_columns
+from bank_mcp_server.view_catalog import parse_column, sanitized_views, view_columns
 from core.app_store import AppStore, get_app_store, new_id
-from core.config import get_settings
+from core.config import DATA_DIR, get_settings
 from core.models import BlastRadius, CheckResult, ComplianceCheck, ProposedAction, Rule
 from knowledge_graph.ontology import CAPABILITIES, PII_COLUMNS, RECORD_FLAGS, WORKFLOWS, ontology_summary
 from privacy.detectors import structured_findings
@@ -33,6 +34,7 @@ MAX_SAMPLES = 5
 ASSERTION_ROW_CAP = 100_000   # rows a record_assertion may read; more is NOT_EVALUATED, never a silent truncation
 ASSERTION_SECONDS = 5.0       # wall-clock limit (SQLite progress handler; Cloud SQL sessions also set statement_timeout)
 WORKLIST_KEYS = ("loan_ref", "customer_ref", "product_id", "branch_id", "outstanding_balance")
+OPAQUE_KEYS = frozenset({"loan_ref", "customer_ref"})
 VIEW_NAME = re.compile(r"^[a-z_][a-z0-9_]*$")
 
 
@@ -51,23 +53,55 @@ class SecureEngine:
     def get_graph_ontology(self, target_domain: str = "All") -> dict:
         return {**ontology_summary(target_domain), "sanitized_views": sanitized_views()}
 
+    # Catalogue of what can be queried ------------------------------------
+    def describe_bank_data(self) -> dict:
+        """Every sanitized view with typed columns, descriptions and live row counts; PII columns are never listed.
+
+        A view that the ontology declares (e.g. a pack's) but whose data has not been loaded is flagged ``onboarded: false``.
+        Planted-exception hints are aggregate counts from the synthetic-data manifest, never row-level."""
+        views = []
+        for name, spec in sorted(sanitized_views().items()):
+            columns = [{"name": c.name, "type": c.type, **({"values": list(c.values)} if c.values else {}),
+                        "description": c.description, **({"opaque_key": True} if c.name in OPAQUE_KEYS else {})}
+                       for c in view_columns(name).values() if c.name.lower() not in PII_COLUMNS]
+            entry: dict[str, Any] = {"view": name, "description": spec.get("description", ""), "columns": columns}
+            try:
+                with analyst_engine().connect() as conn:
+                    entry["row_count"] = int(conn.execute(text(f"SELECT COUNT(*) FROM {name}")).scalar() or 0)  # name is from the catalogue
+                entry["onboarded"] = True
+            except Exception:  # declared in the ontology, no table behind it yet
+                entry.update(row_count=None, onboarded=False, note="Declared in the ontology but no data is loaded for it.")
+            views.append(entry)
+        return {"views": views, "opaque_keys": sorted(OPAQUE_KEYS), "pii_never_available": sorted(PII_COLUMNS),
+                "planted_exception_counts": _planted_counts(),
+                "notes": ["Row-level SQL is keyed by opaque loan_ref/customer_ref; names, contacts, PAN, Aadhaar and account numbers "
+                          "are not in any view.", "vw_asset_quality holds ACTIVE loans only."]}
+
     # Guarded ad-hoc SQL ---------------------------------------------------
-    def run_safe_sql(self, sql: str, intent: str, actor: str = "data_analyst_agent") -> dict:
+    def run_safe_sql(self, sql: str, intent: str, actor: str = "data_analyst_agent", row_level: bool = False) -> dict:
         try:
-            guarded = validate_sql(sql, dialect=self.dialect)
+            guarded = validate_sql(sql, dialect=self.dialect, row_level=row_level)
         except SqlRejected as error:
-            self.store.audit(actor, "run_safe_sql", {"intent": intent, "sql": sql}, "REJECTED", str(error))
+            self.store.audit(actor, "run_safe_sql", {"intent": intent, "sql": sql, "row_level": row_level}, "REJECTED", str(error))
             return {"status": "rejected", "reason": str(error),
-                    "hint": "Use COUNT/SUM/AVG with GROUP BY over vw_* views only; no row-level identifiers."}
-        with analyst_engine().connect() as conn:
-            result = conn.execute(text(guarded.sql))
-            columns = list(result.keys())
-            rows = [dict(zip(columns, (_plain(v) for v in row))) for row in result.fetchall()]
+                    "hint": ("Read-only SELECT over vw_* views, no PII columns, no SELECT *; max 200 rows. "
+                             "Call describe_bank_data for the columns." if row_level else
+                             "Use COUNT/SUM/AVG with GROUP BY over vw_* views only; pass row_level=true for per-loan rows.")}
+        try:
+            with analyst_engine().connect() as conn:
+                result = conn.execute(text(guarded.sql))
+                columns = list(result.keys())
+                rows = [dict(zip(columns, (_plain(v) for v in row))) for row in result.fetchall()]
+        except Exception as error:  # typically a pack view that has no data yet, or a column that does not exist
+            self.store.audit(actor, "run_safe_sql", {"intent": intent, "sql": sql}, guarded.sql, f"ERROR {type(error).__name__}")
+            return {"status": "error", "executed_sql": guarded.sql,
+                    "message": f"The query could not run ({type(error).__name__}). The view may not be onboarded or a column may "
+                               "not exist; call describe_bank_data."}
         leaked = [c for c in columns if c.lower() in PII_COLUMNS]
         if leaked:
             raise RuntimeError(f"Guard bypass detected for columns {leaked}")
         rows = [{k: (_scrub(v) if isinstance(v, str) else v) for k, v in row.items()} for row in rows]
-        self.store.audit(actor, "run_safe_sql", {"intent": intent, "sql": sql}, guarded.sql, {"rows": len(rows)})
+        self.store.audit(actor, "run_safe_sql", {"intent": intent, "sql": sql, "row_level": row_level}, guarded.sql, {"rows": len(rows)})
         return {"status": "success", "executed_sql": guarded.sql, "row_count": len(rows), "rows": rows}
 
     # Tool 2: aggregate impact (deterministic compliance checks) ---------
@@ -280,6 +314,19 @@ def _deadline(conn, seconds: float):
         yield
     finally:
         setter(None, 0)
+
+
+def _planted_counts() -> dict:
+    """Aggregate counts of the exceptions planted in the synthetic data (``data/bank/manifest.json``); nothing row-level."""
+    try:
+        planted = json.loads((DATA_DIR / "bank" / "manifest.json").read_text()).get("planted", {})
+    except (OSError, ValueError):
+        return {}
+    out: dict[str, Any] = {}
+    for key, value in planted.items():
+        if isinstance(value, dict) and isinstance(value.get("count"), int):
+            out[key] = {k: v for k, v in value.items() if k == "count" or (k.startswith("by_") and isinstance(v, dict))}
+    return out
 
 
 def _plain(value: Any) -> Any:
