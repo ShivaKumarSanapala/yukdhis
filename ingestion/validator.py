@@ -7,12 +7,17 @@ retry; WARNINGs survive into the report for the compliance reviewer.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 
 from core.models import ExtractedPolicy, ParsedDocument, ValidationIssue
 from knowledge_graph.ontology import CAPABILITIES, EVENT_TYPES, RECORD_FLAGS
 
 MIN_CONFIDENCE = 0.6
+DRAFT_MESSAGE = "Citation describes a draft or proposal, not an operative provision."
+DRAFT_PATTERN = re.compile(
+    r"\b(draft\s+(directions?|circular|framework)|propos(ed|es)\b|invit(ed|es|ing)\s+(feedback|comments?)"
+    r"|exposure\s+draft|had\s+issued\s+draft|stakeholders)", re.IGNORECASE)
 
 
 def _is_date(value: str | None) -> bool:
@@ -51,6 +56,8 @@ def validate_extraction(extraction: ExtractedPolicy, document: ParsedDocument | 
             snippet = " ".join(rule.citation.snippet.lower().split())
             if not snippet or snippet[:60] not in " ".join(source.split()):
                 add("ERROR", "citation.snippet", "Citation text is not found verbatim in the source document.", rid)
+        if DRAFT_PATTERN.search(rule.citation.snippet):
+            add("ERROR", "citation.snippet", DRAFT_MESSAGE, rid)
         if rule.confidence < MIN_CONFIDENCE:
             add("WARNING", "confidence", f"Low extraction confidence {rule.confidence:.2f}; requires reviewer sign-off.", rid)
         scope = rule.scope

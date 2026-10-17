@@ -80,7 +80,7 @@ def stage_map(state: State) -> dict:
     state["mappings"] = [m.model_dump() for m in mappings]
     return {"supersedes": supersession, "mappings": [
         {"rule_id": m.rule_id, "products": m.product_ids, "processes": m.process_ids, "segments": m.segment_ids,
-         "controls": m.control_ids, "edges_written": len(m.edges_written),
+         "controls": m.control_ids, "scope_status": m.scope_status, "scope_notes": m.scope_notes, "edges_written": len(m.edges_written),
          "resolutions": [r.model_dump() for r in m.resolutions]} for m in mappings]}
 
 
@@ -89,10 +89,17 @@ def stage_blast_radius(state: State, as_of: str | None = None) -> dict:
     as_of = as_of or state.get("as_of") or default_as_of()
     state["as_of"] = as_of
     store = get_graph_store()
-    radii = [blast_radius(store, m["rule_id"], as_of) for m in state["mappings"]]
+    radii = []
+    for mapping in state["mappings"]:
+        radius = blast_radius(store, mapping["rule_id"], as_of)
+        radius.scope_status = mapping.get("scope_status", "RESOLVED")
+        radius.scope_notes = list(mapping.get("scope_notes", []))
+        if radius.scope_status == "UNRESOLVED":  # fail closed: no products for a rule whose scope could not be resolved
+            radius.products, radius.control_gaps = [], {}
+        radii.append(radius)
     state["blast_radius"] = [r.model_dump() for r in radii]
     return {"as_of": as_of, "query_language": store.query_language, "rules": [
-        {"rule_id": r.rule_id, "products": [p["name"] for p in r.products], "processes": [p["name"] for p in r.processes],
+        {"rule_id": r.rule_id, "scope_status": r.scope_status, "scope_notes": r.scope_notes, "products": [p["name"] for p in r.products], "processes": [p["name"] for p in r.processes],
          "control_gaps": r.control_gaps, "owners": sorted({o["team"] for o in r.owners})} for r in radii]}
 
 
@@ -186,8 +193,23 @@ def _owner_for(state: State, rule_id: str, workflow_id: str = "") -> str:
         return "Customer Communications"
     if workflow_id == "COMPENSATION_PAYOUT_REVIEW":
         return "Finance"
-    owners = Counter(o["team"] for o in (radius or {}).get("owners", []) if o["owner_of"].startswith("product:"))
-    return owners.most_common(1)[0][0] if owners else "Compliance"
+    if not radius or radius.get("scope_status") == "UNRESOLVED":
+        return "Compliance"
+    for prefix in ("process:", "product:"):  # the team running the rule's processes owns remediation before product owners
+        owners = Counter(o["team"] for o in radius.get("owners", []) if o["owner_of"].startswith(prefix))
+        if owners:
+            return owners.most_common(1)[0][0]
+    return "Compliance"
+
+
+def overall_status(results: list[CheckResult], unresolved_rules: list[str]) -> str:
+    if any(r.status == "GAP" for r in results):
+        return "NON_COMPLIANT"
+    if any(r.status == "UPCOMING" for r in results):
+        return "UPCOMING"
+    if not results or unresolved_rules or any(r.status == "NOT_EVALUATED" for r in results):
+        return "INCONCLUSIVE"
+    return "COMPLIANT"
 
 
 def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> dict:
@@ -205,6 +227,7 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
                 target.setdefault(item["loan_ref"], item)
     radii = [BlastRadius.model_validate(r) for r in state["blast_radius"]]
     branch_names = SecureEngine().branch_names()
+    unresolved = sorted(r.rule_id for r in radii if r.scope_status == "UNRESOLVED")
     summary = {
         "rules": len(extraction.rules),
         "checks": len(results),
@@ -216,7 +239,8 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
         "statutory_penalty_inr": sum(r.penalty_inr for r in results),
         "control_gaps": sorted({f"{pid}: {c}" for r in radii for pid, gaps in r.control_gaps.items() for c in gaps}),
         "by_branch": dict(Counter(branch_names.get(l["branch_id"], l["branch_id"]) for l in loans.values()).most_common()),
-        "overall_status": "NON_COMPLIANT" if any(r.status == "GAP" for r in results) else "COMPLIANT",
+        "overall_status": overall_status(results, unresolved),
+        "unresolved_rules": unresolved,
         "privacy_redactions": int(state.get("privacy_redactions", 0)),
     }
     report = ImpactReport(

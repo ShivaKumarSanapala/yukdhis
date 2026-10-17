@@ -107,6 +107,17 @@ REGULATORY_GLOSSARY = {
     "movable immovable property": {"secured": True},
 }
 
+# Phrases naming the regulated entity itself (the bank, its licence class), not a product or a
+# customer segment. They must never resolve to a CustomerSegment or Product node.
+REGULATED_ENTITY_TERMS = {
+    "bank", "banks", "commercial bank", "commercial banks", "scheduled commercial bank", "scheduled commercial banks",
+    "authorised dealer", "authorised dealers", "authorized dealer", "authorized dealers", "ad bank", "ad banks",
+    "authorised dealer category i", "authorised dealer category i banks", "nbfc", "nbfcs",
+    "regulated entity", "regulated entities", "lender", "lenders", "cooperative bank", "cooperative banks",
+    "co operative bank", "co operative banks", "small finance bank", "small finance banks", "payments bank",
+    "payments banks", "primary dealer", "primary dealers", "financial institution", "financial institutions",
+}
+
 # Operational event -> process that emits it, used when a rule names no process.
 EVENT_PROCESSES = {
     "LOAN_CLOSED": "process:loan-closure",

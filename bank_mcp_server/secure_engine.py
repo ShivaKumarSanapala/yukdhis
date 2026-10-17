@@ -73,9 +73,19 @@ class SecureEngine:
         product_ids = [p["id"] for p in radius.products]
         base = CheckResult(rule_id=rule.rule_id, check_index=index, kind=check.kind, description=check.description,
                            status="NOT_EVALUATED")
+        effective, cutoff = _d(rule.effective_date), _d(as_of)
+        if effective and cutoff and effective > cutoff:
+            return base.model_copy(update={"status": "UPCOMING", "evidence": f"Effective {rule.effective_date}, after analysis "
+                                                                           f"date {as_of}; readiness not assessed"})
+        if rule.modality == "MAY":
+            return base.model_copy(update={"evidence": "Permission for the bank, not an obligation"})
+        if radius.scope_status == "UNRESOLVED":
+            return base.model_copy(update={"evidence": f"Scope could not be resolved: {' '.join(radius.scope_notes) or 'no notes'}"})
         if not product_ids:
             return base.model_copy(update={"evidence": "No products governed by this rule at the analysis date."})
         status = rule.scope.record_status
+        if status is None and not any(c.kind == "event_deadline" and c.trigger_event == "LOAN_CLOSED" for c in rule.checks):
+            status = "ACTIVE"  # control gaps and flags concern the live book unless the rule targets closures
         if check.kind == "record_flag":
             if check.record_field not in RECORD_FLAGS:
                 return base.model_copy(update={"evidence": f"Unsupported field {check.record_field!r}."})

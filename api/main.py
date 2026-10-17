@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import time
+import uuid
 from collections import defaultdict, deque
 from datetime import date
 from pathlib import Path
@@ -56,22 +57,37 @@ RATE_LIMIT = int(os.getenv("RATE_LIMIT_PER_MINUTE", "60"))
 
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
-    if request.method == "POST":
-        key = request.client.host if request.client else "unknown"
-        window, now = _hits[key], time.monotonic()
-        while window and now - window[0] > 60:
-            window.popleft()
-        if len(window) >= RATE_LIMIT:
-            return JSONResponse({"detail": "Rate limit exceeded"}, status_code=429)
-        window.append(now)
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    if request.url.path.startswith("/api/"):
-        response.headers.setdefault("Cache-Control", "no-store")  # SSE sets "no-store, no-transform"
-    return response
+    started = time.perf_counter()
+    inbound = request.headers.get("x-request-id", "")
+    request_id = inbound if 0 < len(inbound) <= 128 and inbound.isprintable() else uuid.uuid4().hex
+    request.state.request_id = request_id
+    status = 500
+    try:
+        if request.method == "POST":
+            key = request.client.host if request.client else "unknown"
+            window, now = _hits[key], time.monotonic()
+            while window and now - window[0] > 60:
+                window.popleft()
+            if len(window) >= RATE_LIMIT:
+                response = JSONResponse({"detail": "Rate limit exceeded"}, status_code=429)
+            else:
+                window.append(now)
+                response = await call_next(request)
+        else:
+            response = await call_next(request)
+        status = response.status_code
+        response.headers["X-Request-Id"] = request_id
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        if request.url.path.startswith("/api/"):
+            response.headers.setdefault("Cache-Control", "no-store")  # SSE sets "no-store, no-transform"
+        return response
+    finally:  # one JSON line per request; Cloud Logging parses stdout JSON. Never log tokens, bodies or query strings.
+        print(json.dumps({"severity": "ERROR" if status >= 500 else "INFO", "event": "http_request", "request_id": request_id,
+                          "method": request.method, "path": request.url.path, "status": status,
+                          "latency_ms": round((time.perf_counter() - started) * 1000, 1)}), flush=True)
 
 
 @app.exception_handler(Exception)
@@ -200,9 +216,22 @@ class Decision(BaseModel):
     comment: str = Field(default="", max_length=1000)
 
 
+def _require_resolved_scope(store, action_id: str) -> None:
+    """Approving is blocked while the action's rule scope is UNRESOLVED; old reports without scope_status stay approvable."""
+    action = store.get_action(action_id)
+    report = store.get_report(action["report_id"]) if action else None
+    if not report:
+        return
+    entry = next((b for b in report.get("blast_radius", []) if b.get("rule_id") == action.get("rule_id")), None)
+    if entry and entry.get("scope_status", "RESOLVED") == "UNRESOLVED":
+        raise HTTPException(409, "Rule scope could not be resolved from the circular; approve is blocked until the rule is reviewed")
+
+
 @app.post("/api/actions/{action_id}/decision")
 def decide_action(action_id: str, body: Decision, user: User = Depends(current_user)) -> dict:
     store = get_app_store()
+    if body.decision == "APPROVED":
+        _require_resolved_scope(store, action_id)
     if not store.decide_action(action_id, body.decision, user.email):
         raise HTTPException(409, "Action is not pending approval")
     store.audit(user.email, "human_decision", {"action_id": action_id, "comment": body.comment}, body.decision, {})

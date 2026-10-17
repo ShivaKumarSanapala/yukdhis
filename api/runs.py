@@ -8,7 +8,9 @@ Gemini; ``deterministic`` runs the same stages without an LLM.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import time
 from typing import Any
 
 from google.genai import types
@@ -47,6 +49,7 @@ def start_run(source: dict, user_id: str, mode: str | None = None, as_of: str | 
 
 async def _execute(run_id: str, source: dict, user_id: str, mode: str, as_of: str) -> None:
     store = get_app_store()
+    started = time.perf_counter()
     store.update_run(run_id, status="RUNNING")
     store.add_event(run_id, "pipeline", "run_started", {"mode": mode, "as_of": as_of, "document": source.get("filename")})
     try:
@@ -59,11 +62,17 @@ async def _execute(run_id: str, source: dict, user_id: str, mode: str, as_of: st
         if not report_id:
             raise RuntimeError("The pipeline finished without producing a report.")
         store.update_run(run_id, status="SUCCEEDED", report_id=report_id)
-        store.add_event(run_id, "pipeline", "run_completed", {"report_id": report_id})
+        duration_s = round(time.perf_counter() - started, 2)
+        store.add_event(run_id, "pipeline", "run_completed", {"report_id": report_id, "duration_s": duration_s})
+        print(json.dumps({"severity": "INFO", "event": "run_completed", "run_id": run_id, "report_id": report_id,
+                          "mode": mode, "duration_s": duration_s}), flush=True)
     except Exception as error:
         log.exception("Run %s failed", run_id)
         store.update_run(run_id, status="FAILED", error=str(error)[:2000])
-        store.add_event(run_id, "pipeline", "run_failed", {"error": str(error)[:2000]})
+        duration_s = round(time.perf_counter() - started, 2)
+        store.add_event(run_id, "pipeline", "run_failed", {"error": str(error)[:2000], "duration_s": duration_s})
+        print(json.dumps({"severity": "ERROR", "event": "run_failed", "run_id": run_id, "error": str(error)[:300],
+                          "duration_s": duration_s}), flush=True)
 
 
 async def _agentic(run_id: str, source: dict, user_id: str, as_of: str) -> str | None:
@@ -96,7 +105,5 @@ async def _agentic(run_id: str, source: dict, user_id: str, as_of: str) -> str |
 
 
 def _compact(value: Any, limit: int = 3000) -> Any:
-    import json
-
     text = json.dumps(value, default=str)
     return value if len(text) <= limit else {"truncated": True, "preview": text[:limit]}
