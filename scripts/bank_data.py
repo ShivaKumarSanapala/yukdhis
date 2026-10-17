@@ -83,11 +83,12 @@ PROVIDES = {
     "product:personal-loan-floating": ["borrower-notification", "emi-tenor-choice", "fixed-rate-option", "reset-statement"],
     "product:home-loan-floating": ["borrower-notification", "emi-tenor-choice", "fixed-rate-option", "reset-statement",
                                     "document-release-sla", "delay-compensation", "document-collection-choice"],
-    "product:auto-loan-floating": ["borrower-notification", "emi-tenor-choice", "reset-statement", "document-release-sla"],
-    "product:auto-loan-fixed": ["document-release-sla", "delay-compensation"],
+    "product:auto-loan-floating": ["borrower-notification", "emi-tenor-choice", "reset-statement", "document-release-sla",
+                                    "delay-compensation", "document-collection-choice"],
+    "product:auto-loan-fixed": ["document-release-sla", "delay-compensation", "document-collection-choice"],
     "product:education-loan": ["borrower-notification", "emi-tenor-choice", "fixed-rate-option", "reset-statement"],
-    "product:loan-against-property": ["document-release-sla", "delay-compensation"],
-    "product:gold-loan": ["document-collection-choice"],
+    "product:loan-against-property": ["document-release-sla", "delay-compensation", "document-collection-choice"],
+    "product:gold-loan": ["document-release-sla", "delay-compensation", "document-collection-choice"],
     "product:msme-term-loan": ["borrower-notification", "emi-tenor-choice"],
 }
 

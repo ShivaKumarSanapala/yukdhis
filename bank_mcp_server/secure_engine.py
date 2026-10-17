@@ -13,6 +13,7 @@ import time
 from collections import Counter
 from contextlib import contextmanager
 from datetime import date
+from types import SimpleNamespace
 from typing import Any
 
 from sqlalchemy import bindparam, text
@@ -115,7 +116,17 @@ class SecureEngine:
             return self._record_assertion(base, rule, check, product_ids, as_of)
         return base
 
-    def _record_assertion(self, base: CheckResult, rule: Rule, check: ComplianceCheck, product_ids: list[str],
+    def check_data(self, check: ComplianceCheck, as_of: str, subject: str = "adhoc") -> CheckResult:
+        """Run one ``record_assertion`` outside any rule (a control's data check, an eval): same guard, same limits, no product scope."""
+        base = CheckResult(rule_id=subject, check_index=0, kind=check.kind, description=check.description, status="NOT_EVALUATED")
+        if check.kind != "record_assertion":
+            return base.model_copy(update={"evidence": "Only record_assertion checks can be run on their own."})
+        result = self._record_assertion(base, SimpleNamespace(rule_id=subject), check, None, as_of)
+        self.store.audit("eval_suite", "check_data", {"subject": subject, "as_of": as_of}, f"record_assertion on {check.view}",
+                         {"in_scope": result.in_scope, "violations": result.violations})
+        return result
+
+    def _record_assertion(self, base: CheckResult, rule: Rule, check: ComplianceCheck, product_ids: list[str] | None,
                           as_of: str) -> CheckResult:
         """Declarative per-record test: rows matching ``where`` (in scope) that fail ``assert`` (violations).
 
@@ -133,13 +144,14 @@ class SecureEngine:
         keys = [c for c in WORKLIST_KEYS if c in columns]
         where_sql, assert_sql = compiled.sql(self.dialect)
         conditions = [f"({where_sql})"] if where_sql else []
-        if "product_id" in columns:
+        scoped = "product_id" in columns and product_ids is not None
+        if scoped:
             conditions.append("product_id IN :pids")
         sql = (f"SELECT {', '.join(keys)}, CASE WHEN ({assert_sql}) THEN 0 ELSE 1 END AS failed FROM {compiled.view}"
                + (f" WHERE {' AND '.join(conditions)}" if conditions else "") + f" LIMIT {ASSERTION_ROW_CAP + 1}")
         query = text(sql)
         params: dict[str, Any] = {}
-        if "product_id" in columns:
+        if scoped:
             query, params = query.bindparams(bindparam("pids", expanding=True)), {"pids": product_ids}
         try:
             with analyst_engine().connect() as conn, _deadline(conn, ASSERTION_SECONDS):

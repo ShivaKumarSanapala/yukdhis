@@ -1,0 +1,70 @@
+{
+ "note": "Reviewed extraction supplied to the deterministic pipeline (rules skip parse and extract). Mirrors what the LLM extractor produced for the real circular.",
+ "extraction": {
+  "policy": {
+   "policy_id": "policy:RBI/2026-27/CVA",
+   "title": "Credit Valuation Adjustment risk capital charge",
+   "issuer": "RBI",
+   "reference": "RBI/2026-27/CVA",
+   "issued_on": "2026-10-12",
+   "effective_date": "2027-04-01",
+   "source_uri": null,
+   "supersedes": []
+  },
+  "rules": [
+   {
+    "rule_id": "rule:RBI/2026-27/CVA:cva-capital-charge",
+    "title": "Compute the CVA risk capital charge",
+    "description": "Banks shall compute the CVA risk capital charge under BA-CVA and report the resulting RWA and CET1 impact.",
+    "effective_date": "2027-04-01",
+    "scope": {
+     "product_terms": [
+      "derivative counterparty exposures"
+     ],
+     "rate_type": null,
+     "instalment_based": null,
+     "secured": null,
+     "collateral_type": null,
+     "category": null,
+     "record_status": null
+    },
+    "processes": [],
+    "segments": [],
+    "checks": [
+     {
+      "kind": "control_required",
+      "description": "Compute the CVA risk capital charge",
+      "capability": "cva_capital_charge",
+      "capability_description": null,
+      "control_id": null,
+      "record_field": null,
+      "expected": null,
+      "trigger_event": null,
+      "required_event": null,
+      "deadline_days": null,
+      "penalty_per_day_inr": null,
+      "view": null,
+      "where": null,
+      "assertion": null,
+      "tolerance": null
+     }
+    ],
+    "penalty_risk": "MEDIUM",
+    "modality": "MUST",
+    "citation": {
+     "document_id": "doc:eval-preset",
+     "chunk_id": null,
+     "page": null,
+     "snippet": "Banks shall compute the CVA risk capital charge under BA-CVA and report the resulting RWA and CET1 impact."
+    },
+    "confidence": 1.0,
+    "status": "PENDING_REVIEW"
+   }
+  ],
+  "unexecutable": []
+ },
+ "validation_issues": [],
+ "extraction_provenance": {
+  "method": "reviewed-preset"
+ }
+}

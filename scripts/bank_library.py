@@ -83,9 +83,10 @@ def control(slug, name, kind, owner, process, status, *, desc="", since=None, pl
             "last_tested": tested, "last_test_result": result, "synonyms": list(synonyms), "notes": notes}
 
 
-def check(rule: str, instrument: str, view: str, what: str) -> dict:
-    """The data check that evidences a control: a rule of the template of record, run as a record_assertion on a view."""
-    return {"instrument": instrument, "rule": rule, "view": view, "description": what}
+def check(rule: str | None, instrument: str, view: str, what: str, expression: dict | None = None) -> dict:
+    """The data check that evidences a control: a rule of the template of record (``rule``) or, where no template covers the
+    obligation, an explicit ``expression`` {where, assert}; either runs as a record_assertion on ``view``."""
+    return {"instrument": instrument, "rule": rule, "view": view, "description": what, "expression": expression}
 
 
 # ----------------------------------------------------------------------------------------------------- controls
@@ -118,7 +119,7 @@ CONTROLS = [
     # --- Current incurred-loss regime (IRACP Directions, 2025) -------------------------------------------------------
     control("day-end-npa-classification", "Automated Day-end NPA Classification", SYSTEM, "credit-risk", "asset-classification", "implemented",
             since="2024-04-01", desc="Core-banking module that classifies every borrowal account at day-end, with straight-through upgrades and downgrades.",
-            satisfies=sat("iracp", "31", "36(2)", "37", "42(1)"), tested="2026-09-18", result="exceptions",
+            satisfies=sat("iracp", "31", "36(2)", "37", "42(1)") + sat("acpir", "8", "15"), tested="2026-09-18", result="exceptions",
             check=check("npa-classification-90-days", "iracp", "vw_asset_quality", "Accounts with DPD above 90 are classified NPA."),
             evidence=[("audit_report", "IA-2026-011", "System audit of the NPA classification system, FY26"),
                       ("system_config", "CBS-ACM-2026.3", "Asset classification parameters, release 2026.3")],
@@ -130,7 +131,7 @@ CONTROLS = [
             evidence=[("system_config", "CBS-ACM-2026.3", "SMA band parameters")], synonyms=["sma classification", "special mention accounts"]),
     control("overdue-day-end-flagging", "Overdue Flagging at Day-end", SYSTEM, "credit-risk", "asset-classification", "implemented",
             since="2024-04-01", desc="Flags an account overdue in the day-end process for the due date, whatever time the process runs.",
-            satisfies=sat("iracp", "30"), tested="2026-09-18", result="pass"),
+            satisfies=sat("iracp", "30") + sat("acpir", "14"), tested="2026-09-18", result="pass"),
     control("standard-asset-provisioning", "Standard Asset Provisioning Engine", SYSTEM, "finance", "provisioning", "implemented",
             since="2024-04-01", desc="Computes the general provision on standard assets at 0.25 per cent (housing, farm credit, small and micro enterprises) or 0.40 per cent.",
             satisfies=sat("iracp", "36(3)", "80", "81"), tested="2026-09-18", result="pass",
@@ -150,7 +151,7 @@ CONTROLS = [
             notes="Implemented from 1 Jul 2026, the day the amendment took effect (bitemporal demo)."),
     control("cash-basis-income-recognition", "Income Recognition on Cash Basis for NPAs", SYSTEM, "finance", "income-recognition", "implemented",
             since="2024-04-01", desc="Stops interest accrual on non-standard accounts and recognises income on receipt; re-restructured accounts are on cash basis.",
-            satisfies=sat("iracp", "36(4)", "124", "125", "139A", "139B"), tested="2026-09-18", result="exceptions",
+            satisfies=sat("iracp", "36(4)", "124", "125", "139A", "139B") + sat("acpir", "115"), tested="2026-09-18", result="exceptions",
             check=check("npa-income-cash-basis", "iracp", "vw_asset_quality", "Interest on NPAs is recognised on cash basis."),
             evidence=[("audit_report", "IA-2026-011", "System audit of income recognition, FY26")]),
     control("interest-reversal-memorandum", "Interest Reversal and Memorandum Account on NPA", SYSTEM, "finance", "income-recognition", "implemented",
@@ -166,7 +167,7 @@ CONTROLS = [
             evidence=[("audit_report", "IA-2026-011", "System audit of the NPA classification system, FY26")]),
     control("npa-mis-reporting", "Segment-wise NPA and Restructured Asset MIS", PROCESS, "finance", "regulatory-reporting", "implemented",
             since="2024-04-01", desc="System-generated segment-wise NPA, provisions, write-offs and restructured assets, reconciled to regulatory returns.",
-            satisfies=sat("iracp", "29", "33", "34"), tested="2026-07-15", result="pass"),
+            satisfies=sat("iracp", "29", "33", "34") + sat("acpir", "16"), tested="2026-07-15", result="pass"),
     control("crilc-reporting", "CRILC and Supervisory NPA Reporting", PROCESS, "compliance", "regulatory-reporting", "implemented",
             since="2024-04-01", desc="Reports large credits and SMA accounts to CRILC and files the supervisory returns on time.",
             satisfies=sat("iracp", "11"), tested="2026-07-15", result="pass"),
@@ -196,7 +197,7 @@ CONTROLS = [
             notes="Calendars loaded for 9 of 14 states; the rest follow the 90-day norm conservatively."),
     control("loan-agreement-due-date-disclosure", "Loan Agreement Due-date and SMA/NPA Date Disclosure", PROCESS, "lending-ops", "credit-underwriting", "implemented",
             since="2022-01-01", desc="Loan agreements state due dates, frequency, principal and interest split and example SMA/NPA dates.",
-            satisfies=sat("iracp", "13", "14"), tested="2026-05-30", result="pass"),
+            satisfies=sat("iracp", "13", "14") + sat("acpir", "13"), tested="2026-05-30", result="pass"),
     control("board-iracp-policy", "Board-approved IRACP Implementation Policy", GOVERNANCE, "credit-risk", "asset-classification", "implemented",
             since="2024-04-01", desc="Board policy covering income recognition, floating provisions, higher standard-asset provisioning, valuers and delegation for overrides.",
             satisfies=sat("iracp", "10"), tested="2026-03-31", result="pass",
@@ -208,7 +209,8 @@ CONTROLS = [
     control("kyc-periodic-updation", "Risk-based Periodic KYC Updation", PROCESS, "kyc-aml", "kyc-periodic-review", "implemented", since="2026-01-01",
             desc="Re-KYC every 2 years (high risk), 8 years (medium) and 10 years (low), with reminders from 60 days before the due date.",
             satisfies=sat("kyc_md", "periodic updation"), tested="2026-09-24", result="exceptions",
-            check=check("periodic-kyc-updation", "kyc_md", "vw_kyc_status", "No customer is past the re-KYC due date."),
+            check=check(None, "kyc_md", "vw_kyc_status", "No customer is past the re-KYC due date.",
+                        {"where": None, "assert": "kyc_due_date >= :as_of"}),
             evidence=[("campaign", "KYC-REFRESH-2026", "Re-KYC campaign and automated reminders from Jan 2026")],
             notes="Automated reminders only started in 2026; 22 customers are past their due date at the reference date."),
     control("aml-transaction-monitoring", "AML Transaction Monitoring", SYSTEM, "kyc-aml", "kyc-periodic-review", "partial", since="2021-04-01",
@@ -231,7 +233,7 @@ CONTROLS = [
             satisfies=sat("document_release", "Release timeline"), tested="2026-09-02", result="pass"),
     control("credit-appraisal-delegation", "Credit Appraisal and Delegation of Powers Checks", PROCESS, "credit-risk", "credit-underwriting", "implemented",
             since="2020-04-01", desc="Appraisal checklist, cash-flow-based repayment schedules and sanction within delegated limits.",
-            satisfies=sat("iracp", "12"), tested="2026-06-05", result="pass"),
+            satisfies=sat("iracp", "12") + sat("acpir", "12"), tested="2026-06-05", result="pass"),
     control("regulatory-change-tracking", "Regulatory Change Tracking", GOVERNANCE, "compliance", "regulatory-reporting", "partial", since="2025-04-01",
             desc="Compliance logs RBI circulars and assigns owners; impact assessment is manual and takes weeks.",
             satisfies=[], tested="2026-06-20", result="exceptions", notes="The gap Yukdhis is meant to close."),

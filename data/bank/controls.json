@@ -208,13 +208,22 @@
     {
      "instrument": "iracp",
      "paragraph": "42(1)"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "8"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "15"
     }
    ],
    "data_check": {
     "instrument": "iracp",
     "rule": "npa-classification-90-days",
     "view": "vw_asset_quality",
-    "description": "Accounts with DPD above 90 are classified NPA."
+    "description": "Accounts with DPD above 90 are classified NPA.",
+    "expression": null
    },
    "evidence": [
     {
@@ -262,7 +271,8 @@
     "instrument": "iracp",
     "rule": "sma-reporting-bands",
     "view": "vw_asset_quality",
-    "description": "SMA tag matches the days past due band."
+    "description": "SMA tag matches the days past due band.",
+    "expression": null
    },
    "evidence": [
     {
@@ -294,6 +304,10 @@
     {
      "instrument": "iracp",
      "paragraph": "30"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "14"
     }
    ],
    "data_check": null,
@@ -332,7 +346,8 @@
     "instrument": "iracp",
     "rule": "standard-asset-provision-025",
     "view": "vw_asset_quality",
-    "description": "Provision held meets the standard-asset rate."
+    "description": "Provision held meets the standard-asset rate.",
+    "expression": null
    },
    "evidence": [
     {
@@ -387,7 +402,8 @@
     "instrument": "iracp",
     "rule": "substandard-provision-secured-15",
     "view": "vw_asset_quality",
-    "description": "Provision held meets the substandard, doubtful and loss rates."
+    "description": "Provision held meets the substandard, doubtful and loss rates.",
+    "expression": null
    },
    "evidence": [
     {
@@ -443,7 +459,8 @@
     "instrument": "iracp",
     "rule": "resolution-plan-additional-provision-84a",
     "view": "vw_asset_quality",
-    "description": "Additional 5% per resolution plan is held."
+    "description": "Additional 5% per resolution plan is held.",
+    "expression": null
    },
    "evidence": [
     {
@@ -488,13 +505,18 @@
     {
      "instrument": "iracp",
      "paragraph": "139B"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "115"
     }
    ],
    "data_check": {
     "instrument": "iracp",
     "rule": "npa-income-cash-basis",
     "view": "vw_asset_quality",
-    "description": "Interest on NPAs is recognised on cash basis."
+    "description": "Interest on NPAs is recognised on cash basis.",
+    "expression": null
    },
    "evidence": [
     {
@@ -639,6 +661,10 @@
     {
      "instrument": "iracp",
      "paragraph": "34"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "16"
     }
    ],
    "data_check": null,
@@ -841,7 +867,8 @@
     "instrument": "iracp",
     "rule": "resolution-plan-classification-62a-62b",
     "view": "vw_asset_quality",
-    "description": "Accounts under a resolution plan are not downgraded for the plan itself."
+    "description": "Accounts under a resolution plan are not downgraded for the plan itself.",
+    "expression": null
    },
    "evidence": [
     {
@@ -906,6 +933,10 @@
     {
      "instrument": "iracp",
      "paragraph": "14"
+    },
+    {
+     "instrument": "acpir",
+     "paragraph": "13"
     }
    ],
    "data_check": null,
@@ -988,9 +1019,13 @@
    ],
    "data_check": {
     "instrument": "kyc_md",
-    "rule": "periodic-kyc-updation",
+    "rule": null,
     "view": "vw_kyc_status",
-    "description": "No customer is past the re-KYC due date."
+    "description": "No customer is past the re-KYC due date.",
+    "expression": {
+     "where": null,
+     "assert": "kyc_due_date >= :as_of"
+    }
    },
    "evidence": [
     {
@@ -1162,6 +1197,10 @@
    "satisfies": [
     {
      "instrument": "iracp",
+     "paragraph": "12"
+    },
+    {
+     "instrument": "acpir",
      "paragraph": "12"
     }
    ],
