@@ -23,8 +23,9 @@ from fastapi.staticfiles import StaticFiles
 from google.genai import types
 from pydantic import BaseModel, Field
 
-from api.adk_runtime import ASSISTANT_APP, assistant_runner, session_service
+from api.adk_runtime import ASSISTANT_APP, assistant_runner, memory_service, session_service
 from api.auth import User, current_user, verify_firebase_token, verify_service_caller
+from api.chat import auto_title, build_prompt, single_error, sse_response, stream_turn
 from api.runs import choose_mode, start_run
 from bank_mcp_server.remediation import dispatch, request_dispatch
 from core.app_store import get_app_store
@@ -47,7 +48,7 @@ ALLOWED_TYPES = TEXT_TYPES | DOCAI_TYPES
 app = FastAPI(title="Yukdhis - Autonomous Compliance Engine", version="1.0.0",
               docs_url="/api/docs" if settings.auth_mode == "none" else None, redoc_url=None, openapi_url="/api/openapi.json")
 app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_credentials=False,
-                   allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
+                   allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["Authorization", "Content-Type"])
 
 _hits: dict[str, deque] = defaultdict(deque)
 RATE_LIMIT = int(os.getenv("RATE_LIMIT_PER_MINUTE", "60"))
@@ -69,7 +70,7 @@ async def security_middleware(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     if request.url.path.startswith("/api/"):
-        response.headers["Cache-Control"] = "no-store"
+        response.headers.setdefault("Cache-Control", "no-store")  # SSE sets "no-store, no-transform"
     return response
 
 
@@ -279,6 +280,81 @@ async def chat(body: TextIn, user: User = Depends(current_user)) -> dict:
         if event.is_final_response() and event.content:
             reply += "".join(p.text or "" for p in event.content.parts if not getattr(p, "thought", False))
     return {"session_id": session.id, "reply": reply.strip(), "tools_used": tools}
+
+
+# Assistant conversations (streamed, persisted per user) ------------------------------
+ID_PATTERN = r"^[A-Za-z0-9_.:\-]+$"
+
+
+class ChatContext(BaseModel):
+    report_id: str | None = Field(default=None, max_length=64, pattern=ID_PATTERN)
+
+
+class ChatIn(BaseModel):
+    text: str = Field(min_length=1, max_length=8000)
+    conversation_id: str | None = Field(default=None, max_length=64, pattern=ID_PATTERN)
+    context: ChatContext | None = None
+
+
+class TitleIn(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+
+
+def _my_conversation(conversation_id: str, user: User) -> dict:
+    conversation = get_app_store().get_conversation(conversation_id, user.user_id)
+    if not conversation:  # also for someone else's conversation: never confirm it exists
+        raise HTTPException(404, "Unknown conversation")
+    return conversation
+
+
+@app.post("/api/chat/stream")
+async def chat_stream(body: ChatIn, user: User = Depends(current_user)):
+    """SSE answer stream; call the Cloud Run URL directly (Hosting rewrites buffer responses)."""
+    store = get_app_store()
+    conversation = _my_conversation(body.conversation_id, user) if body.conversation_id else None
+    if not settings.is_gcp_llm_ready:
+        return sse_response(single_error("The assistant needs Gemini on Vertex AI (set GOOGLE_CLOUD_PROJECT on the API)."))
+    created = conversation is None
+    if conversation is None:
+        conversation = store.create_conversation(user.user_id, auto_title(body.text))
+    return sse_response(stream_turn(
+        store=store, runner=assistant_runner(), sessions=session_service(), memory=memory_service(),
+        sanitizer=get_sanitizer(), app_name=ASSISTANT_APP, user_id=user.user_id, conversation=conversation,
+        created=created, question=body.text, prompt=build_prompt(body.text, body.context.report_id if body.context else None)))
+
+
+@app.get("/api/conversations")
+def list_conversations(user: User = Depends(current_user)) -> list[dict]:
+    return get_app_store().list_conversations(user.user_id)
+
+
+@app.get("/api/conversations/{conversation_id}")
+def get_conversation(conversation_id: str, user: User = Depends(current_user)) -> dict:
+    conversation = _my_conversation(conversation_id, user)
+    return {**conversation, "messages": get_app_store().chat_messages(conversation_id, user.user_id)}
+
+
+@app.patch("/api/conversations/{conversation_id}")
+def rename_conversation(conversation_id: str, body: TitleIn, user: User = Depends(current_user)) -> dict:
+    title = " ".join(body.title.split())
+    if not title:
+        raise HTTPException(422, "Title must not be blank")
+    conversation = get_app_store().rename_conversation(conversation_id, user.user_id, title)
+    if not conversation:
+        raise HTTPException(404, "Unknown conversation")
+    return conversation
+
+
+@app.delete("/api/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str, user: User = Depends(current_user)) -> dict:
+    conversation = _my_conversation(conversation_id, user)
+    get_app_store().delete_conversation(conversation_id, user.user_id)
+    try:  # the ADK session holds the model-side history; Memory Bank recall is intentionally kept
+        await session_service().delete_session(app_name=ASSISTANT_APP, user_id=user.user_id,
+                                               session_id=conversation["session_id"])
+    except Exception:
+        log.warning("Could not delete ADK session for %s", conversation_id, exc_info=True)
+    return {"conversation_id": conversation_id, "deleted": True}
 
 
 # Watcher, action engine (service-to-service) --------------------------------------
