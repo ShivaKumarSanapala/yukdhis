@@ -1,6 +1,6 @@
 import type { RunEvent, RunInfo } from "../types";
 import AgentActivity from "./AgentActivity";
-import { STAGES, fmtDuration, runStatusMeta, stageOutcome, stageStates, stageTimings, statusLine, type StageState } from "../run-utils";
+import { STAGES, fmtDuration, runStatusMeta, stageStates, stageTimings, statusLine } from "../run-utils";
 
 function describe(event: RunEvent): string {
   const p = event.payload as Record<string, any>;
@@ -23,41 +23,28 @@ function describe(event: RunEvent): string {
   }
 }
 
-const STATE_TEXT: Record<StageState, string> = {
-  pending: "not started", active: "in progress", done: "done", failed: "failed", cancelled: "cancelled here", paused: "paused for review",
-};
-
-/** Stage strip with a one-line outcome each, a plain-language status line, and the raw event log behind a toggle. */
+/** Pipeline card: status, slim progress rail, the stepper with per-stage activity, and the raw event log behind a toggle. */
 export default function RunTimeline({ run, events }: { run: RunInfo; events: RunEvent[] }) {
   const status = run.status;
   const states = stageStates(events, status);
-  const { per, total } = stageTimings(events);
+  const { total } = stageTimings(events);
   const meta = runStatusMeta(status);
   const line = statusLine(run, events);
   const live = status === "RUNNING" || status === "CANCEL_REQUESTED";
+  const done = STAGES.filter(([id]) => states.get(id) === "done").length;
   return (
-    <div className="card">
-      <h2>Agent pipeline <span className={`pill ${meta.tone}`} role="status">{meta.label}</span>
-        {!live && total !== null && total > 0 && <span className="muted"> · total {fmtDuration(total)}</span>}</h2>
+    <div className="card timeline-card">
+      <div className="card-head">
+        <h2>Agent pipeline <span className={`pill ${meta.tone}`} role="status">{meta.label}</span></h2>
+        <span className="muted mono">
+          {done}/{STAGES.length} stages{!live && total !== null && total > 0 && <> · total {fmtDuration(total)}</>}
+        </span>
+      </div>
       {line && <div className={`banner ${status === "FAILED" ? "error" : status === "AWAITING_REVIEW" || status === "CANCEL_REQUESTED" ? "warn" : ""}`} role={status === "FAILED" ? "alert" : "status"}>{line}</div>}
-      <ol className="stages" aria-label="Pipeline stages">
-        {STAGES.map(([id, label]) => {
-          const state = states.get(id) ?? "pending";
-          const outcome = stageOutcome(id, events);
-          return (
-            <li key={id} className={state}>
-              <span className="stage-name">{label}</span>
-              <span className="sr-only">: {STATE_TEXT[state]}</span>
-              {outcome && <span className="outcome">{outcome}</span>}
-              {per.has(id) && <span className="elapsed">{fmtDuration(per.get(id)!)}{state === "active" ? " so far" : ""}</span>}
-              {state === "failed" && <span className="outcome">Failed here</span>}
-              {state === "cancelled" && <span className="outcome">Cancelled here</span>}
-              {state === "paused" && <span className="outcome">Waiting for review</span>}
-            </li>
-          );
-        })}
-      </ol>
-      <AgentActivity events={events} live={live} activeStage={run.current_stage ?? null} />
+      <div className="rail" aria-hidden="true">
+        {STAGES.map(([id]) => <span key={id} className={states.get(id) ?? "pending"} />)}
+      </div>
+      <AgentActivity events={events} live={live} activeStage={run.current_stage ?? null} status={status} />
       <details className="event-log">
         <summary>Raw event log ({events.length})</summary>
         <ul className="log">

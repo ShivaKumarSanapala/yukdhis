@@ -153,7 +153,7 @@ export async function streamChat(
 
 export interface GraphSnapshot {
   as_of: string;
-  nodes: { id: string; type: string; name: string }[];
+  nodes: { id: string; type: string; name: string; attributes?: Record<string, unknown> }[];
   edges: { source: string; target: string; type: string; valid_from: string; valid_to: string | null }[];
 }
 

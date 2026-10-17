@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { ImpactReport } from "../types";
 import { compareReports, inr, isMeasured, kpiRows, overallKey } from "../report-utils";
 import { CheckPill, OverallBadge } from "./StatusBadges";
+import { formatDateTime } from "../format";
 
 const show = (n: number, money?: boolean) => (money ? inr(n) : String(n));
 const delta = (a: number, b: number, money?: boolean) => (a === b ? "no change" : `${b > a ? "+" : "−"}${show(Math.abs(b - a), money)}`);
@@ -11,7 +12,7 @@ function Head({ label, r }: { label: string; r: ImpactReport }) {
     <div className="card">
       <p className="muted">{label}</p>
       <h3>{r.policy.title}</h3>
-      <p className="muted">{r.report_id} · generated {r.generated_at} · as of {r.as_of} · {r.mode}</p>
+      <p className="meta mono">{r.report_id} · generated <time dateTime={r.generated_at} title={r.generated_at}>{formatDateTime(r.generated_at)}</time> · as of {formatDateTime(r.as_of)} · {r.mode}</p>
       <OverallBadge summary={r.summary} large />
     </div>
   );
@@ -40,14 +41,14 @@ export default function CompareView({ a, b }: { a: ImpactReport; b: ImpactReport
         <h3>Summary</h3>
         <div className="table-wrap" tabIndex={0} role="region" aria-label="Summary comparison">
           <table>
-            <thead><tr><th scope="col">Metric</th><th scope="col">Run A</th><th scope="col">Run B</th><th scope="col">Change</th></tr></thead>
+            <thead><tr><th scope="col">Metric</th><th scope="col" className="num">Run A</th><th scope="col" className="num">Run B</th><th scope="col" className="num">Change</th></tr></thead>
             <tbody>
               <tr className={statusChanged ? "diff" : ""}>
                 <th scope="row">Overall status</th><td><OverallBadge summary={a.summary} /></td><td><OverallBadge summary={b.summary} /></td><td>{statusChanged ? "changed" : "no change"}</td>
               </tr>
               {kpis.map((k) => (
                 <tr key={k.label} className={k.a !== k.b ? "diff" : ""}>
-                  <th scope="row">{k.label}</th><td>{show(k.a, k.money)}</td><td>{show(k.b, k.money)}</td><td>{delta(k.a, k.b, k.money)}</td>
+                  <th scope="row">{k.label}</th><td className="num">{show(k.a, k.money)}</td><td className="num">{show(k.b, k.money)}</td><td className="num">{delta(k.a, k.b, k.money)}</td>
                 </tr>
               ))}
             </tbody>

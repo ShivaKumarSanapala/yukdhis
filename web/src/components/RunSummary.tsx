@@ -1,6 +1,7 @@
 import type { ImpactReport, RunInfo } from "../types";
 import { inr, overallKey, overallMeta } from "../report-utils";
 import { OverallBadge } from "./StatusBadges";
+import MetricStrip from "./MetricStrip";
 
 type Reference = { ref?: string; url?: string; relation?: string };
 
@@ -19,19 +20,19 @@ export default function RunSummary({ run, report, onOpen, onOpenInReports, onCom
       <div className="report-head">
         <div>
           <h2 id={`summary-${run.run_id}`}>{report.policy.title}</h2>
-          <p className="muted">Analysed as of {report.as_of} · {report.mode} · {report.report_id}</p>
+          <p className="meta mono">as of {report.as_of} · {report.mode} · {report.report_id}</p>
         </div>
         <div className="head-side" role="status" aria-label="Overall status"><OverallBadge summary={s} large /></div>
       </div>
       {overallMeta(s).hint && <p className="muted status-hint">{overallMeta(s).hint}</p>}
-      <div className="kpis">
-        <Kpi label="Rules" value={s.rules} />
-        <Kpi label="Checks with gaps" value={dash(s.gaps)} />
-        <Kpi label="Loans with violations" value={dash(s.loans_with_violations)} />
-        <Kpi label="Penalty exposure" value={dash(inr(s.statutory_penalty_inr))} />
-        <Kpi label="Actions proposed" value={report.actions?.length ?? 0} />
-        <Kpi label={notApplicable ? "Rules not applicable" : "Products in scope"} value={notApplicable || s.products_in_scope} />
-      </div>
+      <MetricStrip metrics={[
+        { label: "Rules", value: s.rules },
+        { label: "Checks with gaps", value: dash(s.gaps) },
+        { label: "Loans with violations", value: dash(s.loans_with_violations) },
+        { label: "Penalty exposure", value: dash(inr(s.statutory_penalty_inr)) },
+        { label: "Actions proposed", value: report.actions?.length ?? 0 },
+        { label: notApplicable ? "Rules not applicable" : "Products in scope", value: notApplicable || s.products_in_scope },
+      ]} />
       <div className="buttons summary-actions">
         <button className="primary" onClick={onOpen}>Open report</button>
         <button onClick={onOpenInReports}>Open in Reports</button>
@@ -52,8 +53,4 @@ export default function RunSummary({ run, report, onOpen, onOpenInReports, onCom
       )}
     </section>
   );
-}
-
-function Kpi({ label, value }: { label: string; value: string | number }) {
-  return <div className="kpi"><div className="kpi-value">{value}</div><div className="kpi-label">{label}</div></div>;
 }

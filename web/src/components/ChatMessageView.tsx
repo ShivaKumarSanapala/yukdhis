@@ -3,7 +3,7 @@ import type { ChatMessage, ToolCallTrace } from "../types";
 import Markdown from "./Markdown";
 
 const pretty = (value: unknown) => (typeof value === "string" ? value : JSON.stringify(value, null, 2));
-const STATUS_PILL: Record<string, string> = { ok: "ok", error: "bad", running: "info", cancelled: "neutral" };
+const STATUS_TONE: Record<string, string> = { ok: "ok", error: "bad", running: "info", cancelled: "warn" };
 
 export function Thinking({ text, live, label = "Thinking" }: { text: string; live: boolean; label?: string }) {
   const [manual, setManual] = useState<boolean | null>(null);
@@ -13,7 +13,8 @@ export function Thinking({ text, live, label = "Thinking" }: { text: string; liv
     <div className="trace-block">
       <button className="trace-toggle" aria-expanded={open} aria-controls={id} onClick={() => setManual(!open)}>
         <span className="chevron" aria-hidden="true">{open ? "▾" : "▸"}</span>
-        {live ? `${label}…` : label}
+        <span className={`dot ${live ? "info live" : "neutral"}`} aria-hidden="true" />
+        <span>{live ? `${label}…` : label}</span>
       </button>
       {open && <div id={id} className="thinking-text"><Markdown text={text} /></div>}
     </div>
@@ -29,9 +30,10 @@ export function ToolCall({ call }: { call: ToolCallTrace }) {
     <li className="tool-call">
       <button className="trace-toggle" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
         <span className="chevron" aria-hidden="true">{open ? "▾" : "▸"}</span>
-        <code>{call.name}</code>
-        <span className={`pill ${STATUS_PILL[call.status] ?? "neutral"}`}>{call.status === "running" ? "running…" : call.status}</span>
-        {typeof call.duration_ms === "number" && <span className="muted">{(call.duration_ms / 1000).toFixed(2)} s</span>}
+        <span className={`dot ${STATUS_TONE[call.status] ?? "neutral"}${call.status === "running" ? " live" : ""}`} aria-hidden="true" />
+        <code className="tc-name">{call.name}</code>
+        <span className="tc-status">{call.status === "running" ? "running…" : call.status}</span>
+        {typeof call.duration_ms === "number" && <span className="tc-dur mono">{(call.duration_ms / 1000).toFixed(2)}s</span>}
       </button>
       {open && (
         <div id={id} className="tool-io">
