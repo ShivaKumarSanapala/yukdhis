@@ -108,7 +108,7 @@ function Step({ id, name, sub, state, outcome, time, items, live, open, onToggle
       <span className="step-sub mono">{sub}</span>
       <span className="step-outcome">
         {outcome}{outcome && note ? " · " : ""}{note && <b>{note}</b>}
-        {expandable && tools > 0 && <span className="step-tools mono"> · {tools} tool call{tools === 1 ? "" : "s"}</span>}
+        {expandable && tools > 0 && <span className="step-tools mono">{outcome || note ? " · " : ""}{tools} tool call{tools === 1 ? "" : "s"}</span>}
       </span>
       <span className="step-time mono">{time}</span>
       <span className="chevron step-chev" aria-hidden="true">{expandable ? (open ? "▾" : "▸") : ""}</span>
