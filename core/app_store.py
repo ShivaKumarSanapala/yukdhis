@@ -109,6 +109,7 @@ def _json(text: str | None, default: Any) -> Any:
 
 
 SOURCE_KINDS = {"upload": "upload", "sample": "sample", "text": "text", "url": "url", "watcher": "watcher"}
+TRIGGER_KINDS = {**SOURCE_KINDS, "fetch": "url"}  # source["trigger"] -> source_kind (fetch_circular says "fetch")
 
 
 def _meta_values(values: dict) -> dict:
@@ -178,7 +179,7 @@ class AppStore:
 
     # runs ---------------------------------------------------------------
     def create_run(self, mode: str, document: dict, meta: dict | None = None) -> str:
-        run_id, ts = new_id("run"), now()
+        run_id, ts = new_id("run"), now_ms()  # ms: parallel runs started in the same second still order correctly
         with self.engine.begin() as conn:
             conn.execute(insert(runs).values(run_id=run_id, tenant_id=self.tenant_id, status="QUEUED", mode=mode,
                                              document=json.dumps(document), created_at=ts, updated_at=ts))
@@ -247,7 +248,7 @@ class AppStore:
         out.update(
             document={k: v for k, v in document.items() if k != "user_id"},
             created_by=row["created_by"] or document.get("user_id"),
-            source_kind=row["source_kind"] or SOURCE_KINDS.get(document.get("trigger") or "", "upload"),
+            source_kind=row["source_kind"] or TRIGGER_KINDS.get(document.get("trigger") or "", "upload"),
             filename=row["filename"] or document.get("filename"), doc_sha256=row["doc_sha256"],
             current_stage=row["current_stage"], started_at=row["started_at"], finished_at=row["finished_at"],
             queued_position=row["queued_position"], as_of=row["as_of"], review_rules=bool(row["review_rules"]),
@@ -523,12 +524,17 @@ class AppStore:
 
 
 _STORE: AppStore | None = None
+_STORE_LOCK = threading.Lock()
 
 
 def get_app_store() -> AppStore:
+    """Process-wide store; created once even when parallel requests and run threads ask for it at the same time
+    (two concurrent ``create_all`` calls on a fresh database fail with "table already exists")."""
     global _STORE
     if _STORE is None:
-        _STORE = AppStore()
+        with _STORE_LOCK:
+            if _STORE is None:
+                _STORE = AppStore()
     return _STORE
 
 

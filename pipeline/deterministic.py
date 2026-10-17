@@ -11,6 +11,7 @@ and extract are skipped).  ``emit`` may raise to cancel the run between events.
 
 from __future__ import annotations
 
+import contextlib
 import threading
 from typing import Callable
 
@@ -37,10 +38,17 @@ def run_pipeline(source: dict, as_of: str | None = None, emit: Callable[[str, st
                  preset: dict | None = None, stop_after: str | None = None) -> dict:
     if stop_after is not None and stop_after not in STAGE_KEYS:
         raise ValueError(f"stop_after must be one of {STAGE_KEYS}")
+    emit = emit or (lambda *_: None)
+    sink = getattr(stages, "event_sink", None)  # lets stages emit their own events (document_classified, applicability)
+    with sink(emit) if sink else contextlib.nullcontext():
+        return _run(source, as_of, emit, preset, stop_after)
+
+
+def _run(source: dict, as_of: str | None, emit: Callable[[str, str, dict], None], preset: dict | None,
+         stop_after: str | None) -> dict:
     state: dict = {"source": source, **(preset or {})}
     if as_of:
         state["as_of"] = as_of
-    emit = emit or (lambda *_: None)
     supplied = "extraction" in (preset or {})
     for key, agent, label, stage in STAGES:
         if supplied and key in ("parse", "extract"):

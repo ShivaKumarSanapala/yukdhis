@@ -8,7 +8,21 @@ export interface Config {
   backends: Record<string, string>;
 }
 export interface Sample { sample_id: string; title: string }
-export interface RunInfo { run_id: string; status: string; mode: string; report_id: string | null; error: string | null }
+/** QUEUED | RUNNING | CANCEL_REQUESTED | AWAITING_REVIEW | SUCCEEDED | FAILED | CANCELLED | REJECTED */
+export type RunStatus = string;
+export type SourceKind = "upload" | "sample" | "text" | "url" | "watcher" | string;
+/** Fields after `error` are newer; old runs may omit or null them. */
+export interface RunInfo {
+  run_id: string; status: RunStatus; mode: string; report_id: string | null; error: string | null;
+  created_at?: string; updated_at?: string; document?: Record<string, unknown>;
+  created_by?: string | null; source_kind?: SourceKind; filename?: string | null; doc_sha256?: string | null;
+  current_stage?: string | null; started_at?: string | null; finished_at?: string | null; queued_position?: number | null;
+  as_of?: string | null; review_rules?: boolean; rerun_of?: string | null; rules?: ExtractedRule[];
+  previous_run_ids?: string[]; previous_report_id?: string | null; is_mine?: boolean;
+}
+/** A rule as extracted (full server model); only title, modality and effective date are edited in review. */
+export type ExtractedRule = Rule & { scope?: unknown; processes?: string[]; segments?: string[] } & Record<string, unknown>;
+export interface StartedRuns { run_id: string; mode: string; run_ids: string[]; runs: { run_id: string; mode: string; filename?: string }[] }
 export interface RunEvent { seq: number; ts: string; stage: string; kind: string; payload: Record<string, unknown> }
 export interface ReportListItem { report_id: string; title: string; created_at: string; mode: string; summary: Summary }
 export interface Summary {

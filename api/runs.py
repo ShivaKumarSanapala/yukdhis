@@ -43,7 +43,8 @@ from typing import Any, Callable
 from google.genai import types
 
 from api.adk_runtime import PIPELINE_APP, memory_service, pipeline_runner, session_service
-from core.app_store import ACTIVE_RUN_STATUSES, SOURCE_KINDS, get_app_store, now
+from core.app_store import ACTIVE_RUN_STATUSES, TRIGGER_KINDS, get_app_store
+from core.app_store import now_ms as now  # run timestamps in ms: elapsed times of fast runs stay meaningful
 from core.config import get_settings
 from pipeline.deterministic import EXTRACTION_KEYS, run_pipeline
 from pipeline.stages import default_as_of
@@ -143,7 +144,7 @@ def start_run(source: dict, user_id: str, mode: str | None = None, as_of: str | 
     if doc_sha256 is None and source.get("path") and not source.get("gcs_uri"):
         path = Path(source["path"])
         doc_sha256 = sha256_of(path.read_bytes()) if path.is_file() else None
-    kind = source_kind or SOURCE_KINDS.get(source.get("trigger") or "", "upload")
+    kind = source_kind or TRIGGER_KINDS.get(source.get("trigger") or "", "upload")
     run_id = store.create_run(mode, {k: v for k, v in source.items() if k not in {"path", "doc_sha256"}}, {
         "owner_id": user_id, "created_by": email or user_id, "source_kind": kind, "filename": source.get("filename"),
         "doc_sha256": doc_sha256 or source.get("doc_sha256"), "as_of": as_of, "review_rules": review_rules,
@@ -374,6 +375,7 @@ async def _agentic(run_id: str, source: dict, user_id: str, as_of: str, local: _
     if preset:
         prompt += " Its rules were already extracted and approved by a compliance officer; start from the mapping."
     current = None
+    last_error: tuple[str, str] | None = None  # (stage, message) of the latest tool error, explains a missing report
     events = pipeline_runner().run_async(user_id=user_id, session_id=session.id,
                                          new_message=types.Content(role="user", parts=[types.Part(text=prompt)]))
     try:
@@ -392,12 +394,17 @@ async def _agentic(run_id: str, source: dict, user_id: str, as_of: str, local: _
                 store.add_event(run_id, stage, "tool_call", {"tool": call.name, "args": _compact(call.args)})
             for response in event.get_function_responses():
                 store.add_event(run_id, stage, "tool_result", {"tool": response.name, "output": _compact(response.response)})
+                if isinstance(response.response, dict) and response.response.get("status") == "error":
+                    last_error = (stage, str(response.response.get("message") or f"{response.name} failed"))
             text = "".join(part.text or "" for part in (event.content.parts if event.content else []) if not getattr(part, "thought", False))
             if text.strip() and not event.partial:
                 store.add_event(run_id, stage, "agent_message", {"agent": event.author, "text": text.strip()[:6000]})
     finally:
         await events.aclose()  # same task that iterates it (see module docstring)
     final = await service.get_session(app_name=PIPELINE_APP, user_id=user_id, session_id=session.id)
+    if not final.state.get("report_id") and last_error:  # e.g. "No binding obligations were found..." from extraction
+        store.update_run(run_id, current_stage=last_error[0])
+        raise RuntimeError(last_error[1])
     try:
         await memory_service().add_session_to_memory(final)
     except Exception:  # memory is an enhancement; the report is already persisted

@@ -8,7 +8,9 @@ import { overallKey } from "../report-utils";
 
 const time = (value: string) => { const t = Date.parse(value); return Number.isNaN(t) ? 0 : t; };
 
-export default function ReportsPanel({ onOpenReportChange }: { onOpenReportChange?: (reportId: string | null) => void }) {
+export default function ReportsPanel({ onOpenReportChange, initialReportId }: {
+  onOpenReportChange?: (reportId: string | null) => void; initialReportId?: string | null;
+}) {
   const [items, setItems] = useState<ReportListItem[]>([]);
   const [open, setOpen] = useState<ImpactReport | null>(null);
   const openId = open?.report_id ?? null;
@@ -18,6 +20,9 @@ export default function ReportsPanel({ onOpenReportChange }: { onOpenReportChang
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => { api.reports().then(setItems).catch((e) => setError(e.message)); }, []);
+  useEffect(() => {  // "Open in Reports" from the Analyze tab
+    if (initialReportId) api.report(initialReportId).then(setOpen).catch((e) => setError(e.message));
+  }, [initialReportId]);
 
   const openReport = (id: string) => api.report(id).then(setOpen).catch((e) => setError(e.message));
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 2 ? [p[1], id] : [...p, id]));
