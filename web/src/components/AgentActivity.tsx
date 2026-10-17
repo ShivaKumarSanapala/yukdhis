@@ -143,8 +143,16 @@ export default function AgentActivity({ events, live, activeStage, status }: { e
   const extra = [...activity.keys()].filter((s) => !STAGES.some(([id]) => id === s));
   const rows = [...STAGES.map(([id, label]) => ({ id, label })), ...extra.map((id) => ({ id, label: LABELS.get(id) ?? id }))];
   if (!events.length && live) return <p className="muted activity-wait" role="status">Waiting for the first agent to start…</p>;
+  const withItems = rows.filter(({ id }) => (activity.get(id) ?? []).length > 0).map(({ id }) => id);
+  const allOpen = withItems.length > 0 && withItems.every((id) => manual[id] === true);
+  const setAll = (value: boolean) => setManual(Object.fromEntries(withItems.map((id) => [id, value])));
   return (
     <section className="agent-activity" aria-label="Agent activity">
+      {withItems.length > 0 && (
+        <div className="activity-tools">
+          <button className="link" onClick={() => setAll(!allOpen)}>{allOpen ? "Collapse all stages" : "Expand all stages (thinking, tool calls)"}</button>
+        </div>
+      )}
       <ol className="steps" aria-label="Pipeline stages">
         {rows.map(({ id, label }) => {
           const state: StageState = states.get(id) ?? (id === "pipeline" && status === "FAILED" ? "failed" : "pending");

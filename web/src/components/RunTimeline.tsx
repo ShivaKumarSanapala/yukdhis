@@ -25,7 +25,7 @@ function describe(event: RunEvent): string {
 }
 
 /** Pipeline card: a "thinking"-style header (pulsing dot while the agents work), then the progress rail, the stepper with
- *  per-stage activity and the raw event log. Open while the run is active, collapsed by itself once it finishes. */
+ *  per-stage activity and the raw event log. Open while the run is active, collapsed by itself once it finishes live, and open when a finished run is opened. */
 export default function RunTimeline({ run, events }: { run: RunInfo; events: RunEvent[] }) {
   const status = run.status;
   const states = stageStates(events, status);
@@ -35,7 +35,9 @@ export default function RunTimeline({ run, events }: { run: RunInfo; events: Run
   const live = status === "RUNNING" || status === "CANCEL_REQUESTED";
   const active = isActive(run) || status === "AWAITING_REVIEW";
   const done = STAGES.filter(([id]) => states.get(id) === "done").length;
-  const [manual, setManual] = useState<boolean | null>(null);
+  // A run opened from history (already finished) starts open so its thinking and event log are visible; only a run that
+  // finishes while you watch collapses by itself.
+  const [manual, setManual] = useState<boolean | null>(() => (active ? null : true));
   const was = useRef(active);
   useEffect(() => { if (was.current && !active) setManual(null); was.current = active; }, [active]);  // finished: fall back to collapsed
   const open = manual ?? active;
