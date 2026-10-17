@@ -423,7 +423,7 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
         "privacy_redactions": int(state.get("privacy_redactions", 0)),
     }
     report = ImpactReport(
-        report_id=new_id("rpt"), tenant_id=get_settings().tenant_id, policy=extraction.policy, rules=extraction.rules,
+        report_id=state.get("report_id") or new_id("rpt"), tenant_id=get_settings().tenant_id, policy=extraction.policy, rules=extraction.rules,
         generated_at=now(), as_of=state["as_of"], mode=mode, blast_radius=radii, results=results, summary=summary,
         actions=actions, narrative=narrative.strip(),
         validation_issues=[ValidationIssue.model_validate(i) for i in state.get("validation_issues", [])],
