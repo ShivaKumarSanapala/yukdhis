@@ -64,6 +64,7 @@ RESPONSE_STYLE = (
 )
 
 _options = llm_options(reasoning=True)
+_options.pop("planner", None)  # the assistant sets its own (unbounded thinking budget)
 _options["generate_content_config"] = _options["generate_content_config"].model_copy(update={"max_output_tokens": 8192})
 
 root_agent = LlmAgent(

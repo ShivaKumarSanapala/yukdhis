@@ -40,6 +40,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
+from google.adk.agents.run_config import RunConfig, StreamingMode
 from google.genai import types
 
 from api.adk_runtime import PIPELINE_APP, memory_service, pipeline_runner, session_service
@@ -54,6 +55,7 @@ MAX_CONCURRENT_RUNS = max(1, int(os.getenv("MAX_CONCURRENT_RUNS", "3")))
 MAX_ACTIVE_RUNS_PER_USER = max(1, int(os.getenv("MAX_ACTIVE_RUNS_PER_USER", "5")))
 POLL_SECONDS = float(os.getenv("RUN_POLL_SECONDS", "1.0"))
 LOCK_TTL_S, HEARTBEAT_S, STALE_AFTER_S = 120, 20, 300
+THINKING_FLUSH_S = 1.5
 WATCHER_USER = "watcher"
 ACTIVE = set(ACTIVE_RUN_STATUSES)
 PAUSED = {"AWAITING_REVIEW"}
@@ -416,8 +418,11 @@ async def _agentic(run_id: str, source: dict, user_id: str, as_of: str, local: _
         prompt += " Its rules were already extracted and approved by a compliance officer; start from the mapping."
     current = None
     last_error: tuple[str, str] | None = None  # (stage, message) of the latest tool error, explains a missing report
+    trace = _Trace(run_id)
+    # SSE streaming: partial events carry thought summaries as they are generated, so the timeline shows them live.
     events = pipeline_runner().run_async(user_id=user_id, session_id=session.id,
-                                         new_message=types.Content(role="user", parts=[types.Part(text=prompt)]))
+                                         new_message=types.Content(role="user", parts=[types.Part(text=prompt)]),
+                                         run_config=RunConfig(streaming_mode=StreamingMode.SSE))
     try:
         async for event in events:
             if local.cancel.is_set():
@@ -427,29 +432,92 @@ async def _agentic(run_id: str, source: dict, user_id: str, as_of: str, local: _
                 if store.run_status(run_id) == "CANCEL_REQUESTED":
                     local.cancel.set()
                     raise RunCancelled()
+                trace.flush(done=True)
                 store.add_event(run_id, stage, "stage_started", {"agent": event.author})
                 store.update_run(run_id, current_stage=stage)
                 current = stage
+            parts = event.content.parts if event.content and event.content.parts else []
+            thought = "".join(part.text or "" for part in parts if getattr(part, "thought", False))
+            if event.partial:
+                trace.think(stage, event.author, thought)
+                continue
+            trace.finish_thought(stage, event.author, thought)  # the final event repeats the whole thought summary
             for call in event.get_function_calls():
-                store.add_event(run_id, stage, "tool_call", {"tool": call.name, "args": _compact(call.args)})
+                trace.tool_call(stage, call)
             for response in event.get_function_responses():
-                store.add_event(run_id, stage, "tool_result", {"tool": response.name, "output": _compact(response.response)})
+                trace.tool_result(stage, response)
                 if isinstance(response.response, dict) and response.response.get("status") == "error":
                     last_error = (stage, str(response.response.get("message") or f"{response.name} failed"))
-            text = "".join(part.text or "" for part in (event.content.parts if event.content else []) if not getattr(part, "thought", False))
-            if text.strip() and not event.partial:
+            text = "".join(part.text or "" for part in parts if not getattr(part, "thought", False))
+            if text.strip():
                 store.add_event(run_id, stage, "agent_message", {"agent": event.author, "text": text.strip()[:6000]})
+        trace.flush(done=True)
     finally:
         await events.aclose()  # same task that iterates it (see module docstring)
     final = await service.get_session(app_name=PIPELINE_APP, user_id=user_id, session_id=session.id)
-    if not final.state.get("report_id") and last_error:  # e.g. "No binding obligations were found..." from extraction
-        store.update_run(run_id, current_stage=last_error[0])
-        raise RuntimeError(last_error[1])
+    halted = final.state.get("pipeline_halted")  # the Reader could not read the document: that is the real reason
+    if not final.state.get("report_id") and (halted or last_error):
+        store.update_run(run_id, current_stage="reader" if halted else last_error[0])
+        raise RuntimeError(halted or last_error[1])
     try:
         await memory_service().add_session_to_memory(final)
     except Exception:  # memory is an enhancement; the report is already persisted
         log.warning("Could not add session %s to memory", session.id, exc_info=True)
     return final.state.get("report_id")
+
+
+class _Trace:
+    """Turns ADK events into run events the UI renders as each agent's live thinking and tool calls.
+
+    Thought deltas from partial events are buffered and written at most every ``THINKING_FLUSH_S`` as one cumulative
+    ``thinking`` event per stream (the UI keeps the latest text per stream), so the store is not hit per token."""
+
+    def __init__(self, run_id: str) -> None:
+        self.run_id, self.store = run_id, get_app_store()
+        self.count, self.stage, self.agent, self.text, self.flushed_at = 0, "", "", "", 0.0
+        self.calls: dict[str, float] = {}
+
+    def _stream(self) -> str:
+        return f"{self.agent}-{self.count}"
+
+    def think(self, stage: str, agent: str, delta: str) -> None:
+        if not delta:
+            return
+        if agent != self.agent:
+            self.flush(done=True)
+            self.stage, self.agent = stage, agent
+        self.text += delta
+        if time.monotonic() - self.flushed_at >= THINKING_FLUSH_S:
+            self.flush(done=False)
+
+    def finish_thought(self, stage: str, agent: str, full: str) -> None:
+        if full and agent == self.agent and full.startswith(self.text[:200]):
+            self.text = full  # the final event carries the complete summary
+        elif full and not self.text:
+            self.stage, self.agent, self.text = stage, agent, full
+        self.flush(done=True)
+
+    def flush(self, done: bool) -> None:
+        if not self.text:
+            return
+        self.store.add_event(self.run_id, self.stage, "thinking",
+                             {"agent": self.agent, "stream": self._stream(), "text": self.text[-8000:], "done": done})
+        self.flushed_at = time.monotonic()
+        if done:
+            self.count, self.text = self.count + 1, ""
+
+    def tool_call(self, stage: str, call: Any) -> None:
+        self.calls[call.id or call.name] = time.monotonic()
+        self.store.add_event(self.run_id, stage, "tool_call", {"tool": call.name, "id": call.id, "args": _compact(call.args)})
+
+    def tool_result(self, stage: str, response: Any) -> None:
+        started = self.calls.pop(response.id or response.name, None)
+        output = response.response
+        payload = {"tool": response.name, "id": response.id, "output": _compact(output),
+                   "status": "error" if isinstance(output, dict) and output.get("status") == "error" else "ok"}
+        if started is not None:
+            payload["duration_ms"] = round((time.monotonic() - started) * 1000)
+        self.store.add_event(self.run_id, stage, "tool_result", payload)
 
 
 def _compact(value: Any, limit: int = 3000) -> Any:

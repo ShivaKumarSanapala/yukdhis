@@ -136,7 +136,7 @@ def _write(name: str, text: str) -> dict:
 
 
 def _fake_gemini(calls: list):
-    def fake(document, feedback):
+    def fake(document, feedback, progress=None):
         calls.append(document.document_id)
         policy = Policy(policy_id="policy:A.P. (DIR Series) Circular No. 27", title="FERR", issuer="RBI",
                         reference="A.P. (DIR Series) Circular No. 27", effective_date="2026-10-12")

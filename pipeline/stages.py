@@ -136,7 +136,8 @@ def stage_extract(state: State) -> dict:
         issues = [ValidationIssue.model_validate(i) for i in hit.get("issues", [])]
         provenance = {**hit.get("provenance", {}), "cached": True, "cached_at": hit.get("created_at")}
     else:
-        extraction, issues, provenance = extract_policy(document, use_llm=use_llm, classification=classification)
+        extraction, issues, provenance = extract_policy(document, use_llm=use_llm, classification=classification,
+                                                        report=lambda kind, payload: _emit(state, "reader", kind, payload))
         provenance = {**provenance, "cached": False}
         if use_llm:  # only model output is cached; templates are deterministic already
             cache.put(sha, model, {"extraction": extraction.model_dump(), "issues": [i.model_dump() for i in issues],

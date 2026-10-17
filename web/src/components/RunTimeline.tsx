@@ -1,4 +1,5 @@
 import type { RunEvent, RunInfo } from "../types";
+import AgentActivity from "./AgentActivity";
 import { STAGES, fmtDuration, runStatusMeta, stageOutcome, stageStates, stageTimings, statusLine, type StageState } from "../run-utils";
 
 function describe(event: RunEvent): string {
@@ -7,6 +8,8 @@ function describe(event: RunEvent): string {
     case "tool_call": return `→ ${p.tool}(${Object.keys(p.args ?? {}).join(", ")})`;
     case "tool_result": return `← ${p.tool}: ${(p.output?.status as string) ?? "ok"}`;
     case "agent_message": return p.text as string;
+    case "thinking": return `${p.agent} thinking${p.done ? "" : "…"} (${String(p.text ?? "").length} chars)`;
+    case "extraction_retry": return `extraction attempt ${p.attempt} failed: ${p.error}`;
     case "stage_started": return `started ${p.label ?? p.agent ?? ""}`;
     case "stage_completed": return `done: ${p.label}`;
     case "stage_skipped": return `skipped: ${p.label} (${p.reason})`;
@@ -53,6 +56,7 @@ export default function RunTimeline({ run, events }: { run: RunInfo; events: Run
           );
         })}
       </ol>
+      <AgentActivity events={events} live={live} activeStage={run.current_stage ?? null} />
       <details className="event-log">
         <summary>Raw event log ({events.length})</summary>
         <ul className="log">

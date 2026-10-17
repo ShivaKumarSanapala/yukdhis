@@ -140,3 +140,77 @@ def test_reader_failure_halts_later_agents():
     assert skip_when_halted(context) is None
     downstream = [a for a in root_agent.sub_agents if a.name != "reader_agent"]
     assert downstream and all(a.before_agent_callback is skip_when_halted for a in downstream)
+
+
+# extraction output limit and live thinking --------------------------------------------------
+def _chunk(text: str = "", thought: str = "", finish=None):
+    parts = []
+    if thought:
+        parts.append(types.SimpleNamespace(text=thought, thought=True))
+    if text:
+        parts.append(types.SimpleNamespace(text=text, thought=False))
+    candidate = types.SimpleNamespace(content=types.SimpleNamespace(parts=parts), finish_reason=finish)
+    return types.SimpleNamespace(candidates=[candidate])
+
+
+def _fake_genai(monkeypatch, chunks):
+    import core.llm
+    seen = {}
+
+    class Models:
+        def generate_content_stream(self, model, contents, config):
+            seen["config"] = config
+            return iter(chunks)
+
+    monkeypatch.setattr(core.llm, "genai_client", lambda: types.SimpleNamespace(models=Models()))
+    return seen
+
+
+def _document():
+    from core.models import DocumentChunk, ParsedDocument
+    return ParsedDocument(document_id="d1", source_uri="upload://x.pdf", mime_type="application/pdf", title="T",
+                          parser="test", chunks=[DocumentChunk(chunk_id="d1:0", content="Banks shall do X.")])
+
+
+def test_extraction_streams_thoughts_and_has_room_for_thinking(monkeypatch):
+    from ingestion import extractor
+
+    seen = _fake_genai(monkeypatch, [_chunk(thought="Reading the circular. "), _chunk(thought="Two obligations."),
+                                     _chunk(text='{"policy": '), _chunk(text="oops", finish="FinishReason.STOP")])
+    progress = []
+    with pytest.raises(Exception):  # the fake answer is not a valid policy; we only check streaming and limits here
+        extractor._gemini_extract(_document(), "", lambda thoughts, chars, done: progress.append((thoughts, chars, done)))
+    config = seen["config"]
+    assert config.max_output_tokens >= 32768 and config.thinking_config.include_thoughts
+    assert config.thinking_config.thinking_budget < config.max_output_tokens // 4
+    assert progress[-1] == ("Reading the circular. Two obligations.", len('{"policy": oops'), True)
+
+
+def test_truncated_extraction_fails_with_a_clear_reason(monkeypatch):
+    from ingestion import extractor
+
+    _fake_genai(monkeypatch, [_chunk(text='{"policy": {"title": "unterminated'), _chunk(finish="FinishReason.MAX_TOKENS")])
+    with pytest.raises(ValueError, match="cut off at the output limit"):
+        extractor._gemini_extract(_document(), "")
+
+
+def test_trace_buffers_thinking_and_times_tool_calls():
+    store = get_app_store()
+    run_id = store.create_run("agentic", {"filename": "t.md"}, {"owner_id": "u1"})
+    trace = runs._Trace(run_id)
+    runs.THINKING_FLUSH_S = 3600  # buffer everything until the end of the model turn
+    try:
+        trace.think("mapper", "mapper_agent", "Looking at ")
+        trace.think("mapper", "mapper_agent", "products.")
+        trace.finish_thought("mapper", "mapper_agent", "Looking at products.")
+        trace.tool_call("mapper", types.SimpleNamespace(id="c1", name="get_graph_ontology", args={"target_domain": "All"}))
+        trace.tool_result("mapper", types.SimpleNamespace(id="c1", name="get_graph_ontology", response={"status": "success"}))
+    finally:
+        runs.THINKING_FLUSH_S = 1.5
+    events = [(e["kind"], e["payload"]) for e in store.events(run_id)]
+    thinking = [p for k, p in events if k == "thinking"]
+    # the first delta is written at once (activity shows immediately); later ones wait for the flush interval
+    assert thinking == [{"agent": "mapper_agent", "stream": "mapper_agent-0", "text": "Looking at ", "done": False},
+                        {"agent": "mapper_agent", "stream": "mapper_agent-0", "text": "Looking at products.", "done": True}]
+    result = next(p for k, p in events if k == "tool_result")
+    assert result["id"] == "c1" and result["status"] == "ok" and "duration_ms" in result
