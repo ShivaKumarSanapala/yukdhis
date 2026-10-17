@@ -69,19 +69,29 @@ def retry_stream(make: Callable[[], Iterable[T]], *, attempts: int = ATTEMPTS, s
             sleep(delay)
 
 
-@lru_cache(maxsize=1)
-def genai_client():
+@lru_cache(maxsize=4)
+def _client(location: str):
     from google import genai
     from google.genai import types
 
     settings = get_settings()
     http_options = types.HttpOptions(retry_options=retry_options())
     if settings.project:
-        return genai.Client(vertexai=True, project=settings.project, location=settings.gemini_location,
-                            http_options=http_options)
+        return genai.Client(vertexai=True, project=settings.project, location=location, http_options=http_options)
     if os.getenv("GOOGLE_API_KEY"):
         return genai.Client(api_key=os.environ["GOOGLE_API_KEY"], http_options=http_options)
     raise RuntimeError("Set GOOGLE_CLOUD_PROJECT (Vertex AI) to call Gemini.")
+
+
+def genai_client():
+    """Client for Gemini generation, at ``GEMINI_LOCATION`` (may be "global")."""
+    return _client(get_settings().gemini_location)
+
+
+def regional_genai_client():
+    """Client at the deployment region (``GOOGLE_CLOUD_LOCATION``), for models not served on the global endpoint,
+    such as ``text-embedding-005``."""
+    return _client(get_settings().location)
 
 
 def adk_model(name: str):
