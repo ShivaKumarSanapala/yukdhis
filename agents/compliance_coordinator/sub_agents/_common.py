@@ -5,6 +5,7 @@ from __future__ import annotations
 from google.genai import types
 
 from core.config import get_settings
+from core.llm import adk_model
 from privacy.callbacks import mask_pii_before_model
 
 GUARDRAILS = (
@@ -27,7 +28,7 @@ def llm_options(reasoning: bool = False) -> dict:
 
     settings = get_settings()
     return {
-        "model": settings.reasoning_model if reasoning else settings.fast_model,
+        "model": adk_model(settings.reasoning_model if reasoning else settings.fast_model),  # retries 429/5xx
         "generate_content_config": types.GenerateContentConfig(temperature=0.1, max_output_tokens=8192),
         "planner": BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True,
                                                                        thinking_budget=2048 if reasoning else 1024)),
