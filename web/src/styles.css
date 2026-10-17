@@ -511,3 +511,10 @@ button.step-head:hover:not(:disabled) { background: var(--hover); }
   .metrics { grid-template-columns: repeat(3, 1fr); } .grid2 { grid-template-columns: 1fr 1fr; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Mermaid diagrams inside Markdown (report narrative, assistant answers) */
+.mermaid { margin: 10px 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow-x: auto; text-align: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+.mermaid-fallback { text-align: left; }
+.mermaid-fallback pre { margin: 6px 0 0; }
+@media print { .mermaid { break-inside: avoid; } }
