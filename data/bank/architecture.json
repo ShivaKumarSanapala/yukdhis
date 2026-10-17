@@ -10,7 +10,8 @@
      "personal loan",
      "consumer loan",
      "floating rate personal loan",
-     "emi loan"
+     "emi loan",
+     "advances"
     ],
     "bian_domain": "Product Directory",
     "rate_type": "FLOATING",
@@ -29,7 +30,8 @@
      "home loan",
      "housing loan",
      "mortgage",
-     "emi loan"
+     "emi loan",
+     "advances"
     ],
     "bian_domain": "Product Directory",
     "rate_type": "FLOATING",
@@ -50,10 +52,30 @@
      "vehicle loan",
      "four-wheeler advances",
      "two-wheeler loan",
-     "emi loan"
+     "emi loan",
+     "advances"
     ],
     "bian_domain": "Product Directory",
     "rate_type": "FLOATING",
+    "instalment_based": true,
+    "secured": true,
+    "collateral_type": "MOVABLE",
+    "category": "RETAIL_LOAN"
+   }
+  },
+  {
+   "id": "product:auto-loan-fixed",
+   "type": "Product",
+   "name": "DriveNow Fixed Loan",
+   "attributes": {
+    "synonyms": [
+     "fixed rate vehicle loan",
+     "fixed rate car loan",
+     "emi loan",
+     "advances"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FIXED",
     "instalment_based": true,
     "secured": true,
     "collateral_type": "MOVABLE",
@@ -68,10 +90,30 @@
     "synonyms": [
      "personal loan",
      "fixed rate personal loan",
-     "emi loan"
+     "emi loan",
+     "advances"
     ],
     "bian_domain": "Product Directory",
     "rate_type": "FIXED",
+    "instalment_based": true,
+    "secured": false,
+    "collateral_type": "NONE",
+    "category": "RETAIL_LOAN"
+   }
+  },
+  {
+   "id": "product:education-loan",
+   "type": "Product",
+   "name": "EduAssist Education Loan",
+   "attributes": {
+    "synonyms": [
+     "education loan",
+     "student loan",
+     "emi loan",
+     "advances"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FLOATING",
     "instalment_based": true,
     "secured": false,
     "collateral_type": "NONE",
@@ -87,7 +129,8 @@
      "loan against property",
      "lap",
      "mortgage loan",
-     "property loan"
+     "property loan",
+     "advances"
     ],
     "bian_domain": "Product Directory",
     "rate_type": "FIXED",
@@ -105,7 +148,8 @@
     "synonyms": [
      "gold loan",
      "loan against gold jewellery",
-     "jewel loan"
+     "jewel loan",
+     "advances"
     ],
     "bian_domain": "Product Directory",
     "rate_type": "FIXED",
@@ -116,6 +160,45 @@
    }
   },
   {
+   "id": "product:credit-card",
+   "type": "Product",
+   "name": "Everyday Credit Card",
+   "attributes": {
+    "synonyms": [
+     "credit card",
+     "card receivables",
+     "card outstanding",
+     "advances"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FIXED",
+    "instalment_based": false,
+    "secured": false,
+    "collateral_type": "NONE",
+    "category": "CARD"
+   }
+  },
+  {
+   "id": "product:msme-working-capital",
+   "type": "Product",
+   "name": "MSME Working Capital (CC/OD)",
+   "attributes": {
+    "synonyms": [
+     "working capital",
+     "cash credit",
+     "overdraft",
+     "cc od limit",
+     "advances"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FLOATING",
+    "instalment_based": false,
+    "secured": true,
+    "collateral_type": "MOVABLE",
+    "category": "MSME_LOAN"
+   }
+  },
+  {
    "id": "product:msme-term-loan",
    "type": "Product",
    "name": "MSME Growth Term Loan",
@@ -123,7 +206,8 @@
     "synonyms": [
      "msme loan",
      "business term loan",
-     "sme loan"
+     "sme loan",
+     "advances"
     ],
     "bian_domain": "Product Directory",
     "rate_type": "FLOATING",
@@ -131,6 +215,27 @@
     "secured": true,
     "collateral_type": "IMMOVABLE",
     "category": "MSME_LOAN"
+   }
+  },
+  {
+   "id": "product:agri-kcc",
+   "type": "Product",
+   "name": "KisanSure Kisan Credit Card",
+   "attributes": {
+    "synonyms": [
+     "kisan credit card",
+     "kcc",
+     "crop loan",
+     "farm credit",
+     "agricultural advances",
+     "advances"
+    ],
+    "bian_domain": "Product Directory",
+    "rate_type": "FLOATING",
+    "instalment_based": false,
+    "secured": true,
+    "collateral_type": "IMMOVABLE",
+    "category": "AGRI_LOAN"
    }
   },
   {
@@ -174,46 +279,84 @@
    }
   },
   {
-   "id": "control:borrower-notification",
-   "type": "Control",
-   "name": "Reset Impact Notification",
-   "attributes": {}
+   "id": "process:asset-classification",
+   "type": "Process",
+   "name": "Day-end Asset Classification",
+   "attributes": {
+    "bian_domain": "Credit Risk Models"
+   }
   },
   {
-   "id": "control:emi-tenor-choice",
-   "type": "Control",
-   "name": "EMI or Tenor Choice",
-   "attributes": {}
+   "id": "process:provisioning",
+   "type": "Process",
+   "name": "Provisioning and Loss Allowance",
+   "attributes": {
+    "bian_domain": "Financial Accounting"
+   }
   },
   {
-   "id": "control:fixed-rate-option",
-   "type": "Control",
-   "name": "Fixed Rate Conversion Option",
-   "attributes": {}
+   "id": "process:income-recognition",
+   "type": "Process",
+   "name": "Interest Income Recognition",
+   "attributes": {
+    "bian_domain": "Financial Accounting"
+   }
   },
   {
-   "id": "control:reset-statement",
-   "type": "Control",
-   "name": "Quarterly Reset Statement with APR",
-   "attributes": {}
+   "id": "process:restructuring-resolution",
+   "type": "Process",
+   "name": "Resolution Plans and Restructuring",
+   "attributes": {
+    "bian_domain": "Loan Restructuring"
+   }
   },
   {
-   "id": "control:document-release-sla",
-   "type": "Control",
-   "name": "30-day Document Release Tracker",
-   "attributes": {}
+   "id": "process:collections-recovery",
+   "type": "Process",
+   "name": "Collections and Recovery",
+   "attributes": {
+    "bian_domain": "Collections"
+   }
   },
   {
-   "id": "control:delay-compensation",
-   "type": "Control",
-   "name": "Automatic Delay Compensation",
-   "attributes": {}
+   "id": "process:kyc-periodic-review",
+   "type": "Process",
+   "name": "Periodic KYC Updation",
+   "attributes": {
+    "bian_domain": "Party Authentication"
+   }
   },
   {
-   "id": "control:document-collection-choice",
-   "type": "Control",
-   "name": "Document Collection Location Choice",
-   "attributes": {}
+   "id": "process:customer-grievance",
+   "type": "Process",
+   "name": "Customer Grievance Redressal",
+   "attributes": {
+    "bian_domain": "Customer Case Management"
+   }
+  },
+  {
+   "id": "process:credit-underwriting",
+   "type": "Process",
+   "name": "Credit Appraisal and Sanction",
+   "attributes": {
+    "bian_domain": "Consumer Loan"
+   }
+  },
+  {
+   "id": "process:model-governance",
+   "type": "Process",
+   "name": "Model Development, Validation and Monitoring",
+   "attributes": {
+    "bian_domain": "Model Management"
+   }
+  },
+  {
+   "id": "process:regulatory-reporting",
+   "type": "Process",
+   "name": "Regulatory and Supervisory Reporting",
+   "attributes": {
+    "bian_domain": "Regulatory Reporting"
+   }
   },
   {
    "id": "team:retail-lending",
@@ -249,6 +392,78 @@
    "id": "team:collateral-ops",
    "type": "Team",
    "name": "Collateral Operations",
+   "attributes": {}
+  },
+  {
+   "id": "team:cards",
+   "type": "Team",
+   "name": "Cards",
+   "attributes": {}
+  },
+  {
+   "id": "team:agri-banking",
+   "type": "Team",
+   "name": "Agri and Rural Banking",
+   "attributes": {}
+  },
+  {
+   "id": "team:credit-risk",
+   "type": "Team",
+   "name": "Credit Risk",
+   "attributes": {}
+  },
+  {
+   "id": "team:finance",
+   "type": "Team",
+   "name": "Finance and Accounts",
+   "attributes": {}
+  },
+  {
+   "id": "team:collections-recovery",
+   "type": "Team",
+   "name": "Collections and Recovery",
+   "attributes": {}
+  },
+  {
+   "id": "team:kyc-aml",
+   "type": "Team",
+   "name": "KYC and Financial Crime",
+   "attributes": {}
+  },
+  {
+   "id": "team:customer-service",
+   "type": "Team",
+   "name": "Customer Service",
+   "attributes": {}
+  },
+  {
+   "id": "team:model-risk",
+   "type": "Team",
+   "name": "Model Risk Management",
+   "attributes": {}
+  },
+  {
+   "id": "team:compliance",
+   "type": "Team",
+   "name": "Compliance",
+   "attributes": {}
+  },
+  {
+   "id": "team:internal-audit",
+   "type": "Team",
+   "name": "Internal Audit",
+   "attributes": {}
+  },
+  {
+   "id": "team:it-core-banking",
+   "type": "Team",
+   "name": "Core Banking Technology",
+   "attributes": {}
+  },
+  {
+   "id": "team:vendor-management",
+   "type": "Team",
+   "name": "Vendor Management",
    "attributes": {}
   },
   {
@@ -329,6 +544,2896 @@
     "city": "Kolkata",
     "region": "East"
    }
+  },
+  {
+   "id": "branch:blr-whitefield",
+   "type": "Branch",
+   "name": "Whitefield, Bengaluru",
+   "attributes": {
+    "city": "Bengaluru",
+    "region": "South"
+   }
+  },
+  {
+   "id": "branch:kochi-mgroad",
+   "type": "Branch",
+   "name": "MG Road, Kochi",
+   "attributes": {
+    "city": "Kochi",
+    "region": "South"
+   }
+  },
+  {
+   "id": "branch:cbe-rspuram",
+   "type": "Branch",
+   "name": "RS Puram, Coimbatore",
+   "attributes": {
+    "city": "Coimbatore",
+    "region": "South"
+   }
+  },
+  {
+   "id": "branch:mum-bkc",
+   "type": "Branch",
+   "name": "Bandra Kurla Complex, Mumbai",
+   "attributes": {
+    "city": "Mumbai",
+    "region": "West"
+   }
+  },
+  {
+   "id": "branch:pune-kothrud",
+   "type": "Branch",
+   "name": "Kothrud, Pune",
+   "attributes": {
+    "city": "Pune",
+    "region": "West"
+   }
+  },
+  {
+   "id": "branch:ahd-cgroad",
+   "type": "Branch",
+   "name": "CG Road, Ahmedabad",
+   "attributes": {
+    "city": "Ahmedabad",
+    "region": "West"
+   }
+  },
+  {
+   "id": "branch:surat-adajan",
+   "type": "Branch",
+   "name": "Adajan, Surat",
+   "attributes": {
+    "city": "Surat",
+    "region": "West"
+   }
+  },
+  {
+   "id": "branch:ggn-sector29",
+   "type": "Branch",
+   "name": "Sector 29, Gurugram",
+   "attributes": {
+    "city": "Gurugram",
+    "region": "North"
+   }
+  },
+  {
+   "id": "branch:jaipur-cscheme",
+   "type": "Branch",
+   "name": "C-Scheme, Jaipur",
+   "attributes": {
+    "city": "Jaipur",
+    "region": "North"
+   }
+  },
+  {
+   "id": "branch:lko-hazratganj",
+   "type": "Branch",
+   "name": "Hazratganj, Lucknow",
+   "attributes": {
+    "city": "Lucknow",
+    "region": "North"
+   }
+  },
+  {
+   "id": "branch:chd-sector17",
+   "type": "Branch",
+   "name": "Sector 17, Chandigarh",
+   "attributes": {
+    "city": "Chandigarh",
+    "region": "North"
+   }
+  },
+  {
+   "id": "branch:bbsr-saheednagar",
+   "type": "Branch",
+   "name": "Saheed Nagar, Bhubaneswar",
+   "attributes": {
+    "city": "Bhubaneswar",
+    "region": "East"
+   }
+  },
+  {
+   "id": "branch:patna-boring",
+   "type": "Branch",
+   "name": "Boring Road, Patna",
+   "attributes": {
+    "city": "Patna",
+    "region": "East"
+   }
+  },
+  {
+   "id": "branch:guwahati-gs",
+   "type": "Branch",
+   "name": "GS Road, Guwahati",
+   "attributes": {
+    "city": "Guwahati",
+    "region": "East"
+   }
+  },
+  {
+   "id": "control:borrower-notification",
+   "type": "Control",
+   "name": "Reset Impact Notification",
+   "attributes": {
+    "kind": "product",
+    "description": "Tells each borrower the EMI or tenor impact of a benchmark reset.",
+    "owner_team": "team:customer-comms",
+    "process": "process:borrower-notification",
+    "implementation_status": "implemented",
+    "implemented_from": "2023-12-31",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "floating_rate_reset",
+      "paragraph": "Key provisions (1)"
+     }
+    ],
+    "evidence": [
+     {
+      "type": "mis_report",
+      "ref": "MIS-RESET-2026Q3",
+      "title": "Quarterly reset notification report"
+     }
+    ],
+    "last_tested": "2026-08-12",
+    "last_test_result": "exceptions",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:emi-tenor-choice",
+   "type": "Control",
+   "name": "EMI or Tenor Choice",
+   "attributes": {
+    "kind": "product",
+    "description": "Lets the borrower choose a higher EMI or a longer tenor at reset.",
+    "owner_team": "team:lending-ops",
+    "process": "process:rate-reset",
+    "implementation_status": "implemented",
+    "implemented_from": "2023-12-31",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "floating_rate_reset",
+      "paragraph": "Key provisions (2)"
+     }
+    ],
+    "last_tested": "2026-08-12",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:fixed-rate-option",
+   "type": "Control",
+   "name": "Fixed Rate Conversion Option",
+   "attributes": {
+    "kind": "product",
+    "description": "Lets the borrower switch to a fixed rate. DriveNow Floating lost the option on 2024-07-01 (change CHG-2024-0612).",
+    "owner_team": "team:lending-ops",
+    "process": "process:rate-reset",
+    "implementation_status": "partial",
+    "implemented_from": "2023-12-31",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "floating_rate_reset",
+      "paragraph": "Key provisions (2)"
+     }
+    ],
+    "last_tested": "2026-08-12",
+    "last_test_result": "exceptions",
+    "notes": "Planted product-level gap: DriveNow Floating Loan has no fixed-rate switch.",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:reset-statement",
+   "type": "Control",
+   "name": "Quarterly Reset Statement with APR",
+   "attributes": {
+    "kind": "product",
+    "description": "Issues a statement of principal and interest recovered, EMIs remaining and APR.",
+    "owner_team": "team:customer-comms",
+    "process": "process:borrower-notification",
+    "implementation_status": "implemented",
+    "implemented_from": "2023-12-31",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "floating_rate_reset",
+      "paragraph": "Key provisions (3)"
+     }
+    ],
+    "last_tested": "2026-08-12",
+    "last_test_result": "exceptions",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:document-release-sla",
+   "type": "Control",
+   "name": "30-day Document Release Tracker",
+   "attributes": {
+    "kind": "product",
+    "description": "Tracks original property documents from loan closure to release; escalates before day 30.",
+    "owner_team": "team:collateral-ops",
+    "process": "process:collateral-release",
+    "implementation_status": "implemented",
+    "implemented_from": "2023-12-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "document_release",
+      "paragraph": "Release timeline"
+     }
+    ],
+    "evidence": [
+     {
+      "type": "mis_report",
+      "ref": "MIS-DOC-2026-09",
+      "title": "Document release ageing report"
+     }
+    ],
+    "last_tested": "2026-09-02",
+    "last_test_result": "exceptions",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:delay-compensation",
+   "type": "Control",
+   "name": "Automatic Delay Compensation",
+   "attributes": {
+    "kind": "product",
+    "description": "Computes and pays INR 5,000 per day of delay attributable to the bank.",
+    "owner_team": "team:collateral-ops",
+    "process": "process:collateral-release",
+    "implementation_status": "implemented",
+    "implemented_from": "2023-12-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "document_release",
+      "paragraph": "Compensation for delay"
+     }
+    ],
+    "last_tested": "2026-09-02",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:document-collection-choice",
+   "type": "Control",
+   "name": "Document Collection Location Choice",
+   "attributes": {
+    "kind": "product",
+    "description": "Offers the branch of servicing or any office holding the documents.",
+    "owner_team": "team:collateral-ops",
+    "process": "process:document-custody",
+    "implementation_status": "implemented",
+    "implemented_from": "2023-12-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "document_release",
+      "paragraph": "Place of collection"
+     }
+    ],
+    "last_tested": "2026-09-02",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:day-end-npa-classification",
+   "type": "Control",
+   "name": "Automated Day-end NPA Classification",
+   "attributes": {
+    "kind": "system",
+    "description": "Core-banking module that classifies every borrowal account at day-end, with straight-through upgrades and downgrades.",
+    "owner_team": "team:credit-risk",
+    "process": "process:asset-classification",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "31"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "36(2)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "37"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "42(1)"
+     }
+    ],
+    "data_check": {
+     "instrument": "iracp",
+     "rule": "npa-classification-90-days",
+     "view": "vw_asset_quality",
+     "description": "Accounts with DPD above 90 are classified NPA."
+    },
+    "evidence": [
+     {
+      "type": "audit_report",
+      "ref": "IA-2026-011",
+      "title": "System audit of the NPA classification system, FY26"
+     },
+     {
+      "type": "system_config",
+      "ref": "CBS-ACM-2026.3",
+      "title": "Asset classification parameters, release 2026.3"
+     }
+    ],
+    "last_tested": "2026-09-18",
+    "last_test_result": "exceptions",
+    "synonyms": [
+     "npa classification",
+     "asset classification system",
+     "day-end process classification"
+    ]
+   }
+  },
+  {
+   "id": "control:sma-day-end-tagging",
+   "type": "Control",
+   "name": "SMA Day-end Tagging (SMA-0, SMA-1, SMA-2)",
+   "attributes": {
+    "kind": "system",
+    "description": "Tags overdue accounts as SMA-0, SMA-1 or SMA-2 in the day-end process, with the date of tagging.",
+    "owner_team": "team:credit-risk",
+    "process": "process:asset-classification",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "30"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "31"
+     }
+    ],
+    "data_check": {
+     "instrument": "iracp",
+     "rule": "sma-reporting-bands",
+     "view": "vw_asset_quality",
+     "description": "SMA tag matches the days past due band."
+    },
+    "evidence": [
+     {
+      "type": "system_config",
+      "ref": "CBS-ACM-2026.3",
+      "title": "SMA band parameters"
+     }
+    ],
+    "last_tested": "2026-09-18",
+    "last_test_result": "exceptions",
+    "synonyms": [
+     "sma classification",
+     "special mention accounts"
+    ]
+   }
+  },
+  {
+   "id": "control:overdue-day-end-flagging",
+   "type": "Control",
+   "name": "Overdue Flagging at Day-end",
+   "attributes": {
+    "kind": "system",
+    "description": "Flags an account overdue in the day-end process for the due date, whatever time the process runs.",
+    "owner_team": "team:credit-risk",
+    "process": "process:asset-classification",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "30"
+     }
+    ],
+    "last_tested": "2026-09-18",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:standard-asset-provisioning",
+   "type": "Control",
+   "name": "Standard Asset Provisioning Engine",
+   "attributes": {
+    "kind": "system",
+    "description": "Computes the general provision on standard assets at 0.25 per cent (housing, farm credit, small and micro enterprises) or 0.40 per cent.",
+    "owner_team": "team:finance",
+    "process": "process:provisioning",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "36(3)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "80"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "81"
+     }
+    ],
+    "data_check": {
+     "instrument": "iracp",
+     "rule": "standard-asset-provision-025",
+     "view": "vw_asset_quality",
+     "description": "Provision held meets the standard-asset rate."
+    },
+    "evidence": [
+     {
+      "type": "audit_report",
+      "ref": "IA-2026-011",
+      "title": "System audit of provisioning rules, FY26"
+     }
+    ],
+    "last_tested": "2026-09-18",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:npa-provisioning-engine",
+   "type": "Control",
+   "name": "NPA Provisioning Engine",
+   "attributes": {
+    "kind": "system",
+    "description": "Computes substandard (15% / 25% unsecured), doubtful (100% unsecured plus 25/40/100% secured by age) and loss (100%) provisions.",
+    "owner_team": "team:finance",
+    "process": "process:provisioning",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "36(3)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "85"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "86"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "90"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "91"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "95"
+     }
+    ],
+    "data_check": {
+     "instrument": "iracp",
+     "rule": "substandard-provision-secured-15",
+     "view": "vw_asset_quality",
+     "description": "Provision held meets the substandard, doubtful and loss rates."
+    },
+    "evidence": [
+     {
+      "type": "audit_report",
+      "ref": "IA-2026-011",
+      "title": "System audit of provisioning rules, FY26"
+     },
+     {
+      "type": "test_script",
+      "ref": "UAT-PROV-0412",
+      "title": "Provisioning regression pack"
+     }
+    ],
+    "last_tested": "2026-09-18",
+    "last_test_result": "exceptions",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:resolution-plan-provisioning",
+   "type": "Control",
+   "name": "Additional Provision for Resolution Plans (5% per plan)",
+   "attributes": {
+    "kind": "system",
+    "description": "Books the additional specific provision of 5 per cent of the outstanding for each resolution plan implemented.",
+    "owner_team": "team:finance",
+    "process": "process:provisioning",
+    "implementation_status": "implemented",
+    "implemented_from": "2026-07-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "84A"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "84B"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "84C"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "84D"
+     },
+     {
+      "instrument": "iracp_amend_2026",
+      "paragraph": "3(iv)"
+     }
+    ],
+    "data_check": {
+     "instrument": "iracp",
+     "rule": "resolution-plan-additional-provision-84a",
+     "view": "vw_asset_quality",
+     "description": "Additional 5% per resolution plan is held."
+    },
+    "evidence": [
+     {
+      "type": "change_ticket",
+      "ref": "CHG-2026-0701",
+      "title": "Go-live of 84A/84B parameters on 1 Jul 2026"
+     }
+    ],
+    "last_tested": "2026-09-30",
+    "last_test_result": "pass",
+    "notes": "Implemented from 1 Jul 2026, the day the amendment took effect (bitemporal demo).",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:cash-basis-income-recognition",
+   "type": "Control",
+   "name": "Income Recognition on Cash Basis for NPAs",
+   "attributes": {
+    "kind": "system",
+    "description": "Stops interest accrual on non-standard accounts and recognises income on receipt; re-restructured accounts are on cash basis.",
+    "owner_team": "team:finance",
+    "process": "process:income-recognition",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "36(4)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "124"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "125"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "139A"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "139B"
+     }
+    ],
+    "data_check": {
+     "instrument": "iracp",
+     "rule": "npa-income-cash-basis",
+     "view": "vw_asset_quality",
+     "description": "Interest on NPAs is recognised on cash basis."
+    },
+    "evidence": [
+     {
+      "type": "audit_report",
+      "ref": "IA-2026-011",
+      "title": "System audit of income recognition, FY26"
+     }
+    ],
+    "last_tested": "2026-09-18",
+    "last_test_result": "exceptions",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:interest-reversal-memorandum",
+   "type": "Control",
+   "name": "Interest Reversal and Memorandum Account on NPA",
+   "attributes": {
+    "kind": "system",
+    "description": "Reverses uncollected interest on an account that turns NPA and tracks it in a memorandum account.",
+    "owner_team": "team:finance",
+    "process": "process:income-recognition",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "128"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "132"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "133"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "134"
+     }
+    ],
+    "last_tested": "2026-09-18",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:classification-override-governance",
+   "type": "Control",
+   "name": "Manual Override Log with Dual Authorisation",
+   "attributes": {
+    "kind": "governance",
+    "description": "Overrides of system classification need two-level authorisation, a system-generated log kept three years, and Audit Committee reporting.",
+    "owner_team": "team:credit-risk",
+    "process": "process:asset-classification",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "38(2)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "38(3)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "38(4)"
+     }
+    ],
+    "evidence": [
+     {
+      "type": "audit_report",
+      "ref": "IA-2026-004",
+      "title": "Concurrent audit: overrides, Q1 FY27"
+     }
+    ],
+    "last_tested": "2026-06-30",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:npa-system-audit",
+   "type": "Control",
+   "name": "Annual System Audit of the NPA Classification System",
+   "attributes": {
+    "kind": "governance",
+    "description": "Yearly audit of the classification system parameters and of compliance with the IRACP norms.",
+    "owner_team": "team:internal-audit",
+    "process": "process:asset-classification",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "39(3)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "40"
+     }
+    ],
+    "evidence": [
+     {
+      "type": "audit_report",
+      "ref": "IA-2026-011",
+      "title": "System audit of the NPA classification system, FY26"
+     }
+    ],
+    "last_tested": "2026-03-20",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:npa-mis-reporting",
+   "type": "Control",
+   "name": "Segment-wise NPA and Restructured Asset MIS",
+   "attributes": {
+    "kind": "process",
+    "description": "System-generated segment-wise NPA, provisions, write-offs and restructured assets, reconciled to regulatory returns.",
+    "owner_team": "team:finance",
+    "process": "process:regulatory-reporting",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "29"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "33"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "34"
+     }
+    ],
+    "last_tested": "2026-07-15",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:crilc-reporting",
+   "type": "Control",
+   "name": "CRILC and Supervisory NPA Reporting",
+   "attributes": {
+    "kind": "process",
+    "description": "Reports large credits and SMA accounts to CRILC and files the supervisory returns on time.",
+    "owner_team": "team:compliance",
+    "process": "process:regulatory-reporting",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "11"
+     }
+    ],
+    "last_tested": "2026-07-15",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:collateral-valuation-stock-audit",
+   "type": "Control",
+   "name": "Collateral Valuation and Stock Audit for NPAs of INR 5 crore and above",
+   "attributes": {
+    "kind": "process",
+    "description": "Annual external stock audit and three-yearly valuation of immovable collateral for NPAs of INR 5 crore and above.",
+    "owner_team": "team:credit-risk",
+    "process": "process:provisioning",
+    "implementation_status": "partial",
+    "implemented_from": "2024-10-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "22"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "23"
+     }
+    ],
+    "last_tested": "2026-05-10",
+    "last_test_result": "exceptions",
+    "notes": "Two valuations older than three years at the last test; remediation owner Credit Risk.",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:borrower-education-sma-npa",
+   "type": "Control",
+   "name": "Borrower Education on SMA and NPA",
+   "attributes": {
+    "kind": "process",
+    "description": "Website literature and branch posters on overdue, SMA and NPA; front-line briefing at sanction.",
+    "owner_team": "team:customer-comms",
+    "process": "process:borrower-notification",
+    "implementation_status": "implemented",
+    "implemented_from": "2022-01-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "25"
+     }
+    ],
+    "last_tested": "2026-04-22",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:credit-limit-review-tracker",
+   "type": "Control",
+   "name": "Credit Limit Review and Renewal Tracker",
+   "attributes": {
+    "kind": "process",
+    "description": "Tracks regular and ad hoc limits so that reviews finish within three months and no limit goes 180 days unreviewed.",
+    "owner_team": "team:credit-risk",
+    "process": "process:credit-underwriting",
+    "implementation_status": "implemented",
+    "implemented_from": "2022-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "16"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "18"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "20"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "42(5)"
+     }
+    ],
+    "last_tested": "2026-06-05",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:floating-provision-governance",
+   "type": "Control",
+   "name": "Floating Provisions Utilisation Governance",
+   "attributes": {
+    "kind": "governance",
+    "description": "Board-approved ceiling and extraordinary-circumstance criteria; RBI approval before any utilisation.",
+    "owner_team": "team:finance",
+    "process": "process:provisioning",
+    "implementation_status": "implemented",
+    "implemented_from": "2022-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "10(2)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "10(3)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "97"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "98"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "99"
+     }
+    ],
+    "last_tested": "2026-03-31",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:resolution-plan-register",
+   "type": "Control",
+   "name": "Resolution Plan Register and Restructuring Flagging",
+   "attributes": {
+    "kind": "process",
+    "description": "Flags accounts under a resolution plan, counts restructuring instances and keeps them standard per 62A/62B.",
+    "owner_team": "team:collections-recovery",
+    "process": "process:restructuring-resolution",
+    "implementation_status": "implemented",
+    "implemented_from": "2026-07-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "62A"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "62B"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "84A"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "84B"
+     },
+     {
+      "instrument": "iracp_amend_2026",
+      "paragraph": "3(ii)"
+     },
+     {
+      "instrument": "resolution_stressed_assets",
+      "paragraph": "Chapter VI-A"
+     }
+    ],
+    "data_check": {
+     "instrument": "iracp",
+     "rule": "resolution-plan-classification-62a-62b",
+     "view": "vw_asset_quality",
+     "description": "Accounts under a resolution plan are not downgraded for the plan itself."
+    },
+    "evidence": [
+     {
+      "type": "change_ticket",
+      "ref": "CHG-2026-0701",
+      "title": "Go-live of the resolution plan register on 1 Jul 2026"
+     }
+    ],
+    "last_tested": "2026-09-30",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:crop-season-npa-calendar",
+   "type": "Control",
+   "name": "Crop-season NPA Calendar for Agricultural Advances",
+   "attributes": {
+    "kind": "system",
+    "description": "Applies the two-crop-season (short duration) and one-crop-season (long duration) norms with SLBC calendars.",
+    "owner_team": "team:agri-banking",
+    "process": "process:asset-classification",
+    "implementation_status": "partial",
+    "implemented_from": "2025-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "42(6)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "42(7)"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "57"
+     }
+    ],
+    "last_tested": "2026-08-01",
+    "last_test_result": "exceptions",
+    "notes": "Calendars loaded for 9 of 14 states; the rest follow the 90-day norm conservatively.",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:loan-agreement-due-date-disclosure",
+   "type": "Control",
+   "name": "Loan Agreement Due-date and SMA/NPA Date Disclosure",
+   "attributes": {
+    "kind": "process",
+    "description": "Loan agreements state due dates, frequency, principal and interest split and example SMA/NPA dates.",
+    "owner_team": "team:lending-ops",
+    "process": "process:credit-underwriting",
+    "implementation_status": "implemented",
+    "implemented_from": "2022-01-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "13"
+     },
+     {
+      "instrument": "iracp",
+      "paragraph": "14"
+     }
+    ],
+    "last_tested": "2026-05-30",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:board-iracp-policy",
+   "type": "Control",
+   "name": "Board-approved IRACP Implementation Policy",
+   "attributes": {
+    "kind": "governance",
+    "description": "Board policy covering income recognition, floating provisions, higher standard-asset provisioning, valuers and delegation for overrides.",
+    "owner_team": "team:credit-risk",
+    "process": "process:asset-classification",
+    "implementation_status": "implemented",
+    "implemented_from": "2024-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "10"
+     }
+    ],
+    "evidence": [
+     {
+      "type": "board_minute",
+      "ref": "BRD-2026-03-27",
+      "title": "Board approval of the Asset Classification and Provisioning Policy v5"
+     }
+    ],
+    "last_tested": "2026-03-31",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:kyc-risk-categorisation",
+   "type": "Control",
+   "name": "Customer Risk Categorisation",
+   "attributes": {
+    "kind": "process",
+    "description": "Assigns low, medium or high risk at onboarding and at review.",
+    "owner_team": "team:kyc-aml",
+    "process": "process:kyc-periodic-review",
+    "implementation_status": "implemented",
+    "implemented_from": "2019-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "kyc_md",
+      "paragraph": "risk categorisation"
+     }
+    ],
+    "last_tested": "2026-06-12",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:kyc-periodic-updation",
+   "type": "Control",
+   "name": "Risk-based Periodic KYC Updation",
+   "attributes": {
+    "kind": "process",
+    "description": "Re-KYC every 2 years (high risk), 8 years (medium) and 10 years (low), with reminders from 60 days before the due date.",
+    "owner_team": "team:kyc-aml",
+    "process": "process:kyc-periodic-review",
+    "implementation_status": "implemented",
+    "implemented_from": "2026-01-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "kyc_md",
+      "paragraph": "periodic updation"
+     }
+    ],
+    "data_check": {
+     "instrument": "kyc_md",
+     "rule": "periodic-kyc-updation",
+     "view": "vw_kyc_status",
+     "description": "No customer is past the re-KYC due date."
+    },
+    "evidence": [
+     {
+      "type": "campaign",
+      "ref": "KYC-REFRESH-2026",
+      "title": "Re-KYC campaign and automated reminders from Jan 2026"
+     }
+    ],
+    "last_tested": "2026-09-24",
+    "last_test_result": "exceptions",
+    "notes": "Automated reminders only started in 2026; 22 customers are past their due date at the reference date.",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:aml-transaction-monitoring",
+   "type": "Control",
+   "name": "AML Transaction Monitoring",
+   "attributes": {
+    "kind": "system",
+    "description": "Scenario-based monitoring on the deposit and card books; loan repayments are not yet covered.",
+    "owner_team": "team:kyc-aml",
+    "process": "process:kyc-periodic-review",
+    "implementation_status": "partial",
+    "implemented_from": "2021-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "kyc_md",
+      "paragraph": "ongoing monitoring"
+     }
+    ],
+    "last_tested": "2026-02-18",
+    "last_test_result": "exceptions",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:grievance-redressal-tracker",
+   "type": "Control",
+   "name": "Customer Grievance Redressal Tracker",
+   "attributes": {
+    "kind": "process",
+    "description": "Registers, routes and ages complaints; escalates to the internal ombudsman and tracks Ombudsman references.",
+    "owner_team": "team:customer-service",
+    "process": "process:customer-grievance",
+    "implementation_status": "implemented",
+    "implemented_from": "2021-11-12",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "ombudsman",
+      "paragraph": "complaint handling"
+     }
+    ],
+    "last_tested": "2026-07-08",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:fair-practices-disclosure",
+   "type": "Control",
+   "name": "Fair Practices Code Disclosure Checks",
+   "attributes": {
+    "kind": "process",
+    "description": "Checks that loan applications, sanction letters and charge disclosures follow the Fair Practices Code.",
+    "owner_team": "team:retail-lending",
+    "process": "process:credit-underwriting",
+    "implementation_status": "implemented",
+    "implemented_from": "2012-05-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "fair_practices",
+      "paragraph": "disclosure"
+     }
+    ],
+    "last_tested": "2026-05-30",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:recovery-agent-conduct",
+   "type": "Control",
+   "name": "Recovery Agent Conduct Monitoring",
+   "attributes": {
+    "kind": "process",
+    "description": "Code of conduct, call-hour limits and complaint review for recovery agents; call recording covers 60 per cent of agencies.",
+    "owner_team": "team:collections-recovery",
+    "process": "process:collections-recovery",
+    "implementation_status": "partial",
+    "implemented_from": "2023-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "fair_practices",
+      "paragraph": "recovery"
+     }
+    ],
+    "last_tested": "2026-04-15",
+    "last_test_result": "exceptions",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:outsourcing-due-diligence-register",
+   "type": "Control",
+   "name": "Outsourced Service Provider Register and Due Diligence",
+   "attributes": {
+    "kind": "process",
+    "description": "Register of material outsourcing, due diligence, access for supervisors and exit plans.",
+    "owner_team": "team:vendor-management",
+    "implementation_status": "implemented",
+    "implemented_from": "2023-10-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "outsourcing_it",
+      "paragraph": "outsourcing governance"
+     }
+    ],
+    "last_tested": "2026-05-05",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:collateral-document-custody-register",
+   "type": "Control",
+   "name": "Original Document Custody Register",
+   "attributes": {
+    "kind": "process",
+    "description": "Records every original property document by loan, location and movement; feeds the 30-day release tracker.",
+    "owner_team": "team:collateral-ops",
+    "process": "process:document-custody",
+    "implementation_status": "implemented",
+    "implemented_from": "2018-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "document_release",
+      "paragraph": "Release timeline"
+     }
+    ],
+    "last_tested": "2026-09-02",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:credit-appraisal-delegation",
+   "type": "Control",
+   "name": "Credit Appraisal and Delegation of Powers Checks",
+   "attributes": {
+    "kind": "process",
+    "description": "Appraisal checklist, cash-flow-based repayment schedules and sanction within delegated limits.",
+    "owner_team": "team:credit-risk",
+    "process": "process:credit-underwriting",
+    "implementation_status": "implemented",
+    "implemented_from": "2020-04-01",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "iracp",
+      "paragraph": "12"
+     }
+    ],
+    "last_tested": "2026-06-05",
+    "last_test_result": "pass",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:regulatory-change-tracking",
+   "type": "Control",
+   "name": "Regulatory Change Tracking",
+   "attributes": {
+    "kind": "governance",
+    "description": "Compliance logs RBI circulars and assigns owners; impact assessment is manual and takes weeks.",
+    "owner_team": "team:compliance",
+    "process": "process:regulatory-reporting",
+    "implementation_status": "partial",
+    "implemented_from": "2025-04-01",
+    "applies_to": "all",
+    "last_tested": "2026-06-20",
+    "last_test_result": "exceptions",
+    "notes": "The gap Yukdhis is meant to close.",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:ecl-staging-engine",
+   "type": "Control",
+   "name": "ECL Staging Engine (Stages 1, 2, 3)",
+   "attributes": {
+    "kind": "system",
+    "description": "Assigns every instrument to Stage 1, 2 or 3 at each reporting date, with SICR triggers.",
+    "owner_team": "team:credit-risk",
+    "process": "process:asset-classification",
+    "implementation_status": "absent",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "25"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "26"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "33"
+     }
+    ],
+    "notes": "Only a DPD-based proxy (ecl_stage_proxy) exists; it is not a staging engine.",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:sicr-criteria-documentation",
+   "type": "Control",
+   "name": "SICR Criteria Documentation",
+   "attributes": {
+    "kind": "governance",
+    "description": "Documented, consistently applied criteria for a significant increase in credit risk, with the 30-day rebuttable presumption.",
+    "owner_team": "team:credit-risk",
+    "process": "process:model-governance",
+    "implementation_status": "planned",
+    "planned_go_live": "2026-12-31",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "26"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "29"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "30"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "33"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "34"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "35"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "36"
+     }
+    ],
+    "notes": "Working group set up in Aug 2026; drafting in progress.",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:pd-model",
+   "type": "Control",
+   "name": "Probability of Default Models",
+   "attributes": {
+    "kind": "system",
+    "description": "12-month and lifetime PD by segment, with the regulatory floor of 0.03 per cent.",
+    "owner_team": "team:model-risk",
+    "process": "process:model-governance",
+    "implementation_status": "absent",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "45"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "96"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:lgd-model",
+   "type": "Control",
+   "name": "Loss Given Default Models",
+   "attributes": {
+    "kind": "system",
+    "description": "LGD from own recovery history, with the prescribed LGD where history is insufficient.",
+    "owner_team": "team:model-risk",
+    "process": "process:model-governance",
+    "implementation_status": "absent",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "97"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "98"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "99"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:ead-model",
+   "type": "Control",
+   "name": "Exposure at Default Models",
+   "attributes": {
+    "kind": "system",
+    "description": "EAD including drawdown expectations on commitments and guarantees.",
+    "owner_team": "team:model-risk",
+    "process": "process:model-governance",
+    "implementation_status": "absent",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "100"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "43"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:eir-computation-engine",
+   "type": "Control",
+   "name": "Effective Interest Rate Computation",
+   "attributes": {
+    "kind": "system",
+    "description": "EIR at initial recognition, fee and cost amortisation, interest income on gross carrying amount.",
+    "owner_team": "team:finance",
+    "process": "process:income-recognition",
+    "implementation_status": "absent",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "20"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "21"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "50"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "51"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "52"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "53"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "113"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:macro-scenario-framework",
+   "type": "Control",
+   "name": "Macroeconomic Scenario Framework",
+   "attributes": {
+    "kind": "governance",
+    "description": "Multiple macro scenarios with probability weights, linked to PD and LGD.",
+    "owner_team": "team:model-risk",
+    "process": "process:model-governance",
+    "implementation_status": "planned",
+    "planned_go_live": "2027-02-28",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "47"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "48"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "49"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "72"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "124"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "132"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:ecl-model-validation-framework",
+   "type": "Control",
+   "name": "ECL Model Validation Framework",
+   "attributes": {
+    "kind": "governance",
+    "description": "Independent pre-implementation validation, back-testing and calibration of ECL models.",
+    "owner_team": "team:model-risk",
+    "process": "process:model-governance",
+    "implementation_status": "planned",
+    "planned_go_live": "2027-01-31",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "99"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "130"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "131"
+     }
+    ],
+    "notes": "The general MRM policy exists; the ECL-specific validation standard does not.",
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:prudential-floor-calculator",
+   "type": "Control",
+   "name": "Prudential Floor Calculator",
+   "attributes": {
+    "kind": "system",
+    "description": "Product-wise and stage-wise floors on the ECL allowance, with strict product category segregation.",
+    "owner_team": "team:finance",
+    "process": "process:provisioning",
+    "implementation_status": "absent",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "82"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "90"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "91"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "92"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "93"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "94"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:ecl-model-inventory-tiering",
+   "type": "Control",
+   "name": "ECL Model Inventory and Risk Tiering",
+   "attributes": {
+    "kind": "governance",
+    "description": "Inventory of all models in the ECL lifecycle with risk-based tiering and documentation.",
+    "owner_team": "team:model-risk",
+    "process": "process:model-governance",
+    "implementation_status": "planned",
+    "planned_go_live": "2026-12-31",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "120"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "121"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "122"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:ecl-historical-loss-database",
+   "type": "Control",
+   "name": "Historical Loss and Default Database",
+   "attributes": {
+    "kind": "system",
+    "description": "Sufficient history of defaults, recoveries and loss to calibrate PD and LGD.",
+    "owner_team": "team:it-core-banking",
+    "process": "process:model-governance",
+    "implementation_status": "absent",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "64"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "70"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "71"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:ecl-transition-fair-valuation",
+   "type": "Control",
+   "name": "Fair Valuation on Transition and Transitional Arrangements",
+   "attributes": {
+    "kind": "process",
+    "description": "Fair valuation of the loan portfolio on 1 Apr 2027 and the CET1 transition adjustment.",
+    "owner_team": "team:finance",
+    "process": "process:provisioning",
+    "implementation_status": "absent",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "19"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "106"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "107"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "108"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "110"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:ecl-board-governance",
+   "type": "Control",
+   "name": "Board ECL Oversight (Committee with CFO and CRO)",
+   "attributes": {
+    "kind": "governance",
+    "description": "Board policy and a committee with the CFO and CRO that oversees ECL implementation.",
+    "owner_team": "team:compliance",
+    "process": "process:model-governance",
+    "implementation_status": "planned",
+    "planned_go_live": "2026-12-15",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "56"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "57"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:ecl-disclosure-reporting",
+   "type": "Control",
+   "name": "ECL Disclosures and Regulatory Reporting",
+   "attributes": {
+    "kind": "process",
+    "description": "Annex 4 disclosures and the first ECL reporting as at 30 Jun 2027.",
+    "owner_team": "team:finance",
+    "process": "process:regulatory-reporting",
+    "implementation_status": "absent",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "141"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "142"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "144"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "147"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "148"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "150"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:third-party-model-governance",
+   "type": "Control",
+   "name": "Third-party Model Governance",
+   "attributes": {
+    "kind": "governance",
+    "description": "Selection, validation and contractual access for models bought from vendors.",
+    "owner_team": "team:vendor-management",
+    "process": "process:model-governance",
+    "implementation_status": "planned",
+    "planned_go_live": "2027-02-28",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "135"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "136"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "137"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "139"
+     },
+     {
+      "instrument": "acpir",
+      "paragraph": "140"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "control:ecl-model-monitoring",
+   "type": "Control",
+   "name": "Continuous ECL Model Performance Monitoring",
+   "attributes": {
+    "kind": "governance",
+    "description": "Ongoing performance monitoring with clear responsibilities and frequency.",
+    "owner_team": "team:model-risk",
+    "process": "process:model-governance",
+    "implementation_status": "absent",
+    "applies_to": "all",
+    "satisfies": [
+     {
+      "instrument": "acpir",
+      "paragraph": "133"
+     }
+    ],
+    "synonyms": []
+   }
+  },
+  {
+   "id": "policy:POL-CRD-001",
+   "type": "Policy",
+   "name": "Credit Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-CRD-001",
+    "version": "7.2",
+    "owner_team": "team:credit-risk",
+    "approved_by": "Board Credit Committee",
+    "approved_on": "2025-12-18",
+    "effective_date": "2026-01-01",
+    "next_review": "2027-03-31",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-CRD-001/2.1",
+      "title": "Appraisal and repayment schedules",
+      "owner_team": "team:credit-risk",
+      "effective_from": "2026-01-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "12"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:credit-appraisal-delegation"
+      ]
+     },
+     {
+      "clause_id": "POL-CRD-001/2.3",
+      "title": "Review and renewal of credit limits",
+      "owner_team": "team:credit-risk",
+      "effective_from": "2026-01-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "16",
+         "18",
+         "20",
+         "42(5)"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:credit-limit-review-tracker"
+      ]
+     },
+     {
+      "clause_id": "POL-CRD-001/3.2",
+      "title": "Loan agreement disclosures",
+      "owner_team": "team:lending-ops",
+      "effective_from": "2026-01-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "13",
+         "14"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:loan-agreement-due-date-disclosure"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-ACP-002",
+   "type": "Policy",
+   "name": "Asset Classification and Provisioning Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-ACP-002",
+    "version": "5.0",
+    "owner_team": "team:credit-risk",
+    "approved_by": "Board of Directors",
+    "approved_on": "2026-03-27",
+    "effective_date": "2026-04-01",
+    "next_review": "2027-03-31",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-ACP-002/4.1",
+      "title": "Classification as NPA and SMA tagging",
+      "owner_team": "team:credit-risk",
+      "effective_from": "2025-11-28",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "30",
+         "31",
+         "42(1)"
+        ],
+        "rules": [
+         "npa-classification-90-days",
+         "sma-reporting-bands"
+        ]
+       }
+      ],
+      "controls": [
+       "control:day-end-npa-classification",
+       "control:sma-day-end-tagging",
+       "control:overdue-day-end-flagging"
+      ]
+     },
+     {
+      "clause_id": "POL-ACP-002/4.2",
+      "title": "Standard asset provisioning",
+      "owner_team": "team:finance",
+      "effective_from": "2025-11-28",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "80",
+         "81"
+        ],
+        "rules": [
+         "standard-asset-provision-025",
+         "standard-asset-provision-040"
+        ]
+       }
+      ],
+      "controls": [
+       "control:standard-asset-provisioning"
+      ]
+     },
+     {
+      "clause_id": "POL-ACP-002/4.3",
+      "title": "NPA provisioning",
+      "owner_team": "team:finance",
+      "effective_from": "2025-11-28",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "85",
+         "86",
+         "90",
+         "91",
+         "95"
+        ],
+        "rules": [
+         "substandard-provision-secured-15",
+         "substandard-provision-unsecured-25",
+         "doubtful-unsecured-portion-100",
+         "doubtful-secured-portion-ageing",
+         "loss-asset-provision-100"
+        ]
+       }
+      ],
+      "controls": [
+       "control:npa-provisioning-engine"
+      ]
+     },
+     {
+      "clause_id": "POL-ACP-002/4.4",
+      "title": "Income recognition",
+      "owner_team": "team:finance",
+      "effective_from": "2025-11-28",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "124",
+         "125",
+         "128",
+         "132",
+         "133"
+        ],
+        "rules": [
+         "npa-income-cash-basis"
+        ]
+       }
+      ],
+      "controls": [
+       "control:cash-basis-income-recognition",
+       "control:interest-reversal-memorandum"
+      ]
+     },
+     {
+      "clause_id": "POL-ACP-002/4.5",
+      "title": "Resolution plans and restructured accounts",
+      "owner_team": "team:collections-recovery",
+      "effective_from": "2026-07-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "62A",
+         "62B",
+         "84A",
+         "84B",
+         "139A",
+         "139B"
+        ],
+        "rules": [
+         "resolution-plan-classification-62a-62b",
+         "resolution-plan-additional-provision-84a",
+         "repeated-restructuring-additional-provision-84b",
+         "resolution-plan-income-accrual-139a",
+         "restructured-again-income-cash-basis-139b"
+        ]
+       },
+       {
+        "instrument": "iracp_amend_2026",
+        "paragraphs": [
+         "3(ii)",
+         "3(iv)",
+         "3(v)"
+        ],
+        "rules": [
+         "resolution-plan-classification-62a-62b",
+         "resolution-plan-additional-provision-84a",
+         "repeated-restructuring-additional-provision-84b",
+         "resolution-plan-income-accrual-139a",
+         "restructured-again-income-cash-basis-139b"
+        ]
+       }
+      ],
+      "controls": [
+       "control:resolution-plan-register",
+       "control:resolution-plan-provisioning"
+      ]
+     },
+     {
+      "clause_id": "POL-ACP-002/4.6",
+      "title": "Overrides and audit trail",
+      "owner_team": "team:credit-risk",
+      "effective_from": "2025-11-28",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "38"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:classification-override-governance"
+      ]
+     },
+     {
+      "clause_id": "POL-ACP-002/4.7",
+      "title": "Floating provisions",
+      "owner_team": "team:finance",
+      "effective_from": "2025-11-28",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "10(2)",
+         "10(3)",
+         "97",
+         "98",
+         "99"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:floating-provision-governance"
+      ]
+     },
+     {
+      "clause_id": "POL-ACP-002/4.8",
+      "title": "Agricultural advances",
+      "owner_team": "team:agri-banking",
+      "effective_from": "2025-11-28",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "42(6)",
+         "42(7)",
+         "57"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:crop-season-npa-calendar"
+      ]
+     },
+     {
+      "clause_id": "POL-ACP-002/4.9",
+      "title": "Security valuation for large NPAs",
+      "owner_team": "team:credit-risk",
+      "effective_from": "2025-11-28",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "22",
+         "23"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:collateral-valuation-stock-audit"
+      ]
+     },
+     {
+      "clause_id": "POL-ACP-002/9.1",
+      "title": "Expected credit loss framework (to be adopted)",
+      "owner_team": "team:credit-risk",
+      "effective_from": "2027-04-01",
+      "status": "draft",
+      "maps_to": [
+       {
+        "instrument": "acpir",
+        "paragraphs": [
+         "25",
+         "26",
+         "33",
+         "45",
+         "50",
+         "82",
+         "96",
+         "97",
+         "100"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:ecl-staging-engine",
+       "control:sicr-criteria-documentation",
+       "control:pd-model",
+       "control:lgd-model",
+       "control:ead-model",
+       "control:eir-computation-engine",
+       "control:macro-scenario-framework",
+       "control:prudential-floor-calculator",
+       "control:ecl-transition-fair-valuation"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-FPC-003",
+   "type": "Policy",
+   "name": "Fair Practices Code",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-FPC-003",
+    "version": "4.1",
+    "owner_team": "team:retail-lending",
+    "approved_by": "Customer Service Committee of the Board",
+    "approved_on": "2025-09-30",
+    "effective_date": "2025-10-01",
+    "next_review": "2026-09-30",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-FPC-003/1",
+      "title": "Loan applications and disclosures",
+      "owner_team": "team:retail-lending",
+      "effective_from": "2025-10-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "fair_practices",
+        "paragraphs": [
+         "disclosure"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:fair-practices-disclosure"
+      ]
+     },
+     {
+      "clause_id": "POL-FPC-003/5",
+      "title": "Recovery conduct",
+      "owner_team": "team:collections-recovery",
+      "effective_from": "2025-10-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "fair_practices",
+        "paragraphs": [
+         "recovery"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:recovery-agent-conduct"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-RRD-004",
+   "type": "Policy",
+   "name": "Rate Reset and Disclosure Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-RRD-004",
+    "version": "3.0",
+    "owner_team": "team:lending-ops",
+    "approved_by": "Retail Credit Committee",
+    "approved_on": "2023-12-15",
+    "effective_date": "2023-12-31",
+    "next_review": "2026-12-31",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-RRD-004/2",
+      "title": "Reset notification",
+      "owner_team": "team:customer-comms",
+      "effective_from": "2023-12-31",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "floating_rate_reset",
+        "paragraphs": [
+         "Key provisions (1)"
+        ],
+        "rules": [
+         "notify-rate-reset"
+        ]
+       }
+      ],
+      "controls": [
+       "control:borrower-notification"
+      ]
+     },
+     {
+      "clause_id": "POL-RRD-004/3",
+      "title": "Choice at reset",
+      "owner_team": "team:lending-ops",
+      "effective_from": "2023-12-31",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "floating_rate_reset",
+        "paragraphs": [
+         "Key provisions (2)"
+        ],
+        "rules": [
+         "fixed-rate-choice"
+        ]
+       }
+      ],
+      "controls": [
+       "control:emi-tenor-choice",
+       "control:fixed-rate-option"
+      ]
+     },
+     {
+      "clause_id": "POL-RRD-004/4",
+      "title": "Reset statement",
+      "owner_team": "team:customer-comms",
+      "effective_from": "2023-12-31",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "floating_rate_reset",
+        "paragraphs": [
+         "Key provisions (3)"
+        ],
+        "rules": [
+         "reset-statement"
+        ]
+       }
+      ],
+      "controls": [
+       "control:reset-statement"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-COL-005",
+   "type": "Policy",
+   "name": "Collateral and Document Custody Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-COL-005",
+    "version": "2.4",
+    "owner_team": "team:collateral-ops",
+    "approved_by": "Operations Risk Committee",
+    "approved_on": "2023-11-20",
+    "effective_date": "2023-12-01",
+    "next_review": "2026-11-30",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-COL-005/3",
+      "title": "Release within 30 days",
+      "owner_team": "team:collateral-ops",
+      "effective_from": "2023-12-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "document_release",
+        "paragraphs": [
+         "Release timeline"
+        ],
+        "rules": [
+         "release-within-30-days"
+        ]
+       }
+      ],
+      "controls": [
+       "control:document-release-sla",
+       "control:collateral-document-custody-register"
+      ]
+     },
+     {
+      "clause_id": "POL-COL-005/4",
+      "title": "Compensation for delay",
+      "owner_team": "team:collateral-ops",
+      "effective_from": "2023-12-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "document_release",
+        "paragraphs": [
+         "Compensation for delay"
+        ],
+        "rules": [
+         "delay-compensation"
+        ]
+       }
+      ],
+      "controls": [
+       "control:delay-compensation"
+      ]
+     },
+     {
+      "clause_id": "POL-COL-005/5",
+      "title": "Place of collection",
+      "owner_team": "team:collateral-ops",
+      "effective_from": "2023-12-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "document_release",
+        "paragraphs": [
+         "Place of collection"
+        ],
+        "rules": [
+         "collection-choice"
+        ]
+       }
+      ],
+      "controls": [
+       "control:document-collection-choice"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-GRV-006",
+   "type": "Policy",
+   "name": "Customer Grievance Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-GRV-006",
+    "version": "3.2",
+    "owner_team": "team:customer-service",
+    "approved_by": "Customer Service Committee of the Board",
+    "approved_on": "2025-06-30",
+    "effective_date": "2025-07-01",
+    "next_review": "2026-06-30",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-GRV-006/2",
+      "title": "Registration, ageing and escalation",
+      "owner_team": "team:customer-service",
+      "effective_from": "2025-07-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "ombudsman",
+        "paragraphs": [
+         "complaint handling"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:grievance-redressal-tracker"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-KYC-007",
+   "type": "Policy",
+   "name": "KYC and AML Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-KYC-007",
+    "version": "6.0",
+    "owner_team": "team:kyc-aml",
+    "approved_by": "Board of Directors",
+    "approved_on": "2025-12-18",
+    "effective_date": "2026-01-01",
+    "next_review": "2026-12-31",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-KYC-007/3",
+      "title": "Customer risk categorisation",
+      "owner_team": "team:kyc-aml",
+      "effective_from": "2019-04-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "kyc_md",
+        "paragraphs": [
+         "risk categorisation"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:kyc-risk-categorisation"
+      ]
+     },
+     {
+      "clause_id": "POL-KYC-007/7",
+      "title": "Periodic KYC updation",
+      "owner_team": "team:kyc-aml",
+      "effective_from": "2026-01-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "kyc_md",
+        "paragraphs": [
+         "periodic updation"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:kyc-periodic-updation"
+      ]
+     },
+     {
+      "clause_id": "POL-KYC-007/9",
+      "title": "Transaction monitoring",
+      "owner_team": "team:kyc-aml",
+      "effective_from": "2021-04-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "kyc_md",
+        "paragraphs": [
+         "ongoing monitoring"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:aml-transaction-monitoring"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-MRM-008",
+   "type": "Policy",
+   "name": "Model Risk Management Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-MRM-008",
+    "version": "2.1",
+    "owner_team": "team:model-risk",
+    "approved_by": "Risk Management Committee of the Board",
+    "approved_on": "2025-03-28",
+    "effective_date": "2025-04-01",
+    "next_review": "2026-12-31",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-MRM-008/2",
+      "title": "Model inventory and validation (credit scorecards)",
+      "owner_team": "team:model-risk",
+      "effective_from": "2025-04-01",
+      "status": "in_force",
+      "maps_to": [],
+      "controls": []
+     },
+     {
+      "clause_id": "POL-MRM-008/8",
+      "title": "ECL model risk (addendum, to be approved)",
+      "owner_team": "team:model-risk",
+      "effective_from": "2027-04-01",
+      "status": "draft",
+      "maps_to": [
+       {
+        "instrument": "acpir",
+        "paragraphs": [
+         "119",
+         "120",
+         "121",
+         "123",
+         "130",
+         "131",
+         "133",
+         "135",
+         "136"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:ecl-model-inventory-tiering",
+       "control:ecl-model-validation-framework",
+       "control:ecl-model-monitoring",
+       "control:third-party-model-governance"
+      ]
+     },
+     {
+      "clause_id": "POL-MRM-008/9",
+      "title": "Board governance of ECL",
+      "owner_team": "team:compliance",
+      "effective_from": "2027-04-01",
+      "status": "draft",
+      "maps_to": [
+       {
+        "instrument": "acpir",
+        "paragraphs": [
+         "56",
+         "57"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:ecl-board-governance"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-REC-009",
+   "type": "Policy",
+   "name": "Recovery and Restructuring Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-REC-009",
+    "version": "4.3",
+    "owner_team": "team:collections-recovery",
+    "approved_by": "Board Credit Committee",
+    "approved_on": "2026-06-24",
+    "effective_date": "2026-07-01",
+    "next_review": "2027-06-30",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-REC-009/5",
+      "title": "Resolution plans under Chapter VI-A",
+      "owner_team": "team:collections-recovery",
+      "effective_from": "2026-07-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "resolution_stressed_assets",
+        "paragraphs": [
+         "Chapter VI-A"
+        ],
+        "rules": []
+       },
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "62A",
+         "62B",
+         "84A",
+         "84B"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:resolution-plan-register",
+       "control:resolution-plan-provisioning"
+      ]
+     },
+     {
+      "clause_id": "POL-REC-009/7",
+      "title": "Recovery agencies",
+      "owner_team": "team:collections-recovery",
+      "effective_from": "2023-04-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "fair_practices",
+        "paragraphs": [
+         "recovery"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:recovery-agent-conduct"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-OUT-010",
+   "type": "Policy",
+   "name": "Outsourcing Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-OUT-010",
+    "version": "3.0",
+    "owner_team": "team:vendor-management",
+    "approved_by": "Board of Directors",
+    "approved_on": "2023-09-29",
+    "effective_date": "2023-10-01",
+    "next_review": "2026-09-30",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-OUT-010/4",
+      "title": "Register, due diligence and supervisory access",
+      "owner_team": "team:vendor-management",
+      "effective_from": "2023-10-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "outsourcing_it",
+        "paragraphs": [
+         "outsourcing governance"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:outsourcing-due-diligence-register"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-DAT-011",
+   "type": "Policy",
+   "name": "Data Governance and Regulatory Reporting Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-DAT-011",
+    "version": "2.0",
+    "owner_team": "team:finance",
+    "approved_by": "Audit Committee of the Board",
+    "approved_on": "2025-03-28",
+    "effective_date": "2025-04-01",
+    "next_review": "2026-03-31",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-DAT-011/3",
+      "title": "Regulatory MIS and returns",
+      "owner_team": "team:finance",
+      "effective_from": "2025-04-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "11",
+         "29",
+         "33",
+         "34"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:npa-mis-reporting",
+       "control:crilc-reporting"
+      ]
+     },
+     {
+      "clause_id": "POL-DAT-011/8",
+      "title": "Credit data for ECL (planned)",
+      "owner_team": "team:it-core-banking",
+      "effective_from": "2027-04-01",
+      "status": "draft",
+      "maps_to": [
+       {
+        "instrument": "acpir",
+        "paragraphs": [
+         "62",
+         "63",
+         "64",
+         "70",
+         "71"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:ecl-historical-loss-database",
+       "control:ecl-disclosure-reporting"
+      ]
+     },
+     {
+      "clause_id": "POL-DAT-011/9",
+      "title": "Regulatory change management",
+      "owner_team": "team:compliance",
+      "effective_from": "2025-04-01",
+      "status": "in_force",
+      "maps_to": [],
+      "controls": [
+       "control:regulatory-change-tracking"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-AGR-012",
+   "type": "Policy",
+   "name": "Agricultural and MSME Lending Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-AGR-012",
+    "version": "2.2",
+    "owner_team": "team:agri-banking",
+    "approved_by": "Board Credit Committee",
+    "approved_on": "2025-09-30",
+    "effective_date": "2025-10-01",
+    "next_review": "2026-09-30",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-AGR-012/3",
+      "title": "Crop-season norms",
+      "owner_team": "team:agri-banking",
+      "effective_from": "2025-10-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "42(6)",
+         "42(7)",
+         "57"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:crop-season-npa-calendar"
+      ]
+     },
+     {
+      "clause_id": "POL-AGR-012/6",
+      "title": "Guarantee-covered MSME advances",
+      "owner_team": "team:msme-banking",
+      "effective_from": "2025-10-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "111"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "policy:POL-ICA-013",
+   "type": "Policy",
+   "name": "Internal Audit and Compliance Testing Policy",
+   "attributes": {
+    "kind": "internal",
+    "policy_code": "POL-ICA-013",
+    "version": "3.1",
+    "owner_team": "team:internal-audit",
+    "approved_by": "Audit Committee of the Board",
+    "approved_on": "2025-09-30",
+    "effective_date": "2025-10-01",
+    "next_review": "2026-09-30",
+    "status": "in_force",
+    "clauses": [
+     {
+      "clause_id": "POL-ICA-013/5",
+      "title": "Annual system audit of the NPA system",
+      "owner_team": "team:internal-audit",
+      "effective_from": "2025-10-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "39(3)"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": [
+       "control:npa-system-audit",
+       "control:board-iracp-policy"
+      ]
+     },
+     {
+      "clause_id": "POL-ICA-013/6",
+      "title": "Concurrent audit of credit processes",
+      "owner_team": "team:internal-audit",
+      "effective_from": "2025-10-01",
+      "status": "in_force",
+      "maps_to": [
+       {
+        "instrument": "iracp",
+        "paragraphs": [
+         "20"
+        ],
+        "rules": []
+       }
+      ],
+      "controls": []
+     }
+    ]
+   }
   }
  ],
  "edges": [
@@ -366,6 +3471,38 @@
   },
   {
    "source": "product:personal-loan-floating",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "process:collections-recovery",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
    "target": "control:borrower-notification",
    "type": "PROVIDES",
    "valid_from": "2020-01-01",
@@ -383,6 +3520,14 @@
   {
    "source": "product:personal-loan-floating",
    "target": "control:fixed-rate-option",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:reset-statement",
    "type": "PROVIDES",
    "valid_from": "2020-01-01",
    "valid_to": null,
@@ -431,6 +3576,38 @@
   {
    "source": "product:home-loan-floating",
    "target": "process:document-custody",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "process:collections-recovery",
    "type": "USES",
    "valid_from": "2020-01-01",
    "valid_to": null,
@@ -542,6 +3719,38 @@
   },
   {
    "source": "product:auto-loan-floating",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "process:collections-recovery",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
    "target": "control:borrower-notification",
    "type": "PROVIDES",
    "valid_from": "2020-01-01",
@@ -573,6 +3782,86 @@
    "attributes": {}
   },
   {
+   "source": "product:auto-loan-fixed",
+   "target": "team:vehicle-finance",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "process:collateral-release",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "process:document-custody",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "process:collections-recovery",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:document-release-sla",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:delay-compensation",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
    "source": "product:personal-loan-fixed",
    "target": "team:retail-lending",
    "type": "OWNED_BY",
@@ -584,6 +3873,134 @@
    "source": "product:personal-loan-fixed",
    "target": "process:loan-closure",
    "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "process:collections-recovery",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "team:retail-lending",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "process:rate-reset",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "process:borrower-notification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "process:collections-recovery",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:borrower-notification",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:emi-tenor-choice",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:fixed-rate-option",
+   "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:reset-statement",
+   "type": "PROVIDES",
    "valid_from": "2020-01-01",
    "valid_to": null,
    "attributes": {}
@@ -615,6 +4032,38 @@
   {
    "source": "product:loan-against-property",
    "target": "process:document-custody",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "process:collections-recovery",
    "type": "USES",
    "valid_from": "2020-01-01",
    "valid_to": null,
@@ -670,8 +4119,152 @@
   },
   {
    "source": "product:gold-loan",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "process:collections-recovery",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
    "target": "control:document-collection-choice",
    "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "team:cards",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "process:collections-recovery",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "team:msme-banking",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "process:collateral-release",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "process:document-custody",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "process:collections-recovery",
+   "type": "USES",
    "valid_from": "2020-01-01",
    "valid_to": null,
    "attributes": {}
@@ -726,6 +4319,38 @@
   },
   {
    "source": "product:msme-term-loan",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "process:collections-recovery",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
    "target": "control:borrower-notification",
    "type": "PROVIDES",
    "valid_from": "2020-01-01",
@@ -736,6 +4361,70 @@
    "source": "product:msme-term-loan",
    "target": "control:emi-tenor-choice",
    "type": "PROVIDES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "team:agri-banking",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "process:loan-closure",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "process:collateral-release",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "process:document-custody",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "process:asset-classification",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "process:provisioning",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "process:income-recognition",
+   "type": "USES",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "process:collections-recovery",
+   "type": "USES",
    "valid_from": "2020-01-01",
    "valid_to": null,
    "attributes": {}
@@ -791,6 +4480,86 @@
    "attributes": {}
   },
   {
+   "source": "process:asset-classification",
+   "target": "team:credit-risk",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:provisioning",
+   "target": "team:finance",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:income-recognition",
+   "target": "team:finance",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:restructuring-resolution",
+   "target": "team:collections-recovery",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:collections-recovery",
+   "target": "team:collections-recovery",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:kyc-periodic-review",
+   "target": "team:kyc-aml",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:customer-grievance",
+   "target": "team:customer-service",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:credit-underwriting",
+   "target": "team:credit-risk",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:model-governance",
+   "target": "team:model-risk",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "process:regulatory-reporting",
+   "target": "team:compliance",
+   "type": "OWNED_BY",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
    "source": "segment:retail-individual",
    "target": "product:personal-loan-floating",
    "type": "ELIGIBLE_FOR",
@@ -816,7 +4585,23 @@
   },
   {
    "source": "segment:retail-individual",
+   "target": "product:auto-loan-fixed",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:retail-individual",
    "target": "product:personal-loan-fixed",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:retail-individual",
+   "target": "product:education-loan",
    "type": "ELIGIBLE_FOR",
    "valid_from": "2020-01-01",
    "valid_to": null,
@@ -839,10 +4624,3257 @@
    "attributes": {}
   },
   {
+   "source": "segment:retail-individual",
+   "target": "product:credit-card",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:msme",
+   "target": "product:msme-working-capital",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
    "source": "segment:msme",
    "target": "product:msme-term-loan",
    "type": "ELIGIBLE_FOR",
    "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "segment:retail-individual",
+   "target": "product:agri-kcc",
+   "type": "ELIGIBLE_FOR",
+   "valid_from": "2020-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:day-end-npa-classification",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:sma-day-end-tagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:overdue-day-end-flagging",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:standard-asset-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:npa-provisioning-engine",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:resolution-plan-provisioning",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:cash-basis-income-recognition",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:interest-reversal-memorandum",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:classification-override-governance",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:npa-system-audit",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:npa-mis-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:crilc-reporting",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:borrower-education-sma-npa",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:credit-limit-review-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:floating-provision-governance",
+   "type": "PROVIDES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:resolution-plan-register",
+   "type": "PROVIDES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:board-iracp-policy",
+   "type": "PROVIDES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:kyc-risk-categorisation",
+   "type": "PROVIDES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:kyc-periodic-updation",
+   "type": "PROVIDES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:grievance-redressal-tracker",
+   "type": "PROVIDES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:fair-practices-disclosure",
+   "type": "PROVIDES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "PROVIDES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:collateral-document-custody-register",
+   "type": "PROVIDES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-floating",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:home-loan-floating",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-floating",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:auto-loan-fixed",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:personal-loan-fixed",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:education-loan",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:loan-against-property",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:gold-loan",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:credit-card",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-working-capital",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:msme-term-loan",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "product:agri-kcc",
+   "target": "control:credit-appraisal-delegation",
+   "type": "PROVIDES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-CRD-001",
+   "target": "control:credit-appraisal-delegation",
+   "type": "ENFORCES",
+   "valid_from": "2020-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-CRD-001",
+   "target": "control:credit-limit-review-tracker",
+   "type": "ENFORCES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-CRD-001",
+   "target": "control:loan-agreement-due-date-disclosure",
+   "type": "ENFORCES",
+   "valid_from": "2022-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:cash-basis-income-recognition",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:classification-override-governance",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:collateral-valuation-stock-audit",
+   "type": "ENFORCES",
+   "valid_from": "2024-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:crop-season-npa-calendar",
+   "type": "ENFORCES",
+   "valid_from": "2025-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:day-end-npa-classification",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:floating-provision-governance",
+   "type": "ENFORCES",
+   "valid_from": "2022-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:interest-reversal-memorandum",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:macro-scenario-framework",
+   "type": "ENFORCES",
+   "valid_from": "2027-02-28",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:npa-provisioning-engine",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:overdue-day-end-flagging",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:resolution-plan-provisioning",
+   "type": "ENFORCES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:resolution-plan-register",
+   "type": "ENFORCES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:sicr-criteria-documentation",
+   "type": "ENFORCES",
+   "valid_from": "2026-12-31",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:sma-day-end-tagging",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "control:standard-asset-provisioning",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/2026-27/45:repeated-restructuring-additional-provision-84b",
+   "type": "IMPLEMENTS",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.5"
+    ],
+    "paragraphs": [
+     "3(ii)",
+     "3(iv)",
+     "3(v)"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/2026-27/45:resolution-plan-additional-provision-84a",
+   "type": "IMPLEMENTS",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.5"
+    ],
+    "paragraphs": [
+     "3(ii)",
+     "3(iv)",
+     "3(v)"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/2026-27/45:resolution-plan-classification-62a-62b",
+   "type": "IMPLEMENTS",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.5"
+    ],
+    "paragraphs": [
+     "3(ii)",
+     "3(iv)",
+     "3(v)"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/2026-27/45:resolution-plan-income-accrual-139a",
+   "type": "IMPLEMENTS",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.5"
+    ],
+    "paragraphs": [
+     "3(ii)",
+     "3(iv)",
+     "3(v)"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/2026-27/45:restructured-again-income-cash-basis-139b",
+   "type": "IMPLEMENTS",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.5"
+    ],
+    "paragraphs": [
+     "3(ii)",
+     "3(iv)",
+     "3(v)"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:doubtful-secured-portion-ageing",
+   "type": "IMPLEMENTS",
+   "valid_from": "2025-11-28",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.3"
+    ],
+    "paragraphs": [
+     "85",
+     "86",
+     "90",
+     "91",
+     "95"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:doubtful-unsecured-portion-100",
+   "type": "IMPLEMENTS",
+   "valid_from": "2025-11-28",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.3"
+    ],
+    "paragraphs": [
+     "85",
+     "86",
+     "90",
+     "91",
+     "95"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:loss-asset-provision-100",
+   "type": "IMPLEMENTS",
+   "valid_from": "2025-11-28",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.3"
+    ],
+    "paragraphs": [
+     "85",
+     "86",
+     "90",
+     "91",
+     "95"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:npa-classification-90-days",
+   "type": "IMPLEMENTS",
+   "valid_from": "2025-11-28",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.1"
+    ],
+    "paragraphs": [
+     "30",
+     "31",
+     "42(1)"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:npa-income-cash-basis",
+   "type": "IMPLEMENTS",
+   "valid_from": "2025-11-28",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.4"
+    ],
+    "paragraphs": [
+     "124",
+     "125",
+     "128",
+     "132",
+     "133"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:repeated-restructuring-additional-provision-84b",
+   "type": "IMPLEMENTS",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.5"
+    ],
+    "paragraphs": [
+     "139A",
+     "139B",
+     "62A",
+     "62B",
+     "84A",
+     "84B"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:resolution-plan-additional-provision-84a",
+   "type": "IMPLEMENTS",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.5"
+    ],
+    "paragraphs": [
+     "139A",
+     "139B",
+     "62A",
+     "62B",
+     "84A",
+     "84B"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:resolution-plan-classification-62a-62b",
+   "type": "IMPLEMENTS",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.5"
+    ],
+    "paragraphs": [
+     "139A",
+     "139B",
+     "62A",
+     "62B",
+     "84A",
+     "84B"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:resolution-plan-income-accrual-139a",
+   "type": "IMPLEMENTS",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.5"
+    ],
+    "paragraphs": [
+     "139A",
+     "139B",
+     "62A",
+     "62B",
+     "84A",
+     "84B"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:restructured-again-income-cash-basis-139b",
+   "type": "IMPLEMENTS",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.5"
+    ],
+    "paragraphs": [
+     "139A",
+     "139B",
+     "62A",
+     "62B",
+     "84A",
+     "84B"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:sma-reporting-bands",
+   "type": "IMPLEMENTS",
+   "valid_from": "2025-11-28",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.1"
+    ],
+    "paragraphs": [
+     "30",
+     "31",
+     "42(1)"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:standard-asset-provision-025",
+   "type": "IMPLEMENTS",
+   "valid_from": "2025-11-28",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.2"
+    ],
+    "paragraphs": [
+     "80",
+     "81"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:standard-asset-provision-040",
+   "type": "IMPLEMENTS",
+   "valid_from": "2025-11-28",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.2"
+    ],
+    "paragraphs": [
+     "80",
+     "81"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:substandard-provision-secured-15",
+   "type": "IMPLEMENTS",
+   "valid_from": "2025-11-28",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.3"
+    ],
+    "paragraphs": [
+     "85",
+     "86",
+     "90",
+     "91",
+     "95"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-ACP-002",
+   "target": "rule:RBI/DOR/2025-26/164:substandard-provision-unsecured-25",
+   "type": "IMPLEMENTS",
+   "valid_from": "2025-11-28",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-ACP-002/4.3"
+    ],
+    "paragraphs": [
+     "85",
+     "86",
+     "90",
+     "91",
+     "95"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-FPC-003",
+   "target": "control:fair-practices-disclosure",
+   "type": "ENFORCES",
+   "valid_from": "2012-05-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-FPC-003",
+   "target": "control:recovery-agent-conduct",
+   "type": "ENFORCES",
+   "valid_from": "2023-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-RRD-004",
+   "target": "control:borrower-notification",
+   "type": "ENFORCES",
+   "valid_from": "2023-12-31",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-RRD-004",
+   "target": "control:emi-tenor-choice",
+   "type": "ENFORCES",
+   "valid_from": "2023-12-31",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-RRD-004",
+   "target": "control:fixed-rate-option",
+   "type": "ENFORCES",
+   "valid_from": "2023-12-31",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-RRD-004",
+   "target": "control:reset-statement",
+   "type": "ENFORCES",
+   "valid_from": "2023-12-31",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-RRD-004",
+   "target": "rule:DOR.MCS.REC.32/01.01.003/2023-24:fixed-rate-choice",
+   "type": "IMPLEMENTS",
+   "valid_from": "2023-12-31",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-RRD-004/3"
+    ],
+    "paragraphs": [
+     "Key provisions (2)"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-RRD-004",
+   "target": "rule:DOR.MCS.REC.32/01.01.003/2023-24:notify-rate-reset",
+   "type": "IMPLEMENTS",
+   "valid_from": "2023-12-31",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-RRD-004/2"
+    ],
+    "paragraphs": [
+     "Key provisions (1)"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-RRD-004",
+   "target": "rule:DOR.MCS.REC.32/01.01.003/2023-24:reset-statement",
+   "type": "IMPLEMENTS",
+   "valid_from": "2023-12-31",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-RRD-004/4"
+    ],
+    "paragraphs": [
+     "Key provisions (3)"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-COL-005",
+   "target": "control:collateral-document-custody-register",
+   "type": "ENFORCES",
+   "valid_from": "2018-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-COL-005",
+   "target": "control:delay-compensation",
+   "type": "ENFORCES",
+   "valid_from": "2023-12-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-COL-005",
+   "target": "control:document-collection-choice",
+   "type": "ENFORCES",
+   "valid_from": "2023-12-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-COL-005",
+   "target": "control:document-release-sla",
+   "type": "ENFORCES",
+   "valid_from": "2023-12-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-COL-005",
+   "target": "rule:DoR.MCS.REC.38/01.01.001/2023-24:collection-choice",
+   "type": "IMPLEMENTS",
+   "valid_from": "2023-12-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-COL-005/5"
+    ],
+    "paragraphs": [
+     "Place of collection"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-COL-005",
+   "target": "rule:DoR.MCS.REC.38/01.01.001/2023-24:delay-compensation",
+   "type": "IMPLEMENTS",
+   "valid_from": "2023-12-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-COL-005/4"
+    ],
+    "paragraphs": [
+     "Compensation for delay"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-COL-005",
+   "target": "rule:DoR.MCS.REC.38/01.01.001/2023-24:release-within-30-days",
+   "type": "IMPLEMENTS",
+   "valid_from": "2023-12-01",
+   "valid_to": null,
+   "attributes": {
+    "clauses": [
+     "POL-COL-005/3"
+    ],
+    "paragraphs": [
+     "Release timeline"
+    ]
+   }
+  },
+  {
+   "source": "policy:POL-GRV-006",
+   "target": "control:grievance-redressal-tracker",
+   "type": "ENFORCES",
+   "valid_from": "2021-11-12",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-KYC-007",
+   "target": "control:aml-transaction-monitoring",
+   "type": "ENFORCES",
+   "valid_from": "2021-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-KYC-007",
+   "target": "control:kyc-periodic-updation",
+   "type": "ENFORCES",
+   "valid_from": "2026-01-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-KYC-007",
+   "target": "control:kyc-risk-categorisation",
+   "type": "ENFORCES",
+   "valid_from": "2019-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-MRM-008",
+   "target": "control:ecl-board-governance",
+   "type": "ENFORCES",
+   "valid_from": "2026-12-15",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-MRM-008",
+   "target": "control:ecl-model-inventory-tiering",
+   "type": "ENFORCES",
+   "valid_from": "2026-12-31",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-MRM-008",
+   "target": "control:ecl-model-validation-framework",
+   "type": "ENFORCES",
+   "valid_from": "2027-01-31",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-MRM-008",
+   "target": "control:third-party-model-governance",
+   "type": "ENFORCES",
+   "valid_from": "2027-02-28",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-REC-009",
+   "target": "control:recovery-agent-conduct",
+   "type": "ENFORCES",
+   "valid_from": "2023-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-REC-009",
+   "target": "control:resolution-plan-provisioning",
+   "type": "ENFORCES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-REC-009",
+   "target": "control:resolution-plan-register",
+   "type": "ENFORCES",
+   "valid_from": "2026-07-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-OUT-010",
+   "target": "control:outsourcing-due-diligence-register",
+   "type": "ENFORCES",
+   "valid_from": "2023-10-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-DAT-011",
+   "target": "control:crilc-reporting",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-DAT-011",
+   "target": "control:npa-mis-reporting",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-DAT-011",
+   "target": "control:regulatory-change-tracking",
+   "type": "ENFORCES",
+   "valid_from": "2025-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-AGR-012",
+   "target": "control:crop-season-npa-calendar",
+   "type": "ENFORCES",
+   "valid_from": "2025-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ICA-013",
+   "target": "control:board-iracp-policy",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
+   "valid_to": null,
+   "attributes": {}
+  },
+  {
+   "source": "policy:POL-ICA-013",
+   "target": "control:npa-system-audit",
+   "type": "ENFORCES",
+   "valid_from": "2024-04-01",
    "valid_to": null,
    "attributes": {}
   }

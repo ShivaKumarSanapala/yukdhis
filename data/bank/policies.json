@@ -1,0 +1,1162 @@
+{
+ "synthetic": true,
+ "instruments": {
+  "iracp": {
+   "reference": "RBI/DOR/2025-26/164",
+   "title": "Commercial Banks - Income Recognition, Asset Classification and Provisioning Directions, 2025",
+   "effective_date": "2025-11-28",
+   "status": "in_force",
+   "in_corpus": true,
+   "corpus_file": "rbi_ecl_2025_11_28_iracp_directions_v2026_07_01.md"
+  },
+  "iracp_amend_2025": {
+   "reference": "RBI/2025-26/128",
+   "title": "IRACP Amendment Directions, 2025 (deletes paragraph 117)",
+   "effective_date": "2026-01-01",
+   "status": "in_force",
+   "in_corpus": true,
+   "corpus_file": "rbi_ecl_2025_12_04_iracp_amendment_directions.md"
+  },
+  "iracp_amend_2026": {
+   "reference": "RBI/2026-27/45",
+   "title": "IRACP Amendment Directions, 2026 (resolution plans: 62A/62B, 84A-84D, 139A/139B)",
+   "effective_date": "2026-07-01",
+   "status": "in_force",
+   "in_corpus": true,
+   "corpus_file": "rbi_ecl_2026_04_29_iracp_amendment_directions.md"
+  },
+  "acpir": {
+   "reference": "RBI/DOR/2026-27/398",
+   "title": "Commercial Banks - Asset Classification, Provisioning and Income Recognition (ACPIR) Directions, 2026",
+   "effective_date": "2027-04-01",
+   "status": "not_yet_in_force",
+   "in_corpus": true,
+   "corpus_file": "rbi_ecl_2026_04_27_acpir_directions_final.md"
+  },
+  "iracp_repeal": {
+   "reference": "RBI/DOR/2026-27/36",
+   "title": "IRACP Repeal Directions, 2026 (repeals the IRACP Directions from 1 Apr 2027)",
+   "effective_date": "2027-04-01",
+   "status": "not_yet_in_force",
+   "in_corpus": true,
+   "corpus_file": "rbi_ecl_2026_04_27_iracp_repeal_directions.md"
+  },
+  "floating_rate_reset": {
+   "reference": "DOR.MCS.REC.32/01.01.003/2023-24",
+   "title": "Reset of Floating Interest Rate on EMI based Personal Loans (RBI/2023-24/55)",
+   "effective_date": "2023-12-31",
+   "status": "in_force",
+   "in_corpus": true,
+   "corpus_file": "rbi_2023_08_18_floating_rate_reset_emi_loans.md"
+  },
+  "document_release": {
+   "reference": "DoR.MCS.REC.38/01.01.001/2023-24",
+   "title": "Release of Movable / Immovable Property Documents (RBI/2023-24/60)",
+   "effective_date": "2023-12-01",
+   "status": "in_force",
+   "in_corpus": true,
+   "corpus_file": "rbi_2023_09_13_release_of_property_documents.md"
+  },
+  "resolution_stressed_assets": {
+   "reference": "Reserve Bank of India (Commercial Banks - Resolution of Stressed Assets) Directions, 2025",
+   "title": "Resolution of Stressed Assets Directions, 2025 (Chapter VI-A: resolution plans)",
+   "effective_date": "2025-11-28",
+   "status": "in_force",
+   "in_corpus": false
+  },
+  "outsourcing_it": {
+   "reference": "Master Direction on Outsourcing of Information Technology Services dated April 10, 2023",
+   "title": "Master Direction on Outsourcing of Information Technology Services",
+   "effective_date": "2023-10-01",
+   "status": "in_force",
+   "in_corpus": false
+  },
+  "kyc_md": {
+   "reference": "Master Direction - Know Your Customer (KYC) Direction, 2016 (as updated)",
+   "title": "Know Your Customer (KYC) Direction",
+   "effective_date": "2016-02-25",
+   "status": "in_force",
+   "in_corpus": false
+  },
+  "ombudsman": {
+   "reference": "Reserve Bank - Integrated Ombudsman Scheme, 2021",
+   "title": "Integrated Ombudsman Scheme (RB-IOS), 2021",
+   "effective_date": "2021-11-12",
+   "status": "in_force",
+   "in_corpus": false
+  },
+  "fair_practices": {
+   "reference": "Guidelines on Fair Practices Code for Lenders",
+   "title": "Fair Practices Code for Lenders",
+   "effective_date": "2012-05-01",
+   "status": "in_force",
+   "in_corpus": false
+  }
+ },
+ "policies": [
+  {
+   "policy_id": "policy:POL-CRD-001",
+   "code": "POL-CRD-001",
+   "title": "Credit Policy",
+   "kind": "internal",
+   "owner_team": "team:credit-risk",
+   "version": "7.2",
+   "approved_by": "Board Credit Committee",
+   "approved_on": "2025-12-18",
+   "effective_date": "2026-01-01",
+   "next_review": "2027-03-31",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-CRD-001/2.1",
+     "title": "Appraisal and repayment schedules",
+     "summary": "Repayment schedules follow borrower cash flows; sanction within delegated limits.",
+     "owner_team": "team:credit-risk",
+     "effective_from": "2026-01-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "12"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:credit-appraisal-delegation"
+     ]
+    },
+    {
+     "clause_id": "POL-CRD-001/2.3",
+     "title": "Review and renewal of credit limits",
+     "summary": "Limits are reviewed within three months of the due date; no limit goes 180 days unreviewed.",
+     "owner_team": "team:credit-risk",
+     "effective_from": "2026-01-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "16",
+        "18",
+        "20",
+        "42(5)"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:credit-limit-review-tracker"
+     ]
+    },
+    {
+     "clause_id": "POL-CRD-001/3.2",
+     "title": "Loan agreement disclosures",
+     "summary": "Agreements state due dates, instalment split and example SMA/NPA dates.",
+     "owner_team": "team:lending-ops",
+     "effective_from": "2026-01-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "13",
+        "14"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:loan-agreement-due-date-disclosure"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-ACP-002",
+   "code": "POL-ACP-002",
+   "title": "Asset Classification and Provisioning Policy",
+   "kind": "internal",
+   "owner_team": "team:credit-risk",
+   "version": "5.0",
+   "approved_by": "Board of Directors",
+   "approved_on": "2026-03-27",
+   "effective_date": "2026-04-01",
+   "next_review": "2027-03-31",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-ACP-002/4.1",
+     "title": "Classification as NPA and SMA tagging",
+     "summary": "Classification and SMA tagging are system driven at day-end; an account is NPA when overdue for more than 90 days.",
+     "owner_team": "team:credit-risk",
+     "effective_from": "2025-11-28",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "30",
+        "31",
+        "42(1)"
+       ],
+       "rules": [
+        "npa-classification-90-days",
+        "sma-reporting-bands"
+       ]
+      }
+     ],
+     "controls": [
+      "control:day-end-npa-classification",
+      "control:sma-day-end-tagging",
+      "control:overdue-day-end-flagging"
+     ]
+    },
+    {
+     "clause_id": "POL-ACP-002/4.2",
+     "title": "Standard asset provisioning",
+     "summary": "General provision at 0.25 per cent for housing, farm credit and small and micro enterprises, 0.40 per cent otherwise.",
+     "owner_team": "team:finance",
+     "effective_from": "2025-11-28",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "80",
+        "81"
+       ],
+       "rules": [
+        "standard-asset-provision-025",
+        "standard-asset-provision-040"
+       ]
+      }
+     ],
+     "controls": [
+      "control:standard-asset-provisioning"
+     ]
+    },
+    {
+     "clause_id": "POL-ACP-002/4.3",
+     "title": "NPA provisioning",
+     "summary": "Substandard 15 per cent (25 per cent unsecured); doubtful 100 per cent unsecured plus 25/40/100 per cent secured by age; loss 100 per cent.",
+     "owner_team": "team:finance",
+     "effective_from": "2025-11-28",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "85",
+        "86",
+        "90",
+        "91",
+        "95"
+       ],
+       "rules": [
+        "substandard-provision-secured-15",
+        "substandard-provision-unsecured-25",
+        "doubtful-unsecured-portion-100",
+        "doubtful-secured-portion-ageing",
+        "loss-asset-provision-100"
+       ]
+      }
+     ],
+     "controls": [
+      "control:npa-provisioning-engine"
+     ]
+    },
+    {
+     "clause_id": "POL-ACP-002/4.4",
+     "title": "Income recognition",
+     "summary": "Accrual only on standard accounts; cash basis for the rest; reversal and memorandum tracking on slippage.",
+     "owner_team": "team:finance",
+     "effective_from": "2025-11-28",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "124",
+        "125",
+        "128",
+        "132",
+        "133"
+       ],
+       "rules": [
+        "npa-income-cash-basis"
+       ]
+      }
+     ],
+     "controls": [
+      "control:cash-basis-income-recognition",
+      "control:interest-reversal-memorandum"
+     ]
+    },
+    {
+     "clause_id": "POL-ACP-002/4.5",
+     "title": "Resolution plans and restructured accounts",
+     "summary": "Standard accounts stay standard on implementation of a resolution plan; 5 per cent additional provision per plan; accrual after a plan, cash basis after repeated restructuring.",
+     "owner_team": "team:collections-recovery",
+     "effective_from": "2026-07-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "62A",
+        "62B",
+        "84A",
+        "84B",
+        "139A",
+        "139B"
+       ],
+       "rules": [
+        "resolution-plan-classification-62a-62b",
+        "resolution-plan-additional-provision-84a",
+        "repeated-restructuring-additional-provision-84b",
+        "resolution-plan-income-accrual-139a",
+        "restructured-again-income-cash-basis-139b"
+       ]
+      },
+      {
+       "instrument": "iracp_amend_2026",
+       "paragraphs": [
+        "3(ii)",
+        "3(iv)",
+        "3(v)"
+       ],
+       "rules": [
+        "resolution-plan-classification-62a-62b",
+        "resolution-plan-additional-provision-84a",
+        "repeated-restructuring-additional-provision-84b",
+        "resolution-plan-income-accrual-139a",
+        "restructured-again-income-cash-basis-139b"
+       ]
+      }
+     ],
+     "controls": [
+      "control:resolution-plan-register",
+      "control:resolution-plan-provisioning"
+     ]
+    },
+    {
+     "clause_id": "POL-ACP-002/4.6",
+     "title": "Overrides and audit trail",
+     "summary": "Manual overrides need two-level authorisation, system logs kept for three years and Audit Committee reporting.",
+     "owner_team": "team:credit-risk",
+     "effective_from": "2025-11-28",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "38"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:classification-override-governance"
+     ]
+    },
+    {
+     "clause_id": "POL-ACP-002/4.7",
+     "title": "Floating provisions",
+     "summary": "Ceiling set by the Board; use only in extraordinary circumstances with RBI approval.",
+     "owner_team": "team:finance",
+     "effective_from": "2025-11-28",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "10(2)",
+        "10(3)",
+        "97",
+        "98",
+        "99"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:floating-provision-governance"
+     ]
+    },
+    {
+     "clause_id": "POL-ACP-002/4.8",
+     "title": "Agricultural advances",
+     "summary": "Crop-season norms apply to farm credit as notified by the State Level Bankers Committee.",
+     "owner_team": "team:agri-banking",
+     "effective_from": "2025-11-28",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "42(6)",
+        "42(7)",
+        "57"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:crop-season-npa-calendar"
+     ]
+    },
+    {
+     "clause_id": "POL-ACP-002/4.9",
+     "title": "Security valuation for large NPAs",
+     "summary": "Stock audit annually and collateral valuation every three years for NPAs of INR 5 crore and above.",
+     "owner_team": "team:credit-risk",
+     "effective_from": "2025-11-28",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "22",
+        "23"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:collateral-valuation-stock-audit"
+     ]
+    },
+    {
+     "clause_id": "POL-ACP-002/9.1",
+     "title": "Expected credit loss framework (to be adopted)",
+     "summary": "Staging, SICR, PD/LGD/EAD, EIR, macro scenarios and prudential floors from 1 April 2027. Draft; no operating procedure yet.",
+     "owner_team": "team:credit-risk",
+     "effective_from": "2027-04-01",
+     "status": "draft",
+     "maps_to": [
+      {
+       "instrument": "acpir",
+       "paragraphs": [
+        "25",
+        "26",
+        "33",
+        "45",
+        "50",
+        "82",
+        "96",
+        "97",
+        "100"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:ecl-staging-engine",
+      "control:sicr-criteria-documentation",
+      "control:pd-model",
+      "control:lgd-model",
+      "control:ead-model",
+      "control:eir-computation-engine",
+      "control:macro-scenario-framework",
+      "control:prudential-floor-calculator",
+      "control:ecl-transition-fair-valuation"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-FPC-003",
+   "code": "POL-FPC-003",
+   "title": "Fair Practices Code",
+   "kind": "internal",
+   "owner_team": "team:retail-lending",
+   "version": "4.1",
+   "approved_by": "Customer Service Committee of the Board",
+   "approved_on": "2025-09-30",
+   "effective_date": "2025-10-01",
+   "next_review": "2026-09-30",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-FPC-003/1",
+     "title": "Loan applications and disclosures",
+     "summary": "Plain-language terms, all charges disclosed before sanction.",
+     "owner_team": "team:retail-lending",
+     "effective_from": "2025-10-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "fair_practices",
+       "paragraphs": [
+        "disclosure"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:fair-practices-disclosure"
+     ]
+    },
+    {
+     "clause_id": "POL-FPC-003/5",
+     "title": "Recovery conduct",
+     "summary": "No harassment; contact hours; recording of calls by recovery agents.",
+     "owner_team": "team:collections-recovery",
+     "effective_from": "2025-10-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "fair_practices",
+       "paragraphs": [
+        "recovery"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:recovery-agent-conduct"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-RRD-004",
+   "code": "POL-RRD-004",
+   "title": "Rate Reset and Disclosure Policy",
+   "kind": "internal",
+   "owner_team": "team:lending-ops",
+   "version": "3.0",
+   "approved_by": "Retail Credit Committee",
+   "approved_on": "2023-12-15",
+   "effective_date": "2023-12-31",
+   "next_review": "2026-12-31",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-RRD-004/2",
+     "title": "Reset notification",
+     "summary": "Borrowers are told the EMI or tenor impact of every benchmark reset.",
+     "owner_team": "team:customer-comms",
+     "effective_from": "2023-12-31",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "floating_rate_reset",
+       "paragraphs": [
+        "Key provisions (1)"
+       ],
+       "rules": [
+        "notify-rate-reset"
+       ]
+      }
+     ],
+     "controls": [
+      "control:borrower-notification"
+     ]
+    },
+    {
+     "clause_id": "POL-RRD-004/3",
+     "title": "Choice at reset",
+     "summary": "Borrowers may choose a higher EMI or a longer tenor, and may switch to a fixed rate.",
+     "owner_team": "team:lending-ops",
+     "effective_from": "2023-12-31",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "floating_rate_reset",
+       "paragraphs": [
+        "Key provisions (2)"
+       ],
+       "rules": [
+        "fixed-rate-choice"
+       ]
+      }
+     ],
+     "controls": [
+      "control:emi-tenor-choice",
+      "control:fixed-rate-option"
+     ]
+    },
+    {
+     "clause_id": "POL-RRD-004/4",
+     "title": "Reset statement",
+     "summary": "A statement of principal, interest, EMIs remaining and APR is issued at each reset.",
+     "owner_team": "team:customer-comms",
+     "effective_from": "2023-12-31",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "floating_rate_reset",
+       "paragraphs": [
+        "Key provisions (3)"
+       ],
+       "rules": [
+        "reset-statement"
+       ]
+      }
+     ],
+     "controls": [
+      "control:reset-statement"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-COL-005",
+   "code": "POL-COL-005",
+   "title": "Collateral and Document Custody Policy",
+   "kind": "internal",
+   "owner_team": "team:collateral-ops",
+   "version": "2.4",
+   "approved_by": "Operations Risk Committee",
+   "approved_on": "2023-11-20",
+   "effective_date": "2023-12-01",
+   "next_review": "2026-11-30",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-COL-005/3",
+     "title": "Release within 30 days",
+     "summary": "Original documents are released within 30 days of closure and charges are removed.",
+     "owner_team": "team:collateral-ops",
+     "effective_from": "2023-12-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "document_release",
+       "paragraphs": [
+        "Release timeline"
+       ],
+       "rules": [
+        "release-within-30-days"
+       ]
+      }
+     ],
+     "controls": [
+      "control:document-release-sla",
+      "control:collateral-document-custody-register"
+     ]
+    },
+    {
+     "clause_id": "POL-COL-005/4",
+     "title": "Compensation for delay",
+     "summary": "INR 5,000 per day for delay attributable to the bank.",
+     "owner_team": "team:collateral-ops",
+     "effective_from": "2023-12-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "document_release",
+       "paragraphs": [
+        "Compensation for delay"
+       ],
+       "rules": [
+        "delay-compensation"
+       ]
+      }
+     ],
+     "controls": [
+      "control:delay-compensation"
+     ]
+    },
+    {
+     "clause_id": "POL-COL-005/5",
+     "title": "Place of collection",
+     "summary": "Borrowers choose the branch of servicing or any office holding the documents.",
+     "owner_team": "team:collateral-ops",
+     "effective_from": "2023-12-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "document_release",
+       "paragraphs": [
+        "Place of collection"
+       ],
+       "rules": [
+        "collection-choice"
+       ]
+      }
+     ],
+     "controls": [
+      "control:document-collection-choice"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-GRV-006",
+   "code": "POL-GRV-006",
+   "title": "Customer Grievance Policy",
+   "kind": "internal",
+   "owner_team": "team:customer-service",
+   "version": "3.2",
+   "approved_by": "Customer Service Committee of the Board",
+   "approved_on": "2025-06-30",
+   "effective_date": "2025-07-01",
+   "next_review": "2026-06-30",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-GRV-006/2",
+     "title": "Registration, ageing and escalation",
+     "summary": "Every complaint is registered, aged and escalated; Ombudsman references are tracked.",
+     "owner_team": "team:customer-service",
+     "effective_from": "2025-07-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "ombudsman",
+       "paragraphs": [
+        "complaint handling"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:grievance-redressal-tracker"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-KYC-007",
+   "code": "POL-KYC-007",
+   "title": "KYC and AML Policy",
+   "kind": "internal",
+   "owner_team": "team:kyc-aml",
+   "version": "6.0",
+   "approved_by": "Board of Directors",
+   "approved_on": "2025-12-18",
+   "effective_date": "2026-01-01",
+   "next_review": "2026-12-31",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-KYC-007/3",
+     "title": "Customer risk categorisation",
+     "summary": "Customers are rated low, medium or high risk at onboarding and review.",
+     "owner_team": "team:kyc-aml",
+     "effective_from": "2019-04-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "kyc_md",
+       "paragraphs": [
+        "risk categorisation"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:kyc-risk-categorisation"
+     ]
+    },
+    {
+     "clause_id": "POL-KYC-007/7",
+     "title": "Periodic KYC updation",
+     "summary": "Re-KYC every 2 years (high risk), 8 years (medium) and 10 years (low), with reminders.",
+     "owner_team": "team:kyc-aml",
+     "effective_from": "2026-01-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "kyc_md",
+       "paragraphs": [
+        "periodic updation"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:kyc-periodic-updation"
+     ]
+    },
+    {
+     "clause_id": "POL-KYC-007/9",
+     "title": "Transaction monitoring",
+     "summary": "Scenario-based monitoring of accounts and transactions.",
+     "owner_team": "team:kyc-aml",
+     "effective_from": "2021-04-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "kyc_md",
+       "paragraphs": [
+        "ongoing monitoring"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:aml-transaction-monitoring"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-MRM-008",
+   "code": "POL-MRM-008",
+   "title": "Model Risk Management Policy",
+   "kind": "internal",
+   "owner_team": "team:model-risk",
+   "version": "2.1",
+   "approved_by": "Risk Management Committee of the Board",
+   "approved_on": "2025-03-28",
+   "effective_date": "2025-04-01",
+   "next_review": "2026-12-31",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-MRM-008/2",
+     "title": "Model inventory and validation (credit scorecards)",
+     "summary": "Inventory, tiering and annual validation of credit scorecards.",
+     "owner_team": "team:model-risk",
+     "effective_from": "2025-04-01",
+     "status": "in_force",
+     "maps_to": [],
+     "controls": []
+    },
+    {
+     "clause_id": "POL-MRM-008/8",
+     "title": "ECL model risk (addendum, to be approved)",
+     "summary": "Inventory, tiering, validation, calibration, monitoring and third-party models for ECL. Draft addendum, not yet approved.",
+     "owner_team": "team:model-risk",
+     "effective_from": "2027-04-01",
+     "status": "draft",
+     "maps_to": [
+      {
+       "instrument": "acpir",
+       "paragraphs": [
+        "119",
+        "120",
+        "121",
+        "123",
+        "130",
+        "131",
+        "133",
+        "135",
+        "136"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:ecl-model-inventory-tiering",
+      "control:ecl-model-validation-framework",
+      "control:ecl-model-monitoring",
+      "control:third-party-model-governance"
+     ]
+    },
+    {
+     "clause_id": "POL-MRM-008/9",
+     "title": "Board governance of ECL",
+     "summary": "A Board committee with the CFO and CRO oversees ECL implementation. Draft.",
+     "owner_team": "team:compliance",
+     "effective_from": "2027-04-01",
+     "status": "draft",
+     "maps_to": [
+      {
+       "instrument": "acpir",
+       "paragraphs": [
+        "56",
+        "57"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:ecl-board-governance"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-REC-009",
+   "code": "POL-REC-009",
+   "title": "Recovery and Restructuring Policy",
+   "kind": "internal",
+   "owner_team": "team:collections-recovery",
+   "version": "4.3",
+   "approved_by": "Board Credit Committee",
+   "approved_on": "2026-06-24",
+   "effective_date": "2026-07-01",
+   "next_review": "2027-06-30",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-REC-009/5",
+     "title": "Resolution plans under Chapter VI-A",
+     "summary": "Resolution of stressed accounts after a calamity; register, flagging and provisioning of the plan.",
+     "owner_team": "team:collections-recovery",
+     "effective_from": "2026-07-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "resolution_stressed_assets",
+       "paragraphs": [
+        "Chapter VI-A"
+       ],
+       "rules": []
+      },
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "62A",
+        "62B",
+        "84A",
+        "84B"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:resolution-plan-register",
+      "control:resolution-plan-provisioning"
+     ]
+    },
+    {
+     "clause_id": "POL-REC-009/7",
+     "title": "Recovery agencies",
+     "summary": "Appointment, monitoring and conduct of recovery agencies.",
+     "owner_team": "team:collections-recovery",
+     "effective_from": "2023-04-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "fair_practices",
+       "paragraphs": [
+        "recovery"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:recovery-agent-conduct"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-OUT-010",
+   "code": "POL-OUT-010",
+   "title": "Outsourcing Policy",
+   "kind": "internal",
+   "owner_team": "team:vendor-management",
+   "version": "3.0",
+   "approved_by": "Board of Directors",
+   "approved_on": "2023-09-29",
+   "effective_date": "2023-10-01",
+   "next_review": "2026-09-30",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-OUT-010/4",
+     "title": "Register, due diligence and supervisory access",
+     "summary": "Material outsourcing is registered, assessed and open to supervisory evaluation.",
+     "owner_team": "team:vendor-management",
+     "effective_from": "2023-10-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "outsourcing_it",
+       "paragraphs": [
+        "outsourcing governance"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:outsourcing-due-diligence-register"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-DAT-011",
+   "code": "POL-DAT-011",
+   "title": "Data Governance and Regulatory Reporting Policy",
+   "kind": "internal",
+   "owner_team": "team:finance",
+   "version": "2.0",
+   "approved_by": "Audit Committee of the Board",
+   "approved_on": "2025-03-28",
+   "effective_date": "2025-04-01",
+   "next_review": "2026-03-31",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-DAT-011/3",
+     "title": "Regulatory MIS and returns",
+     "summary": "System-generated NPA, provision and restructuring MIS reconciled to returns; CRILC filings on time.",
+     "owner_team": "team:finance",
+     "effective_from": "2025-04-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "11",
+        "29",
+        "33",
+        "34"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:npa-mis-reporting",
+      "control:crilc-reporting"
+     ]
+    },
+    {
+     "clause_id": "POL-DAT-011/8",
+     "title": "Credit data for ECL (planned)",
+     "summary": "History of defaults, recoveries and losses at account level, for PD and LGD calibration.",
+     "owner_team": "team:it-core-banking",
+     "effective_from": "2027-04-01",
+     "status": "draft",
+     "maps_to": [
+      {
+       "instrument": "acpir",
+       "paragraphs": [
+        "62",
+        "63",
+        "64",
+        "70",
+        "71"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:ecl-historical-loss-database",
+      "control:ecl-disclosure-reporting"
+     ]
+    },
+    {
+     "clause_id": "POL-DAT-011/9",
+     "title": "Regulatory change management",
+     "summary": "Compliance logs and assesses each RBI instruction and assigns owners.",
+     "owner_team": "team:compliance",
+     "effective_from": "2025-04-01",
+     "status": "in_force",
+     "maps_to": [],
+     "controls": [
+      "control:regulatory-change-tracking"
+     ]
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-AGR-012",
+   "code": "POL-AGR-012",
+   "title": "Agricultural and MSME Lending Policy",
+   "kind": "internal",
+   "owner_team": "team:agri-banking",
+   "version": "2.2",
+   "approved_by": "Board Credit Committee",
+   "approved_on": "2025-09-30",
+   "effective_date": "2025-10-01",
+   "next_review": "2026-09-30",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-AGR-012/3",
+     "title": "Crop-season norms",
+     "summary": "Overdue short-duration crop loans are NPA after two crop seasons, long-duration after one.",
+     "owner_team": "team:agri-banking",
+     "effective_from": "2025-10-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "42(6)",
+        "42(7)",
+        "57"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:crop-season-npa-calendar"
+     ]
+    },
+    {
+     "clause_id": "POL-AGR-012/6",
+     "title": "Guarantee-covered MSME advances",
+     "summary": "No provision on the portion covered by CGTMSE, CRGFTLIH or NCGTC guarantees.",
+     "owner_team": "team:msme-banking",
+     "effective_from": "2025-10-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "111"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": []
+    }
+   ]
+  },
+  {
+   "policy_id": "policy:POL-ICA-013",
+   "code": "POL-ICA-013",
+   "title": "Internal Audit and Compliance Testing Policy",
+   "kind": "internal",
+   "owner_team": "team:internal-audit",
+   "version": "3.1",
+   "approved_by": "Audit Committee of the Board",
+   "approved_on": "2025-09-30",
+   "effective_date": "2025-10-01",
+   "next_review": "2026-09-30",
+   "status": "in_force",
+   "clauses": [
+    {
+     "clause_id": "POL-ICA-013/5",
+     "title": "Annual system audit of the NPA system",
+     "summary": "Internal or external system auditors test parameters and compliance every year.",
+     "owner_team": "team:internal-audit",
+     "effective_from": "2025-10-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "39(3)"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": [
+      "control:npa-system-audit",
+      "control:board-iracp-policy"
+     ]
+    },
+    {
+     "clause_id": "POL-ICA-013/6",
+     "title": "Concurrent audit of credit processes",
+     "summary": "Review and renewal of credit facilities is within concurrent audit scope.",
+     "owner_team": "team:internal-audit",
+     "effective_from": "2025-10-01",
+     "status": "in_force",
+     "maps_to": [
+      {
+       "instrument": "iracp",
+       "paragraphs": [
+        "20"
+       ],
+       "rules": []
+      }
+     ],
+     "controls": []
+    }
+   ]
+  }
+ ]
+}

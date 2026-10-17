@@ -26,29 +26,38 @@ from sqlalchemy import Engine, create_engine, event
 from core.config import DATA_DIR, Settings, get_settings
 
 OPERATIONAL_DIR = DATA_DIR / "bank" / "operational"
-BOOLEAN_COLUMNS = {"borrower_notified", "has_fixed_rate_option", "has_emi_tenor_choice", "statement_available"}
-INTEGER_COLUMNS = {"emi_amount", "outstanding_balance"}
+BOOLEAN_COLUMNS = {"borrower_notified", "has_fixed_rate_option", "has_emi_tenor_choice", "statement_available",
+                   "secured", "restructured"}
+INTEGER_COLUMNS = {"emi_amount", "outstanding_balance", "days_past_due", "overdue_amount", "npa_age_months", "security_value",
+                   "restructure_count", "provision_held", "provision_required", "ecl_stage_proxy"}
 
 SQLITE_SCHEMA = """
 CREATE TABLE branches (branch_id TEXT PRIMARY KEY, branch_name TEXT, city TEXT, region TEXT,
                        manager_name TEXT, manager_email TEXT);
 CREATE TABLE customers (customer_id TEXT PRIMARY KEY, customer_ref TEXT UNIQUE NOT NULL, full_name TEXT,
-                        email TEXT, phone TEXT, pan TEXT, segment_id TEXT, branch_id TEXT);
+                        email TEXT, phone TEXT, pan TEXT, segment_id TEXT, branch_id TEXT,
+                        kyc_risk_category TEXT, last_kyc_review TEXT, kyc_due_date TEXT, kyc_status TEXT);
 CREATE TABLE loans (loan_id TEXT PRIMARY KEY, loan_ref TEXT UNIQUE NOT NULL, customer_id TEXT NOT NULL,
                     product_id TEXT NOT NULL, status TEXT, rate_type TEXT, emi_amount INTEGER,
                     outstanding_balance INTEGER, sanctioned_on TEXT, closed_on TEXT, rate_reset_due TEXT,
                     borrower_notified INTEGER, has_fixed_rate_option INTEGER, has_emi_tenor_choice INTEGER,
-                    statement_available INTEGER);
+                    statement_available INTEGER,
+                    days_past_due INTEGER, overdue_amount INTEGER, asset_classification TEXT, npa_date TEXT,
+                    npa_age_months INTEGER, security_value INTEGER, secured INTEGER, restructured INTEGER,
+                    restructure_date TEXT, restructure_count INTEGER, provision_held INTEGER, provision_required INTEGER,
+                    interest_recognition TEXT, exposure_class TEXT, ecl_stage_proxy INTEGER);
 CREATE TABLE loan_events (event_id TEXT PRIMARY KEY, loan_id TEXT NOT NULL, event_type TEXT NOT NULL,
                           occurred_on TEXT NOT NULL);
 """
 
-# Identical view definitions run on SQLite and PostgreSQL.
+# Identical view definitions run on SQLite and PostgreSQL (infrastructure/cloudsql/schema.sql repeats them with OR REPLACE).
+# New columns are always appended: PostgreSQL's CREATE OR REPLACE VIEW cannot reorder or drop columns.
 VIEWS_SQL = """
 CREATE VIEW vw_compliance_impact AS
 SELECT l.loan_ref, c.customer_ref, l.product_id, c.segment_id, c.branch_id, l.status, l.rate_type,
        l.emi_amount, l.outstanding_balance, l.sanctioned_on, l.closed_on, l.rate_reset_due,
-       l.borrower_notified, l.has_fixed_rate_option, l.has_emi_tenor_choice, l.statement_available
+       l.borrower_notified, l.has_fixed_rate_option, l.has_emi_tenor_choice, l.statement_available,
+       l.restructured, l.secured
 FROM loans l JOIN customers c ON c.customer_id = l.customer_id;
 
 CREATE VIEW vw_loan_events AS
@@ -57,6 +66,22 @@ FROM loan_events e JOIN loans l ON l.loan_id = e.loan_id JOIN customers c ON c.c
 
 CREATE VIEW vw_branch_directory AS
 SELECT branch_id, branch_name, city, region FROM branches;
+
+CREATE VIEW vw_asset_quality AS
+SELECT l.loan_ref, c.customer_ref, l.product_id, c.segment_id, c.branch_id, l.exposure_class,
+       l.outstanding_balance, l.overdue_amount, l.days_past_due, l.asset_classification, l.npa_date, l.npa_age_months,
+       l.security_value, l.secured,
+       CASE WHEN l.security_value < l.outstanding_balance THEN l.security_value ELSE l.outstanding_balance END AS secured_portion,
+       l.outstanding_balance - CASE WHEN l.security_value < l.outstanding_balance THEN l.security_value
+                                    ELSE l.outstanding_balance END AS unsecured_portion,
+       l.restructured, l.restructure_date, l.restructure_count, l.provision_held, l.provision_required,
+       l.interest_recognition, l.ecl_stage_proxy
+FROM loans l JOIN customers c ON c.customer_id = l.customer_id
+WHERE l.status = 'ACTIVE';
+
+CREATE VIEW vw_kyc_status AS
+SELECT c.customer_ref, c.segment_id, c.branch_id, c.kyc_risk_category, c.last_kyc_review, c.kyc_due_date, c.kyc_status
+FROM customers c;
 """
 
 _lock = threading.Lock()
@@ -69,10 +94,10 @@ def load_rows(table: str, directory: Path = OPERATIONAL_DIR) -> list[dict]:
         for key, value in row.items():
             if key in BOOLEAN_COLUMNS:
                 row[key] = value.lower() == "true"
-            elif key in INTEGER_COLUMNS:
-                row[key] = int(value)
             elif value == "":
                 row[key] = None
+            elif key in INTEGER_COLUMNS:
+                row[key] = int(value)
     return rows
 
 

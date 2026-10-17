@@ -1,0 +1,537 @@
+{
+ "pack_id": "provisioning_iracp",
+ "version": "1.0.0",
+ "title": "Provisioning, asset classification and income recognition (IRACP) and the ECL readiness controls",
+ "domain": "asset_quality",
+ "business_line": "retail_lending",
+ "requires_data_domains": [
+  "loans",
+  "asset_quality",
+  "kyc"
+ ],
+ "capabilities": {
+  "automated_npa_classification": {
+   "control": "control:day-end-npa-classification",
+   "description": "Core-banking module that classifies every borrowal account at day-end, with straight-through upgrades and downgrades.",
+   "process": "process:asset-classification",
+   "synonyms": [
+    "asset classification system",
+    "automated day-end npa classification",
+    "day end npa classification",
+    "day-end process classification",
+    "npa classification"
+   ]
+  },
+  "sma_tagging": {
+   "control": "control:sma-day-end-tagging",
+   "description": "Tags overdue accounts as SMA-0, SMA-1 or SMA-2 in the day-end process, with the date of tagging.",
+   "process": "process:asset-classification",
+   "synonyms": [
+    "sma classification",
+    "sma day end tagging",
+    "sma day-end tagging (sma-0, sma-1, sma-2)",
+    "special mention accounts"
+   ]
+  },
+  "overdue_flagging": {
+   "control": "control:overdue-day-end-flagging",
+   "description": "Flags an account overdue in the day-end process for the due date, whatever time the process runs.",
+   "process": "process:asset-classification",
+   "synonyms": [
+    "overdue day end flagging",
+    "overdue flagging at day-end"
+   ]
+  },
+  "standard_asset_provisioning": {
+   "control": "control:standard-asset-provisioning",
+   "description": "Computes the general provision on standard assets at 0.25 per cent (housing, farm credit, small and micro enterprises) or 0.40 per cent.",
+   "process": "process:provisioning",
+   "synonyms": [
+    "standard asset provisioning",
+    "standard asset provisioning engine"
+   ]
+  },
+  "npa_provisioning": {
+   "control": "control:npa-provisioning-engine",
+   "description": "Computes substandard (15% / 25% unsecured), doubtful (100% unsecured plus 25/40/100% secured by age) and loss (100%) provisions.",
+   "process": "process:provisioning",
+   "synonyms": [
+    "npa provisioning engine"
+   ]
+  },
+  "resolution_plan_provisioning": {
+   "control": "control:resolution-plan-provisioning",
+   "description": "Books the additional specific provision of 5 per cent of the outstanding for each resolution plan implemented.",
+   "process": "process:provisioning",
+   "synonyms": [
+    "additional provision for resolution plans (5% per plan)",
+    "resolution plan provisioning"
+   ]
+  },
+  "cash_basis_income_recognition": {
+   "control": "control:cash-basis-income-recognition",
+   "description": "Stops interest accrual on non-standard accounts and recognises income on receipt; re-restructured accounts are on cash basis.",
+   "process": "process:income-recognition",
+   "synonyms": [
+    "cash basis income recognition",
+    "income recognition on cash basis for npas"
+   ]
+  },
+  "interest_reversal": {
+   "control": "control:interest-reversal-memorandum",
+   "description": "Reverses uncollected interest on an account that turns NPA and tracks it in a memorandum account.",
+   "process": "process:income-recognition",
+   "synonyms": [
+    "interest reversal and memorandum account on npa",
+    "interest reversal memorandum"
+   ]
+  },
+  "classification_override_governance": {
+   "control": "control:classification-override-governance",
+   "description": "Overrides of system classification need two-level authorisation, a system-generated log kept three years, and Audit Committee reporting.",
+   "process": "process:asset-classification",
+   "synonyms": [
+    "classification override governance",
+    "manual override log with dual authorisation"
+   ]
+  },
+  "npa_system_audit": {
+   "control": "control:npa-system-audit",
+   "description": "Yearly audit of the classification system parameters and of compliance with the IRACP norms.",
+   "process": "process:asset-classification",
+   "synonyms": [
+    "annual system audit of the npa classification system",
+    "npa system audit"
+   ]
+  },
+  "npa_mis_reporting": {
+   "control": "control:npa-mis-reporting",
+   "description": "System-generated segment-wise NPA, provisions, write-offs and restructured assets, reconciled to regulatory returns.",
+   "process": "process:regulatory-reporting",
+   "synonyms": [
+    "npa mis reporting",
+    "segment-wise npa and restructured asset mis"
+   ]
+  },
+  "crilc_reporting": {
+   "control": "control:crilc-reporting",
+   "description": "Reports large credits and SMA accounts to CRILC and files the supervisory returns on time.",
+   "process": "process:regulatory-reporting",
+   "synonyms": [
+    "crilc and supervisory npa reporting",
+    "crilc reporting"
+   ]
+  },
+  "collateral_valuation_stock_audit": {
+   "control": "control:collateral-valuation-stock-audit",
+   "description": "Annual external stock audit and three-yearly valuation of immovable collateral for NPAs of INR 5 crore and above.",
+   "process": "process:provisioning",
+   "synonyms": [
+    "collateral valuation and stock audit for npas of inr 5 crore and above",
+    "collateral valuation stock audit"
+   ]
+  },
+  "borrower_education_sma_npa": {
+   "control": "control:borrower-education-sma-npa",
+   "description": "Website literature and branch posters on overdue, SMA and NPA; front-line briefing at sanction.",
+   "process": "process:borrower-notification",
+   "synonyms": [
+    "borrower education on sma and npa",
+    "borrower education sma npa"
+   ]
+  },
+  "credit_limit_review_tracking": {
+   "control": "control:credit-limit-review-tracker",
+   "description": "Tracks regular and ad hoc limits so that reviews finish within three months and no limit goes 180 days unreviewed.",
+   "process": "process:credit-underwriting",
+   "synonyms": [
+    "credit limit review and renewal tracker",
+    "credit limit review tracker"
+   ]
+  },
+  "floating_provision_governance": {
+   "control": "control:floating-provision-governance",
+   "description": "Board-approved ceiling and extraordinary-circumstance criteria; RBI approval before any utilisation.",
+   "process": "process:provisioning",
+   "synonyms": [
+    "floating provision governance",
+    "floating provisions utilisation governance"
+   ]
+  },
+  "resolution_plan_register": {
+   "control": "control:resolution-plan-register",
+   "description": "Flags accounts under a resolution plan, counts restructuring instances and keeps them standard per 62A/62B.",
+   "process": "process:restructuring-resolution",
+   "synonyms": [
+    "resolution plan register",
+    "resolution plan register and restructuring flagging"
+   ]
+  },
+  "crop_season_npa_calendar": {
+   "control": "control:crop-season-npa-calendar",
+   "description": "Applies the two-crop-season (short duration) and one-crop-season (long duration) norms with SLBC calendars.",
+   "process": "process:asset-classification",
+   "synonyms": [
+    "crop season npa calendar",
+    "crop-season npa calendar for agricultural advances"
+   ]
+  },
+  "loan_agreement_due_date_disclosure": {
+   "control": "control:loan-agreement-due-date-disclosure",
+   "description": "Loan agreements state due dates, frequency, principal and interest split and example SMA/NPA dates.",
+   "process": "process:credit-underwriting",
+   "synonyms": [
+    "loan agreement due date disclosure",
+    "loan agreement due-date and sma/npa date disclosure"
+   ]
+  },
+  "board_iracp_policy": {
+   "control": "control:board-iracp-policy",
+   "description": "Board policy covering income recognition, floating provisions, higher standard-asset provisioning, valuers and delegation for overrides.",
+   "process": "process:asset-classification",
+   "synonyms": [
+    "board iracp policy",
+    "board-approved iracp implementation policy"
+   ]
+  },
+  "kyc_risk_categorisation": {
+   "control": "control:kyc-risk-categorisation",
+   "description": "Assigns low, medium or high risk at onboarding and at review.",
+   "process": "process:kyc-periodic-review",
+   "synonyms": [
+    "customer risk categorisation",
+    "kyc risk categorisation"
+   ]
+  },
+  "kyc_periodic_updation": {
+   "control": "control:kyc-periodic-updation",
+   "description": "Re-KYC every 2 years (high risk), 8 years (medium) and 10 years (low), with reminders from 60 days before the due date.",
+   "process": "process:kyc-periodic-review",
+   "synonyms": [
+    "kyc periodic updation",
+    "risk-based periodic kyc updation"
+   ]
+  },
+  "aml_transaction_monitoring": {
+   "control": "control:aml-transaction-monitoring",
+   "description": "Scenario-based monitoring on the deposit and card books; loan repayments are not yet covered.",
+   "process": "process:kyc-periodic-review",
+   "synonyms": [
+    "aml transaction monitoring"
+   ]
+  },
+  "grievance_redressal_tracking": {
+   "control": "control:grievance-redressal-tracker",
+   "description": "Registers, routes and ages complaints; escalates to the internal ombudsman and tracks Ombudsman references.",
+   "process": "process:customer-grievance",
+   "synonyms": [
+    "customer grievance redressal tracker",
+    "grievance redressal tracker"
+   ]
+  },
+  "fair_practices_disclosure": {
+   "control": "control:fair-practices-disclosure",
+   "description": "Checks that loan applications, sanction letters and charge disclosures follow the Fair Practices Code.",
+   "process": "process:credit-underwriting",
+   "synonyms": [
+    "fair practices code disclosure checks",
+    "fair practices disclosure"
+   ]
+  },
+  "recovery_agent_conduct": {
+   "control": "control:recovery-agent-conduct",
+   "description": "Code of conduct, call-hour limits and complaint review for recovery agents; call recording covers 60 per cent of agencies.",
+   "process": "process:collections-recovery",
+   "synonyms": [
+    "recovery agent conduct",
+    "recovery agent conduct monitoring"
+   ]
+  },
+  "outsourcing_due_diligence": {
+   "control": "control:outsourcing-due-diligence-register",
+   "description": "Register of material outsourcing, due diligence, access for supervisors and exit plans.",
+   "process": null,
+   "synonyms": [
+    "outsourced service provider register and due diligence",
+    "outsourcing due diligence register"
+   ]
+  },
+  "document_custody_register": {
+   "control": "control:collateral-document-custody-register",
+   "description": "Records every original property document by loan, location and movement; feeds the 30-day release tracker.",
+   "process": "process:document-custody",
+   "synonyms": [
+    "collateral document custody register",
+    "original document custody register"
+   ]
+  },
+  "credit_appraisal_delegation": {
+   "control": "control:credit-appraisal-delegation",
+   "description": "Appraisal checklist, cash-flow-based repayment schedules and sanction within delegated limits.",
+   "process": "process:credit-underwriting",
+   "synonyms": [
+    "credit appraisal and delegation of powers checks",
+    "credit appraisal delegation"
+   ]
+  },
+  "regulatory_change_tracking": {
+   "control": "control:regulatory-change-tracking",
+   "description": "Compliance logs RBI circulars and assigns owners; impact assessment is manual and takes weeks.",
+   "process": "process:regulatory-reporting",
+   "synonyms": [
+    "regulatory change tracking"
+   ]
+  },
+  "ecl_staging": {
+   "control": "control:ecl-staging-engine",
+   "description": "Assigns every instrument to Stage 1, 2 or 3 at each reporting date, with SICR triggers.",
+   "process": "process:asset-classification",
+   "synonyms": [
+    "ecl staging engine",
+    "ecl staging engine (stages 1, 2, 3)"
+   ]
+  },
+  "sicr_criteria_documentation": {
+   "control": "control:sicr-criteria-documentation",
+   "description": "Documented, consistently applied criteria for a significant increase in credit risk, with the 30-day rebuttable presumption.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "sicr criteria documentation"
+   ]
+  },
+  "probability_of_default_model": {
+   "control": "control:pd-model",
+   "description": "12-month and lifetime PD by segment, with the regulatory floor of 0.03 per cent.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "pd model",
+    "probability of default models"
+   ]
+  },
+  "loss_given_default_model": {
+   "control": "control:lgd-model",
+   "description": "LGD from own recovery history, with the prescribed LGD where history is insufficient.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "lgd model",
+    "loss given default models"
+   ]
+  },
+  "exposure_at_default_model": {
+   "control": "control:ead-model",
+   "description": "EAD including drawdown expectations on commitments and guarantees.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "ead model",
+    "exposure at default models"
+   ]
+  },
+  "effective_interest_rate_computation": {
+   "control": "control:eir-computation-engine",
+   "description": "EIR at initial recognition, fee and cost amortisation, interest income on gross carrying amount.",
+   "process": "process:income-recognition",
+   "synonyms": [
+    "effective interest rate computation",
+    "eir computation engine"
+   ]
+  },
+  "macroeconomic_scenarios": {
+   "control": "control:macro-scenario-framework",
+   "description": "Multiple macro scenarios with probability weights, linked to PD and LGD.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "macro scenario framework",
+    "macroeconomic scenario framework"
+   ]
+  },
+  "ecl_model_validation": {
+   "control": "control:ecl-model-validation-framework",
+   "description": "Independent pre-implementation validation, back-testing and calibration of ECL models.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "ecl model validation framework"
+   ]
+  },
+  "prudential_floor_calculation": {
+   "control": "control:prudential-floor-calculator",
+   "description": "Product-wise and stage-wise floors on the ECL allowance, with strict product category segregation.",
+   "process": "process:provisioning",
+   "synonyms": [
+    "prudential floor calculator"
+   ]
+  },
+  "ecl_model_inventory": {
+   "control": "control:ecl-model-inventory-tiering",
+   "description": "Inventory of all models in the ECL lifecycle with risk-based tiering and documentation.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "ecl model inventory and risk tiering",
+    "ecl model inventory tiering"
+   ]
+  },
+  "historical_loss_database": {
+   "control": "control:ecl-historical-loss-database",
+   "description": "Sufficient history of defaults, recoveries and loss to calibrate PD and LGD.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "ecl historical loss database",
+    "historical loss and default database"
+   ]
+  },
+  "ecl_transition_fair_valuation": {
+   "control": "control:ecl-transition-fair-valuation",
+   "description": "Fair valuation of the loan portfolio on 1 Apr 2027 and the CET1 transition adjustment.",
+   "process": "process:provisioning",
+   "synonyms": [
+    "ecl transition fair valuation",
+    "fair valuation on transition and transitional arrangements"
+   ]
+  },
+  "ecl_board_governance": {
+   "control": "control:ecl-board-governance",
+   "description": "Board policy and a committee with the CFO and CRO that oversees ECL implementation.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "board ecl oversight (committee with cfo and cro)",
+    "ecl board governance"
+   ]
+  },
+  "ecl_disclosure_reporting": {
+   "control": "control:ecl-disclosure-reporting",
+   "description": "Annex 4 disclosures and the first ECL reporting as at 30 Jun 2027.",
+   "process": "process:regulatory-reporting",
+   "synonyms": [
+    "ecl disclosure reporting",
+    "ecl disclosures and regulatory reporting"
+   ]
+  },
+  "third_party_model_governance": {
+   "control": "control:third-party-model-governance",
+   "description": "Selection, validation and contractual access for models bought from vendors.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "third party model governance",
+    "third-party model governance"
+   ]
+  },
+  "ecl_model_monitoring": {
+   "control": "control:ecl-model-monitoring",
+   "description": "Ongoing performance monitoring with clear responsibilities and frequency.",
+   "process": "process:model-governance",
+   "synonyms": [
+    "continuous ecl model performance monitoring",
+    "ecl model monitoring"
+   ]
+  }
+ },
+ "record_flags": {
+  "restructured": "A resolution plan has been implemented on the loan (IRACP paras 62A, 62B, 84A-84D, 139A, 139B).",
+  "secured": "The exposure was secured ab initio: security above 10 per cent of the outstanding (IRACP para 5(13))."
+ },
+ "event_types": [
+  "OVERDUE_FLAGGED",
+  "EMI_BOUNCED",
+  "COLLECTION_NOTICE_SENT",
+  "SMA_FLAGGED",
+  "NPA_CLASSIFIED",
+  "PROVISION_BOOKED",
+  "INTEREST_REVERSED",
+  "ACCOUNT_RESTRUCTURED"
+ ],
+ "event_processes": {
+  "OVERDUE_FLAGGED": "process:asset-classification",
+  "SMA_FLAGGED": "process:asset-classification",
+  "NPA_CLASSIFIED": "process:asset-classification",
+  "PROVISION_BOOKED": "process:provisioning",
+  "INTEREST_REVERSED": "process:income-recognition",
+  "ACCOUNT_RESTRUCTURED": "process:restructuring-resolution",
+  "EMI_BOUNCED": "process:collections-recovery",
+  "COLLECTION_NOTICE_SENT": "process:collections-recovery"
+ },
+ "product_attributes": [],
+ "views": {
+  "vw_asset_quality": {
+   "description": "One row per ACTIVE loan with its asset classification, security, provisioning and interest recognition. Opaque refs only; no names or contact details.",
+   "columns": {
+    "loan_ref": "text: opaque loan reference",
+    "customer_ref": "text: opaque customer reference",
+    "product_id": "text: canonical product node id",
+    "segment_id": "text: customer segment node id",
+    "branch_id": "text: branch node id",
+    "exposure_class": "enum[INDIVIDUAL_HOUSING|FARM_CREDIT|SMALL_MICRO_ENTERPRISE|MEDIUM_ENTERPRISE|OTHER]: provisioning exposure class (IRACP para 80)",
+    "outstanding_balance": "int: INR outstanding",
+    "overdue_amount": "int: INR overdue",
+    "days_past_due": "int: days past due, counting the due date as day 1",
+    "asset_classification": "enum[STANDARD|SMA0|SMA1|SMA2|SUBSTANDARD|DOUBTFUL|LOSS]: asset classification recorded by the bank's day-end process",
+    "npa_date": "date: date the account was classified NPA, null for standard accounts",
+    "npa_age_months": "int: completed months since npa_date, null for standard accounts (below 12 is substandard, 12 or more doubtful)",
+    "security_value": "int: INR assessed realisable value of the security",
+    "secured": "bool: true when the exposure was secured ab initio (security above 10 per cent of the outstanding, para 5(13))",
+    "secured_portion": "int: INR part of the outstanding covered by the security",
+    "unsecured_portion": "int: INR part of the outstanding not covered by the security",
+    "restructured": "bool: a resolution plan has been implemented",
+    "restructure_date": "date: date of the latest resolution plan",
+    "restructure_count": "int: number of resolution plans (restructuring instances) implemented",
+    "provision_held": "int: INR provision held against the account",
+    "provision_required": "int: INR provision the bank's system computed as required under IRACP",
+    "interest_recognition": "enum[ACCRUAL|CASH]: basis on which interest income is recognised",
+    "ecl_stage_proxy": "int: PROXY ONLY, derived from days past due (1 up to 30, 2 up to 90, 3 above); not the output of an ECL staging engine"
+   }
+  },
+  "vw_kyc_status": {
+   "description": "One row per customer with the periodic KYC updation status. Opaque customer reference only.",
+   "columns": {
+    "customer_ref": "text: opaque customer reference",
+    "segment_id": "text: customer segment node id",
+    "branch_id": "text: branch node id",
+    "kyc_risk_category": "enum[LOW|MEDIUM|HIGH]: customer risk category (re-KYC every 10, 8 or 2 years)",
+    "last_kyc_review": "date: date of the last KYC review",
+    "kyc_due_date": "date: date by which the next KYC updation is due",
+    "kyc_status": "enum[CURRENT|DUE_SOON|OVERDUE]: DUE_SOON within 60 days of the due date, OVERDUE after it"
+   }
+  }
+ },
+ "glossary": {
+  "farm credit": {
+   "category": "AGRI_LOAN"
+  },
+  "agricultural advances": {
+   "category": "AGRI_LOAN"
+  },
+  "credit card receivables": {
+   "category": "CARD"
+  },
+  "msme advances": {
+   "category": "MSME_LOAN"
+  }
+ },
+ "workflows": {},
+ "applicability_signals": {
+  "keywords": [
+   "non-performing asset",
+   "NPA",
+   "special mention account",
+   "SMA",
+   "provision",
+   "provisioning",
+   "asset classification",
+   "income recognition",
+   "substandard",
+   "doubtful",
+   "loss asset",
+   "days past due",
+   "overdue",
+   "resolution plan",
+   "restructuring",
+   "expected credit loss",
+   "KYC",
+   "periodic updation"
+  ],
+  "business_line": "retail_lending",
+  "data_domains": [
+   "loans",
+   "asset_quality",
+   "kyc"
+  ]
+ }
+}

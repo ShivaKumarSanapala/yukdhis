@@ -18,7 +18,8 @@ from dataclasses import dataclass
 import sqlglot
 from sqlglot import exp
 
-from knowledge_graph.ontology import PII_COLUMNS, SANITIZED_VIEWS
+from bank_mcp_server.view_catalog import sanitized_views
+from knowledge_graph.ontology import PII_COLUMNS
 
 MAX_ROWS = 100
 IDENTIFIER_COLUMNS = {"loan_ref", "customer_ref", "loan_id"}
@@ -53,9 +54,10 @@ def validate_sql(query: str, dialect: str = "sqlite", source_dialect: str = "pos
 
     cte_names = {cte.alias_or_name.lower() for cte in tree.find_all(exp.CTE)}
     tables = sorted({t.name.lower() for t in tree.find_all(exp.Table)} - cte_names)
-    unknown = [t for t in tables if t not in SANITIZED_VIEWS]
+    views = sanitized_views()
+    unknown = [t for t in tables if t not in views]
     if unknown:
-        raise SqlRejected(f"Only sanitized views are queryable ({', '.join(SANITIZED_VIEWS)}); rejected: {', '.join(unknown)}.")
+        raise SqlRejected(f"Only sanitized views are queryable ({', '.join(views)}); rejected: {', '.join(unknown)}.")
     if not tables:
         raise SqlRejected("Query must read from a sanitized view.")
     for column in tree.find_all(exp.Column):

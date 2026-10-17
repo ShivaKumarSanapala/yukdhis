@@ -66,6 +66,8 @@ def match_rules(candidate: ExtractedPolicy, gold: ExtractedPolicy) -> list[dict]
 
 
 def check_signature(check: ComplianceCheck) -> tuple:
+    if check.kind == "record_assertion":  # the expressions are the check; two assertions differ when their text does
+        return (check.kind, check.view, " ".join((check.where or "").lower().split()), " ".join((check.assertion or "").lower().split()))
     return (check.kind, check.capability, check.record_field, check.expected if check.kind == "record_flag" else None,
             check.trigger_event, check.required_event, check.deadline_days)
 
