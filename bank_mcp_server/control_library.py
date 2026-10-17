@@ -10,7 +10,6 @@ The library is data about the bank's own controls, not customer data; it never r
 from __future__ import annotations
 
 import json
-from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
@@ -97,7 +96,3 @@ def readiness(instrument: str, as_of: str, directory: Path | None = None) -> dic
 def policy_for_control(control_id: str, directory: Path | None = None) -> list[str]:
     """Internal policies that enforce a control."""
     return sorted(p["policy_id"] for p in policies(directory) for c in p["clauses"] if control_id in c["controls"])
-
-
-def days_between(a: str, b: str) -> int:
-    return (date.fromisoformat(b) - date.fromisoformat(a)).days

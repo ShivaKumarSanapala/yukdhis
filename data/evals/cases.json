@@ -122,7 +122,8 @@
    "document": "rbi_ecl_2025_11_28_iracp_directions_v2026_01_01.md",
    "as_of": "2026-10-17",
    "modes": [
-    "deterministic"
+    "deterministic",
+    "llm"
    ],
    "rationale": "The IRACP Directions as updated 1 Jan 2026 are in force. The bank follows them, so most checks are COMPLIANT. The planted exceptions surface: 14 accounts more than 90 days past due still STANDARD (Patna, Surat, Jaipur), 6 SMA mis-tags and 16 NPAs under-provisioned at Pune Kothrud and Lucknow Hazratganj. Five governance obligations cannot be tested on loan data (Board policy, system coverage, annual system audit, crop-season calendar, stock audit). The July-only rules (62A/62B, 84A, 84B, 139A, 139B) must not appear in this version.",
    "expected": {
@@ -211,7 +212,8 @@
    "document": "rbi_ecl_2025_11_28_iracp_directions_v2026_01_01.md",
    "as_of": "2025-11-01",
    "modes": [
-    "deterministic"
+    "deterministic",
+    "llm"
    ],
    "rationale": "Analysis date before the Directions took effect (28 Nov 2025): every rule is UPCOMING and nothing is evaluated, so no violations and no actions. The roll-up is INCONCLUSIVE rather than UPCOMING because the five unexecutable governance obligations outrank UPCOMING in the roll-up order (GAP, unexecutable, UPCOMING).",
    "expected": {
@@ -244,7 +246,8 @@
    "document": "rbi_ecl_2025_11_28_iracp_directions_v2026_07_01.md",
    "as_of": "2026-10-17",
    "modes": [
-    "deterministic"
+    "deterministic",
+    "llm"
    ],
    "rationale": "The consolidated Directions as updated 1 Jul 2026 add 62A/62B, 84A/84B and 139A/139B. The bank implemented the resolution-plan provision on 1 Jul 2026 (control resolution-plan-provisioning), so 84A and 84B are COMPLIANT. The planted exception in the new text: 5 of the 8 accounts restructured again are still on accrual basis (139B).",
    "expected": {
@@ -343,7 +346,8 @@
    "document": "rbi_ecl_2025_11_28_iracp_directions_v2026_07_01.md",
    "as_of": "2026-06-01",
    "modes": [
-    "deterministic"
+    "deterministic",
+    "llm"
    ],
    "rationale": "Same consolidated text read on 1 Jun 2026: the rules inserted by the 29 Apr 2026 amendment take effect on 1 Jul 2026, so they are UPCOMING and not evaluated (their planted exception does not show yet). The base rules are evaluated on the same snapshot. The run comparison against case ecl-07a shows the five new rules.",
    "expected": {
@@ -428,7 +432,8 @@
    "document": "rbi_ecl_2026_04_29_iracp_amendment_directions.md",
    "as_of": "2026-10-17",
    "modes": [
-    "deterministic"
+    "deterministic",
+    "llm"
    ],
    "rationale": "The amendment effective 1 Jul 2026, read on 17 Oct 2026, must extract only what it changes: 62A/62B, 84A, 84B, 139A, 139B. It must not re-extract the Direction. The bank's position: provisions held and classification COMPLIANT; 5 re-restructured accounts on accrual basis violate 139B.",
    "expected": {
@@ -468,7 +473,8 @@
    "document": "rbi_ecl_2026_04_29_iracp_amendment_directions.md",
    "as_of": "2026-06-01",
    "modes": [
-    "deterministic"
+    "deterministic",
+    "llm"
    ],
    "rationale": "The same amendment read before it takes effect: every new obligation is UPCOMING, so the roll-up is UPCOMING, nothing is evaluated and no action is proposed.",
    "expected": {
@@ -623,7 +629,8 @@
    "document": "rbi_2023_08_18_floating_rate_reset_emi_loans.md",
    "as_of": "2026-10-17",
    "modes": [
-    "deterministic"
+    "deterministic",
+    "llm"
    ],
    "rationale": "RBI/2023-24/55 in force since 31 Dec 2023. Planted: 42 of 1,410 floating EMI loans without a reset notice, 18 without a statement; DriveNow Floating (240 loans) lost its fixed-rate switch on 2024-07-01, a product-level control gap that time travel shows is absent before that date.",
    "expected": {
@@ -657,7 +664,8 @@
    "document": "rbi_2023_09_13_release_of_property_documents.md",
    "as_of": "2026-10-17",
    "modes": [
-    "deterministic"
+    "deterministic",
+    "llm"
    ],
    "rationale": "RBI/2023-24/60: the original planted scenario, unchanged. Exactly 12 closed secured loans had documents released late or not at all, 7 of them at Koramangala. Every product offers the three required controls, so the control checks are COMPLIANT.",
    "expected": {

@@ -18,12 +18,12 @@ BRANCHES = [
     ("branch:kochi-mgroad", "MG Road", "Kochi", "South", 3),
     ("branch:cbe-rspuram", "RS Puram", "Coimbatore", "South", 2),
     ("branch:mum-bkc", "Bandra Kurla Complex", "Mumbai", "West", 3),
-    ("branch:pune-kothrud", "Kothrud", "Pune", "West", 3),
+    ("branch:pune-kothrud", "Kothrud", "Pune", "West", 5),
     ("branch:ahd-cgroad", "CG Road", "Ahmedabad", "West", 3),
     ("branch:surat-adajan", "Adajan", "Surat", "West", 2),
     ("branch:ggn-sector29", "Sector 29", "Gurugram", "North", 3),
     ("branch:jaipur-cscheme", "C-Scheme", "Jaipur", "North", 2),
-    ("branch:lko-hazratganj", "Hazratganj", "Lucknow", "North", 3),
+    ("branch:lko-hazratganj", "Hazratganj", "Lucknow", "North", 5),
     ("branch:chd-sector17", "Sector 17", "Chandigarh", "North", 2),
     ("branch:bbsr-saheednagar", "Saheed Nagar", "Bhubaneswar", "East", 2),
     ("branch:patna-boring", "Boring Road", "Patna", "East", 2),
@@ -132,7 +132,7 @@ PRODUCT_ORDER = list(PROFILES)
 
 # Branches with a worse asset quality (NPA probability multiplier). Pune and Lucknow are the two branches where
 # the planted provisioning shortfalls sit; Patna, Surat and Jaipur hold the planted mis-classifications.
-STRESSED_BRANCHES = {"branch:pune-kothrud": 3.0, "branch:lko-hazratganj": 3.0, "branch:patna-boring": 1.6,
+STRESSED_BRANCHES = {"branch:pune-kothrud": 5.0, "branch:lko-hazratganj": 4.5, "branch:patna-boring": 1.6,
                      "branch:surat-adajan": 1.4, "branch:jaipur-cscheme": 1.4}
 # Calamity-affected branches: resolution plans (restructuring) under Chapter VI-A of the Resolution of Stressed Assets Directions.
 CALAMITY_BRANCHES = ["branch:guwahati-gs", "branch:kochi-mgroad", "branch:bbsr-saheednagar", "branch:patna-boring"]

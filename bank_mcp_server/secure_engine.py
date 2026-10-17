@@ -245,7 +245,8 @@ class SecureEngine:
         samples = []
         for item in items:
             sample = {k: v for k, v in item.items() if k not in {"loan_ref", "customer_ref"}}
-            sample["loan_token"] = VAULT.tokenize(session_id, item["loan_ref"], "LOAN")
+            if item.get("loan_ref"):  # customer-level views (vw_kyc_status) have no loan reference
+                sample["loan_token"] = VAULT.tokenize(session_id, item["loan_ref"], "LOAN")
             sample["customer_token"] = VAULT.tokenize(session_id, item["customer_ref"], "CUSTOMER")
             sample["branch"] = self.branch_names().get(item["branch_id"], item["branch_id"])
             samples.append(sample)

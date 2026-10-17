@@ -159,7 +159,7 @@ def make_customers(rng: random.Random) -> tuple[list[dict], dict[str, str]]:
             sizes[cid] = rng.choices(["MICRO", "SMALL", "MEDIUM"], weights=[40, 40, 20])[0]
         risk = rng.choices(["LOW", "MEDIUM", "HIGH"], weights=[55, 35, 10] if msme else [82, 15, 3])[0]
         years = KYC_YEARS[risk]
-        last_review = REFERENCE_DATE - timedelta(days=rng.randrange(0, years * 365 - 75))
+        last_review = REFERENCE_DATE - timedelta(days=rng.randrange(0, years * 365 - 20))
         due = add_years(last_review, years)
         customers.append({
             "customer_id": cid, "customer_ref": unique_ref(rng, "CUST", 24, refs, 6),

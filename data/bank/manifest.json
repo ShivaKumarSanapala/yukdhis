@@ -6,16 +6,16 @@
     "branches": 20,
     "customers": 2500,
     "loans": 3998,
-    "loan_events": 15946
+    "loan_events": 16387
   },
   "asset_classification_mix_active_book": {
-    "STANDARD": 3190,
-    "SMA0": 171,
-    "SUBSTANDARD": 64,
-    "SMA1": 59,
-    "DOUBTFUL": 37,
-    "SMA2": 22,
-    "LOSS": 7
+    "STANDARD": 3131,
+    "SMA0": 189,
+    "SUBSTANDARD": 80,
+    "SMA1": 63,
+    "DOUBTFUL": 48,
+    "SMA2": 31,
+    "LOSS": 8
   },
   "planted": {
     "resolution_plans": {
@@ -23,10 +23,10 @@
       "first_plan": 28,
       "repeated": 8,
       "by_branch": {
-        "branch:bbsr-saheednagar": 12,
-        "branch:kochi-mgroad": 9,
-        "branch:patna-boring": 8,
-        "branch:guwahati-gs": 7
+        "branch:kochi-mgroad": 14,
+        "branch:bbsr-saheednagar": 11,
+        "branch:patna-boring": 7,
+        "branch:guwahati-gs": 4
       }
     },
     "repeat_restructured_on_accrual": {
@@ -65,7 +65,7 @@
         "doubtful-unsecured-portion-100": 3,
         "doubtful-secured-portion-ageing": 3
       },
-      "shortfall_inr": 9422880
+      "shortfall_inr": 4170133
     },
     "kyc_periodic_updation_overdue": {
       "count": 22,
@@ -75,18 +75,19 @@
         "LOW": 6
       },
       "by_branch": {
-        "branch:blr-whitefield": 4,
-        "branch:ggn-sector29": 3,
-        "branch:blr-koramangala": 2,
-        "branch:kol-saltlake": 2,
-        "branch:guwahati-gs": 2,
-        "branch:lko-hazratganj": 2,
-        "branch:hyd-banjara": 2,
-        "branch:chd-sector17": 1,
-        "branch:mum-bkc": 1,
-        "branch:ahd-cgroad": 1,
-        "branch:pune-kothrud": 1,
-        "branch:kochi-mgroad": 1
+        "branch:ahd-cgroad": 3,
+        "branch:kochi-mgroad": 3,
+        "branch:pune-kothrud": 3,
+        "branch:hyd-banjara": 3,
+        "branch:blr-whitefield": 2,
+        "branch:jaipur-cscheme": 1,
+        "branch:ggn-sector29": 1,
+        "branch:guwahati-gs": 1,
+        "branch:lko-hazratganj": 1,
+        "branch:bbsr-saheednagar": 1,
+        "branch:blr-koramangala": 1,
+        "branch:cbe-rspuram": 1,
+        "branch:del-cp": 1
       }
     },
     "rbi_2023_24_60_document_release_violations": 12,

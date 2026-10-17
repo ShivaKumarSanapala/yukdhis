@@ -304,3 +304,28 @@ def test_the_pipeline_database_matches_a_fresh_build(tmp_path):
             columns = [row[1] for row in conn.execute(f"PRAGMA table_info({view})")]
             assert columns == list(spec["columns"]), view
     assert guard.MAX_NODES > 0
+
+
+def test_customer_level_assertion_runs_through_the_pipeline_with_remediation_and_tokenized_samples():
+    """A record_assertion on vw_kyc_status (no loan_ref column) must survive finalisation, action planning and sampling."""
+    from core.app_store import get_app_store
+    from pipeline import stages
+
+    kyc = check(None, "kyc_due_date >= :as_of", view="vw_kyc_status")
+    rule = Rule(rule_id="rule:KYC/1:periodic-updation", title="Periodic KYC updation", description="Re-KYC by the due date",
+                effective_date="2016-02-25", scope=ProductScope(product_terms=["loans and advances"]), checks=[kyc],
+                citation=SourceCitation(document_id="doc:kyc", snippet="Periodic updation of KYC is required."))
+    policy = Policy(policy_id="policy:KYC/1", title="KYC", issuer="RBI", reference="KYC/1", effective_date="2016-02-25")
+    state: dict = {"extraction": ExtractedPolicy(policy=policy, rules=[rule]).model_dump(), "as_of": "2026-10-17"}
+    stages.stage_map(state)
+    stages.stage_blast_radius(state)
+    stages.stage_evaluate(state)
+    stages.stage_finalize(state)
+    report = get_app_store().get_report(state["report_id"])
+    result = report["results"][0]
+    assert (result["status"], result["in_scope"], result["violations"]) == ("GAP", 2500, 22)
+    assert report["summary"]["loans_with_violations"] == 22 and report["summary"]["overall_status"] == "NON_COMPLIANT"
+    assert [a["workflow_id"] for a in report["actions"]] == ["BRANCH_MANAGER_ALERT"]
+    samples = SecureEngine().fetch_anonymized_samples(result["worklist_id"], 3, "s1")["samples"]
+    assert len(samples) == 3 and all("loan_token" not in x and x["customer_token"] for x in samples)
+    assert not any(k in x for x in samples for k in ("loan_ref", "customer_ref"))
