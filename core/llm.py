@@ -5,16 +5,24 @@ project's quota. Every Gemini call therefore retries 429 and 5xx with exponentia
 - plain requests through the SDK's ``HttpRetryOptions`` on the client;
 - streams through ``retry_stream`` / ``RetryingGemini``, which retry only before the first chunk arrives, so
   nothing is ever delivered twice.
+
+Load control: at most ``GEMINI_MAX_CONCURRENCY`` (default 4) Gemini calls are in flight per instance, whatever
+mix of parallel runs, parallel agents and chat is running, so a burst cannot trip shared-capacity 429s itself.
+Every call logs one JSON line (``llm_call``: model, location, duration, tokens, attempt) so usage per run can be
+measured in Cloud Logging.
 """
 
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import json
 import logging
 import os
 import random
+import threading
 import time
-from collections.abc import AsyncIterator, Callable, Iterable, Iterator
+from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Generator
 from functools import lru_cache
 from typing import Any, TypeVar
 
@@ -25,6 +33,44 @@ T = TypeVar("T")
 
 RETRYABLE_STATUS = (429, 500, 502, 503, 504)
 ATTEMPTS, INITIAL_DELAY_S, MAX_DELAY_S = 6, 2.0, 45.0  # about 2 minutes of waiting in the worst case
+
+
+_MAX_CONCURRENT = max(1, int(os.getenv("GEMINI_MAX_CONCURRENCY", "4") or 4))
+_SLOTS = threading.BoundedSemaphore(_MAX_CONCURRENT)  # one pool for threads (sync SDK calls) and event loops (ADK)
+
+
+@contextlib.contextmanager
+def slot() -> Generator[None, None, None]:
+    """Hold one of the per-instance Gemini call slots (blocking, for threads)."""
+    _SLOTS.acquire()
+    try:
+        yield
+    finally:
+        _SLOTS.release()
+
+
+@contextlib.asynccontextmanager
+async def async_slot() -> AsyncIterator[None]:
+    """Hold a call slot without blocking the event loop."""
+    while not _SLOTS.acquire(blocking=False):
+        await asyncio.sleep(0.05)
+    try:
+        yield
+    finally:
+        _SLOTS.release()
+
+
+def log_call(model: str, location: str, started: float, usage: Any = None, attempt: int = 1, status: int = 200) -> None:
+    """One structured line per Gemini call (Cloud Logging parses JSON on stdout)."""
+    def tokens(name: str) -> int | None:
+        value = getattr(usage, name, None)
+        return value if isinstance(value, int) else None
+
+    print(json.dumps({"severity": "INFO" if status < 400 else "WARNING", "event": "llm_call", "model": model,
+                      "location": location, "status": status, "attempt": attempt,
+                      "duration_ms": round((time.monotonic() - started) * 1000),
+                      "prompt_tokens": tokens("prompt_token_count"), "output_tokens": tokens("candidates_token_count"),
+                      "thought_tokens": tokens("thoughts_token_count")}), flush=True)
 
 
 def retry_options():
@@ -57,9 +103,10 @@ def retry_stream(make: Callable[[], Iterable[T]], *, attempts: int = ATTEMPTS, s
     for attempt in range(1, attempts + 1):
         started = False
         try:
-            for item in make():
-                started = True
-                yield item
+            with slot():  # released before any backoff sleep
+                for item in make():
+                    started = True
+                    yield item
             return
         except Exception as error:
             if started or not is_retryable(error) or attempt == attempts:
@@ -77,10 +124,33 @@ def _client(location: str):
     settings = get_settings()
     http_options = types.HttpOptions(retry_options=retry_options())
     if settings.project:
-        return genai.Client(vertexai=True, project=settings.project, location=location, http_options=http_options)
-    if os.getenv("GOOGLE_API_KEY"):
-        return genai.Client(api_key=os.environ["GOOGLE_API_KEY"], http_options=http_options)
-    raise RuntimeError("Set GOOGLE_CLOUD_PROJECT (Vertex AI) to call Gemini.")
+        client = genai.Client(vertexai=True, project=settings.project, location=location, http_options=http_options)
+    elif os.getenv("GOOGLE_API_KEY"):
+        client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"], http_options=http_options)
+    else:
+        raise RuntimeError("Set GOOGLE_CLOUD_PROJECT (Vertex AI) to call Gemini.")
+    _limit(client.models, location)
+    return client
+
+
+def _limit(models: Any, location: str) -> None:
+    """Route the SDK's blocking calls through the shared slots and log them. Streams are limited by ``retry_stream``."""
+    for name in ("generate_content", "embed_content"):
+        call = getattr(models, name)
+
+        def limited(*args: Any, __call=call, __name=name, **kwargs: Any) -> Any:
+            started = time.monotonic()
+            model = kwargs.get("model") or (args[0] if args else "?")
+            try:
+                with slot():
+                    response = __call(*args, **kwargs)
+            except Exception as error:
+                log_call(str(model), location, started, status=status_of(error) or 500)
+                raise
+            log_call(str(model), location, started, getattr(response, "usage_metadata", None))
+            return response
+
+        setattr(models, name, limited)
 
 
 def genai_client():
@@ -102,16 +172,25 @@ def adk_model(name: str):
         """Retries 429/5xx raised before the first response chunk (ADK streams in SSE mode)."""
 
         async def generate_content_async(self, llm_request: Any, stream: bool = False) -> AsyncIterator[Any]:
+            location = get_settings().gemini_location
             for attempt in range(1, ATTEMPTS + 1):
-                started = False
+                started, began, usage = False, time.monotonic(), None
                 try:
-                    async for response in super().generate_content_async(llm_request, stream):
-                        started = True
-                        yield response
+                    async with async_slot():  # released before any backoff sleep
+                        async for response in super().generate_content_async(llm_request, stream):
+                            started = True
+                            usage = getattr(response, "usage_metadata", None) or usage
+                            yield response
+                    log_call(self.model, location, began, usage, attempt)
                     return
                 except Exception as error:
+                    if started:
+                        log_call(self.model, location, began, usage, attempt, status_of(error) or 500)
                     if started or not is_retryable(error) or attempt == ATTEMPTS:
+                        if not started:
+                            log_call(self.model, location, began, None, attempt, status_of(error) or 500)
                         raise
+                    log_call(self.model, location, began, None, attempt, status_of(error) or 500)
                     delay = backoff_delay(attempt)
                     log.warning("%s: %s on attempt %s/%s; retrying in %.1fs", self.model, status_of(error), attempt,
                                 ATTEMPTS, delay)
