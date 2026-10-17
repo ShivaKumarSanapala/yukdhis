@@ -52,3 +52,17 @@ export interface ImpactReport {
   extraction_provenance: Record<string, unknown>;
   data_profile: { executed_sql?: string; rows?: Record<string, unknown>[] };
 }
+
+// Assistant chat ----------------------------------------------------------------
+export interface ToolCallTrace {
+  id: string; name: string; args: unknown; output?: unknown;
+  status: "running" | "ok" | "error" | "cancelled" | string; duration_ms?: number | null;
+}
+export interface ChatTrace { thinking: string; tool_calls: ToolCallTrace[] }
+export interface ChatMessage {
+  message_id: string; role: "user" | "assistant"; content: string;
+  /** complete | stopped | error, plus "streaming" while a local draft is live. */
+  status: string; created_at?: string; trace?: ChatTrace; error?: string;
+}
+export interface Conversation { conversation_id: string; title: string; created_at: string; updated_at: string; message_count?: number }
+export interface ConversationDetail extends Conversation { messages: ChatMessage[] }
