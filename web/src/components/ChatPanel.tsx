@@ -24,8 +24,8 @@ export default function ChatPanel({ enabled }: { enabled: boolean }) {
   return (
     <section className="card chat">
       <h2>Compliance assistant</h2>
-      {!enabled && <div className="banner">Chat needs Gemini on Vertex AI. Set GOOGLE_CLOUD_PROJECT on the API.</div>}
-      <div className="turns">
+      {!enabled && <div className="banner" role="status">Chat needs Gemini on Vertex AI. Set GOOGLE_CLOUD_PROJECT on the API.</div>}
+      <div className="turns" role="log" aria-live="polite" aria-label="Conversation">
         {turns.map((t, i) => (
           <div key={i} className={`turn ${t.role}`}>
             {t.text.split("\n").map((l, j) => <p key={j}>{l}</p>)}
@@ -34,7 +34,7 @@ export default function ChatPanel({ enabled }: { enabled: boolean }) {
         ))}
       </div>
       <div className="row">
-        <input className="grow" value={text} placeholder="e.g. Which branch has the most overdue document releases?" onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} disabled={!enabled || busy} />
+        <input className="grow" aria-label="Ask the compliance assistant" value={text} placeholder="e.g. Which branch has the most overdue document releases?" onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} disabled={!enabled || busy} />
         <button className="primary" onClick={send} disabled={!enabled || busy}>{busy ? "Thinking…" : "Ask"}</button>
       </div>
     </section>

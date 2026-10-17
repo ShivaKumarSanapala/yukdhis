@@ -39,7 +39,7 @@ export default function AnalyzePanel({ config }: { config: Config }) {
 
   return (
     <section>
-      <div className="card controls">
+      <div className="card controls no-print">
         <h2>New regulatory circular</h2>
         <div className="row">
           <label>Sample
@@ -65,7 +65,7 @@ export default function AnalyzePanel({ config }: { config: Config }) {
             {status === "RUNNING" ? "Analysing…" : "Run impact analysis"}
           </button>
         </div>
-        {error && <div className="banner error">{error}</div>}
+        {error && <div className="banner error" role="alert">{error}</div>}
       </div>
       {events.length > 0 && <RunTimeline events={events} status={status} />}
       {report && <ReportView report={report} onChange={setReport} />}

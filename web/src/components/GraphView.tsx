@@ -38,11 +38,11 @@ export default function GraphView({ defaultAsOf }: { defaultAsOf: string }) {
         <label>Time-travel (business date)
           <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
         </label>
-        <span className="muted">{graph ? `${graph.nodes.length} nodes · ${graph.edges.length} edges valid on ${graph.as_of}` : ""}</span>
+        <span className="muted" role="status">{graph ? `${graph.nodes.length} nodes · ${graph.edges.length} edges valid on ${graph.as_of}` : ""}</span>
       </div>
-      {error && <div className="banner error">{error}</div>}
+      {error && <div className="banner error" role="alert">{error}</div>}
       <p className="muted">Click a node to highlight its relationships. Try 2024-01-01 vs today: DriveNow's fixed-rate option edge expired on 2024-07-01.</p>
-      <div className="graph-scroll">
+      <div className="graph-scroll" tabIndex={0} role="region" aria-label="Knowledge graph, scrollable">
         <svg width={W} height={layout.height} role="img" aria-label="Knowledge graph">
           {COLUMNS.map((c, i) => <text key={c} x={i * COL + 8} y={18} className="col-title">{c}</text>)}
           {graph?.edges.map((e, i) => {
