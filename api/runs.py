@@ -474,7 +474,8 @@ class _Trace:
 
     def __init__(self, run_id: str) -> None:
         self.run_id, self.store = run_id, get_app_store()
-        self.count, self.stage, self.agent, self.text, self.flushed_at = 0, "", "", "", 0.0
+        self.count, self.stage, self.agent, self.text = 0, "", "", ""
+        self.flushed_at = float("-inf")  # the first delta is written at once, whatever the monotonic clock reads
         self.calls: dict[str, float] = {}
 
     def _stream(self) -> str:
@@ -504,7 +505,7 @@ class _Trace:
                              {"agent": self.agent, "stream": self._stream(), "text": self.text[-8000:], "done": done})
         self.flushed_at = time.monotonic()
         if done:
-            self.count, self.text = self.count + 1, ""
+            self.count, self.text, self.flushed_at = self.count + 1, "", float("-inf")
 
     def tool_call(self, stage: str, call: Any) -> None:
         self.calls[call.id or call.name] = time.monotonic()

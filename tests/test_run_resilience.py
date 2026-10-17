@@ -194,7 +194,8 @@ def test_truncated_extraction_fails_with_a_clear_reason(monkeypatch):
         extractor._gemini_extract(_document(), "")
 
 
-def test_trace_buffers_thinking_and_times_tool_calls():
+def test_trace_buffers_thinking_and_times_tool_calls(monkeypatch):
+    monkeypatch.setattr(runs.time, "monotonic", lambda: 5.0)  # a fresh container: the clock starts near zero
     store = get_app_store()
     run_id = store.create_run("agentic", {"filename": "t.md"}, {"owner_id": "u1"})
     trace = runs._Trace(run_id)
