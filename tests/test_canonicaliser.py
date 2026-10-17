@@ -32,6 +32,16 @@ LEGACY_CONTROLS = {"borrower-notification", "emi-tenor-choice", "fixed-rate-opti
                    "delay-compensation", "document-collection-choice"}
 
 
+@pytest.fixture(autouse=True)
+def lending_vocabulary_only(monkeypatch):
+    """The demo profile also enables the provisioning pack; these tests are about the seven original controls."""
+    from knowledge_graph import packs
+
+    original = packs.load_profile
+    monkeypatch.setattr(packs, "load_profile",
+                        lambda *a, **k: {**original(*a, **k), "ontology_packs": ["retail_lending", "msme_lending"]})
+
+
 @pytest.fixture
 def store(tmp_path):
     """The canonicaliser's top-K candidate list holds at most 8 controls. The bank baseline now carries ~50 controls, so these

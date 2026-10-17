@@ -24,7 +24,7 @@ from bank_mcp_server.operational_store import SQLITE_SCHEMA, VIEWS_SQL, build_sq
 from bank_mcp_server.view_catalog import sanitized_views  # noqa: E402
 from ingestion.documents import parse_document  # noqa: E402
 from ingestion.templates import floating_rate_reset, iracp_amendment_2026, iracp_directions, property_document_release  # noqa: E402
-from knowledge_graph import ontology  # noqa: E402
+from knowledge_graph import ontology, packs  # noqa: E402
 from knowledge_graph.store import LocalGraphStore  # noqa: E402
 from scripts import generate_synthetic_bank as gen  # noqa: E402
 
@@ -263,10 +263,11 @@ def test_pack_has_the_agreed_shape_and_redefines_nothing():
     for view, spec in pack["views"].items():
         assert set(spec) == {"description", "columns"} and all(isinstance(d, str) for d in spec["columns"].values())
     # nothing already defined in the retail-lending vocabulary
-    assert not set(pack["capabilities"]) & set(ontology.CAPABILITIES)
-    assert not set(pack["record_flags"]) & set(ontology.RECORD_FLAGS) and not set(pack["event_types"]) & ontology.EVENT_TYPES
-    assert not set(pack["views"]) & set(ontology.SANITIZED_VIEWS) and not set(pack["glossary"]) & set(ontology.REGULATORY_GLOSSARY)
-    assert not set(pack["workflows"]) & set(ontology.WORKFLOWS) and not set(pack["event_processes"]) & set(ontology.EVENT_PROCESSES)
+    lending = ontology.get_ontology({**packs.load_profile(), "ontology_packs": ["retail_lending", "msme_lending"]})
+    assert not set(pack["capabilities"]) & set(lending.capabilities)
+    assert not set(pack["record_flags"]) & set(lending.record_flags) and not set(pack["event_types"]) & set(lending.event_types)
+    assert not set(pack["views"]) & set(lending.sanitized_views) and not set(pack["glossary"]) & set(lending.glossary)
+    assert not set(pack["workflows"]) & set(lending.workflows) and not set(pack["event_processes"]) & set(lending.event_processes)
     assert set(pack["event_processes"]) <= set(pack["event_types"])
     # every capability resolves to a control and a process of the architecture
     architecture = json.loads((BANK / "architecture.json").read_text())
