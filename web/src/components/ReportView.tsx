@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api } from "../api";
 import type { Action, ImpactReport } from "../types";
 import BarList from "./BarList";
+import Markdown from "./Markdown";
 import MetricStrip from "./MetricStrip";
 import { formatDateTime } from "../format";
 import { CheckPill, ModalityBadge, OverallBadge } from "./StatusBadges";
@@ -106,7 +107,7 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
         </div>
       )}
 
-      {report.narrative && <div className="card narrative"><h3>Executive summary (Orchestrator agent)</h3>{report.narrative.split("\n").map((l, i) => <p key={i}>{l}</p>)}</div>}
+      {report.narrative && <div className="card narrative"><h3>Executive summary (Orchestrator agent)</h3><Markdown text={report.narrative} /></div>}
 
       <div className="grid2">
         <div className="card">
