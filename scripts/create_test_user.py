@@ -1,6 +1,6 @@
 """Create (or reset) an email/password Firebase user so evaluators without a Google account can sign in.
 
-Usage: python scripts/create_test_user.py evaluator@example.com 'a-strong-password'
+Usage: python scripts/create_test_user.py demo@yukdhis.demo 'a-strong-password'
 Needs gcloud credentials with Firebase Authentication admin on GCP_PROJECT_ID, and the Email/Password sign-in provider
 enabled (Firebase console > Authentication > Sign-in method). The user is created with a verified email, which the API
 requires. If ALLOWED_EMAIL_DOMAIN is set on the API, the address must be in that domain. Share the credentials with

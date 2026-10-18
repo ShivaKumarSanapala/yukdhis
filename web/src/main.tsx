@@ -5,6 +5,7 @@ import "@fontsource/jetbrains-mono/latin-500.css";
 import App from "./App";
 import "./styles.css";
 import "./workspace.css";
+import "./landing.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
