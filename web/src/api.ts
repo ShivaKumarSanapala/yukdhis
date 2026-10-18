@@ -79,6 +79,9 @@ export const api = {
     call<{ session_id: string; reply: string; tools_used: string[] }>("/api/chat", json({ text, session_id: sessionId })),
   conversations: () => call<Conversation[]>("/api/conversations"),
   conversation: (id: string) => call<ConversationDetail>(conversationPath(id)),
+  /** The caller's own conversation about a run or report (null until they ask something); never another user's. */
+  threadConversation: (threadId: string) =>
+    call<{ conversation: ConversationDetail | null }>(`/api/threads/${encodeURIComponent(threadId)}/conversation`),
   renameConversation: (id: string, title: string) => call<Conversation>(conversationPath(id), json({ title }, "PATCH")),
   deleteConversation: (id: string) => call<{ deleted: boolean }>(conversationPath(id), { method: "DELETE" }),
 };
@@ -129,7 +132,7 @@ function dispatch(frame: string, h: StreamHandlers) {
  * responses and EventSource cannot send the ID token, so this reads the fetch body as SSE.
  */
 export async function streamChat(
-  body: { text: string; conversation_id?: string; context?: { report_id?: string } },
+  body: { text: string; conversation_id?: string; thread_id?: string; context?: { report_id?: string } },
   handlers: StreamHandlers,
   signal: AbortSignal,
 ): Promise<void> {

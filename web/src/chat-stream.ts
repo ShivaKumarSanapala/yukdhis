@@ -13,7 +13,7 @@ export const nodeContextLine = (n: NodeContext) =>
  * Resolves when the stream ends (also on abort or error: the draft carries the state).
  */
 export async function askAssistant(opts: {
-  display: string; wire: string; conversationId?: string; reportId?: string;
+  display: string; wire: string; conversationId?: string; threadId?: string; reportId?: string;
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>; signal: AbortSignal;
   onStart: (data: { conversation_id: string; title: string; created: boolean }) => void;
 }): Promise<void> {
@@ -26,7 +26,7 @@ export async function askAssistant(opts: {
   const update = (fn: (m: ChatMessage) => ChatMessage) => setMessages((all) => all.map((m) => (m.message_id === draftId ? fn(m) : m)));
   const trace = (m: ChatMessage) => m.trace ?? { thinking: "", tool_calls: [] };
   try {
-    await streamChat({ text: opts.wire, conversation_id: opts.conversationId, context: opts.reportId ? { report_id: opts.reportId } : undefined }, {
+    await streamChat({ text: opts.wire, conversation_id: opts.threadId ? undefined : opts.conversationId, thread_id: opts.threadId, context: opts.reportId ? { report_id: opts.reportId } : undefined }, {
       onStart: opts.onStart,
       onThinking: (delta) => update((m) => ({ ...m, trace: { ...trace(m), thinking: trace(m).thinking + delta } })),
       onText: (delta) => update((m) => ({ ...m, content: m.content + delta })),
