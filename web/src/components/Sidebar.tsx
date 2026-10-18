@@ -110,9 +110,9 @@ export default function Sidebar({ collapsed, onCollapse, open, onClose, isNarrow
   return (
     <aside id="sidebar" className={`sidebar no-print${railed ? " mini" : ""}${isNarrow ? " narrow" : ""}${open ? " open" : ""}`} aria-label="Workspace sidebar" {...(isNarrow && !open ? { inert: true } : {})}>
       <div className="sidebar-head">
-        <Link to="/" className="brand" aria-label="Yukdhis home" onClick={onClose}>
+        <Link to="/" className="brand" aria-label="Anuvi home" onClick={onClose}>
           <span className="brand-mark" aria-hidden="true"><BrandMark size={18} /></span>
-          {!railed && <span className="brand-name"><strong>Yukdhis</strong></span>}
+          {!railed && <span className="brand-name"><strong>Anuvi</strong></span>}
         </Link>
         {isNarrow ? (
           <button className="icon ghost" onClick={onClose} aria-label="Close menu"><Icon name="close" size={18} /></button>

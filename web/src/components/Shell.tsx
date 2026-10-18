@@ -63,7 +63,7 @@ export default function Shell() {
       {narrow && (
         <header className="topbar no-print">
           <button ref={menuBtn} className="icon ghost" onClick={() => setDrawer(true)} aria-label="Open menu" aria-expanded={drawer} aria-controls="sidebar"><Icon name="menu" size={20} /></button>
-          <span className="topbar-brand"><span className="brand-mark" aria-hidden="true"><BrandMark size={16} /></span><strong>Yukdhis</strong></span>
+          <span className="topbar-brand"><span className="brand-mark" aria-hidden="true"><BrandMark size={16} /></span><strong>Anuvi</strong></span>
         </header>
       )}
       {narrow && drawer && <div className="drawer-scrim no-print" onClick={() => setDrawer(false)} aria-hidden="true" />}

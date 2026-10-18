@@ -53,7 +53,7 @@ settings = get_settings()
 SAMPLES_DIR = DATA_DIR / "circulars"
 ALLOWED_TYPES = TEXT_TYPES | DOCAI_TYPES
 
-app = FastAPI(title="Yukdhis - Autonomous Compliance Engine", version="1.0.0",
+app = FastAPI(title="Anuvi - Autonomous Compliance Engine", version="1.0.0",
               docs_url="/api/docs" if settings.auth_mode == "none" else None, redoc_url=None, openapi_url="/api/openapi.json")
 app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_credentials=False,
                    allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["Authorization", "Content-Type"])

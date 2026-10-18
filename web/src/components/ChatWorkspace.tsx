@@ -179,7 +179,7 @@ export default function ChatWorkspace() {
 
   // ------------------------------------------------------------------ derived view state
   const title = run ? runTitle(run) : report ? report.policy.title : conversations.find((c) => c.conversation_id === convId)?.title ?? (kind === "conv" ? "Conversation" : "");
-  useEffect(() => { document.title = title ? `${title} · Yukdhis` : "Yukdhis: AI compliance workspace"; return () => { document.title = "Yukdhis: AI compliance workspace"; }; }, [title]);
+  useEffect(() => { document.title = title ? `${title} · Anuvi` : "Anuvi: AI compliance workspace"; return () => { document.title = "Anuvi: AI compliance workspace"; }; }, [title]);
   const empty = kind === "new" && !messages.length && !streaming;
   const runActive = Boolean(run && isActive(run) && run.is_mine);
   const pill: ContextPill | null = nodeCtx
