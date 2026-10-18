@@ -11,8 +11,8 @@ const SUGGESTED = [
 
 export const QUESTIONS = [
   "Which branches have the most NPA provision shortfall?",
-  "What changed between the Jan and Jul 2026 IRACP versions?",
-  "Show ECL readiness gaps",
+  "What did we conclude in earlier analyses of the 2026 IRACP amendment directions?",
+  "Which policies and controls are not ready for ECL as of today?",
 ];
 
 export function Greeting() {
