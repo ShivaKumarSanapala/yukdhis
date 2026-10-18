@@ -255,3 +255,52 @@ def test_two_users_chat_about_the_same_run_in_separate_conversations(chat, store
     main.app.dependency_overrides[current_user] = lambda: ALICE
     alice_conv = client.get("/api/threads/run-shared/conversation").json()["conversation"]
     assert [m["content"] for m in alice_conv["messages"] if m["role"] == "user"] == ["Alice asks", "Alice again"]
+
+
+def test_reply_keeps_running_after_the_viewer_leaves_and_can_be_reattached_or_stopped(store):
+    from api.chat import TurnInProgress, active_turn, follow, start_turn, stop_turn
+
+    conversation = store.create_conversation(ALICE.user_id, "Background")
+    cid = conversation["conversation_id"]
+
+    def begin(delay):
+        return start_turn(store=store, runner=FakeRunner(script(), delay=delay), sessions=FakeSessions(), memory=FakeMemory(),
+                          sanitizer=Sanitizer(), app_name="app", user_id=ALICE.user_id, conversation=conversation,
+                          created=False, question="q", prompt="q")
+
+    async def leave_and_return():
+        turn = begin(0.02)
+        viewer = follow(turn)
+        first = await viewer.__anext__()  # the viewer sees the start frame, then leaves (switches conversation)
+        await viewer.aclose()
+        assert first.startswith("event: start") and active_turn(ALICE.user_id, cid) is turn
+        try:
+            begin(0.02)
+            raise AssertionError("a second reply must not start in the same conversation")
+        except TurnInProgress:
+            pass
+        return [frame async for frame in follow(turn)]  # coming back replays from the start and follows to the end
+
+    frames_seen = asyncio.run(leave_and_return())
+    names = [f.split("\n", 1)[0].removeprefix("event: ") for f in frames_seen]
+    assert names[0] == "start" and names[-1] == "done"
+    saved = store.chat_messages(cid, ALICE.user_id)
+    assert saved[-1]["role"] == "assistant" and saved[-1]["status"] == "complete"  # finished with nobody watching
+
+    other = store.create_conversation(ALICE.user_id, "Stop me")
+
+    async def stop_it():
+        turn = start_turn(store=store, runner=FakeRunner(script(), delay=0.05), sessions=FakeSessions(), memory=FakeMemory(),
+                          sanitizer=Sanitizer(), app_name="app", user_id=ALICE.user_id, conversation=other,
+                          created=False, question="q", prompt="q")
+        viewer = follow(turn)
+        async for frame in viewer:
+            if frame.startswith("event: text"):
+                break
+        assert stop_turn(ALICE.user_id, other["conversation_id"]) is True
+        return [f async for f in viewer]
+
+    tail = asyncio.run(stop_it())
+    assert '"status": "stopped"' in tail[-1]
+    assert store.chat_messages(other["conversation_id"], ALICE.user_id)[-1]["status"] == "stopped"
+    assert stop_turn(ALICE.user_id, other["conversation_id"]) is False

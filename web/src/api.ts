@@ -83,6 +83,8 @@ export const api = {
   threadConversation: (threadId: string) =>
     call<{ conversation: ConversationDetail | null }>(`/api/threads/${encodeURIComponent(threadId)}/conversation`),
   renameConversation: (id: string, title: string) => call<Conversation>(conversationPath(id), json({ title }, "PATCH")),
+  /** Stops the reply being written (the partial answer is kept). Leaving the conversation does not stop it. */
+  stopConversation: (id: string) => call<{ stopped: boolean }>(`${conversationPath(id)}/stop`, { method: "POST" }),
   deleteConversation: (id: string) => call<{ deleted: boolean }>(conversationPath(id), { method: "DELETE" }),
 };
 
@@ -136,10 +138,19 @@ export async function streamChat(
   handlers: StreamHandlers,
   signal: AbortSignal,
 ): Promise<void> {
+  return readSse("/api/chat/stream", { method: "POST", body: JSON.stringify(body) }, handlers, signal);
+}
+
+/** Re-attach to a reply that is still being written on the server: replays what exists, then follows it live. */
+export async function reattachChat(conversationId: string, handlers: StreamHandlers, signal: AbortSignal): Promise<void> {
+  return readSse(`${conversationPath(conversationId)}/stream`, { method: "GET" }, handlers, signal);
+}
+
+async function readSse(path: string, init: { method: string; body?: string }, handlers: StreamHandlers, signal: AbortSignal): Promise<void> {
   const token = await idToken();
   const headers = new Headers({ "Content-Type": "application/json", Accept: "text/event-stream" });
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  const response = await fetch(`${API_BASE}/api/chat/stream`, { method: "POST", headers, body: JSON.stringify(body), signal });
+  const response = await fetch(`${API_BASE}${path}`, { ...init, headers, signal });
   if (!response.ok || !response.body) throw await errorFrom(response);
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
   let buffer = "";
