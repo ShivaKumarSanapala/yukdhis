@@ -376,3 +376,17 @@ def test_reader_is_skipped_when_rules_were_approved():
                                                                        "effective_date": "2023-12-01"}]})
     content = skip_when_rules_approved(context)
     assert content is not None and "approved 1 extracted rule" in content.parts[0].text
+
+
+def test_rule_review_updates_graph_and_stored_report(fast):
+    with TestClient(app) as client:
+        run_id, run = _start_review(client)
+        client.post(f"/api/runs/{run_id}/review", json={"decision": "APPROVE"})
+        report_id = wait_for(client, run_id, {"SUCCEEDED", "FAILED", "CANCELLED"})["report_id"]
+        report = client.get(f"/api/reports/{report_id}").json()
+        rule_id = report["rules"][0]["rule_id"]
+        assert report["rules"][0]["status"] == "PENDING_REVIEW"
+        response = client.post("/api/rules/review", json={"rule_id": rule_id, "decision": "APPROVED", "report_id": report_id})
+        assert response.status_code == 200 and response.json()["status"] == "APPROVED"
+        assert client.get(f"/api/reports/{report_id}").json()["rules"][0]["status"] == "APPROVED"
+        assert client.post("/api/rules/review", json={"rule_id": "rule:nope", "decision": "APPROVED"}).status_code == 404

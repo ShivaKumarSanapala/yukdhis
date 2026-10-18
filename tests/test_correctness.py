@@ -64,3 +64,21 @@ def test_closed_loans_are_not_counted_against_a_control_gap():
         counts = dict(conn.execute(query.bindparams(bindparam("p", expanding=True)), {"p": gap["products_missing_control"]}).fetchall())
     assert counts.get("CLOSED", 0) > 0, "fixture must contain closed loans for this test to mean anything"
     assert gap["violations"] == counts["ACTIVE"]
+
+
+def test_proposed_control_pending_review_is_not_a_gap():
+    state = run({}, check=ComplianceCheck(kind="control_required", description="Brand new capability", capability="brand_new_capability"))
+    store = stages.get_graph_store()
+    required = state["blast_radius"][0]["controls_required"]
+    assert required
+    for control_id in required:  # what the mapper does for a control it has just proposed
+        node = store.node(control_id)
+        store.upsert_node(control_id, node["type"], node["name"], {**node["attributes"], "needs_review": True})
+    stages.stage_blast_radius(state)
+    stages.stage_evaluate(state)
+    stages.stage_finalize(state)
+    result = state["results"][0]
+    assert result["status"] == "NOT_EVALUATED" and "awaiting review" in result["evidence"]
+    summary = stages.get_app_store().get_report(state["report_id"])["summary"]
+    assert set(required) <= set(summary["controls_pending_review"]) and not summary["control_gaps"]
+    assert summary["overall_status"] == "INCONCLUSIVE" and summary["gaps"] == 0
