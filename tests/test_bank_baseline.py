@@ -462,3 +462,26 @@ def test_internal_policies_light_up_once_the_circular_is_ingested():
     assert all(m["scope_status"] == "RESOLVED" and len(m["product_ids"]) == 12 for m in state["mappings"])  # "loans and advances" = the whole book
     amended = store.neighbours(["rule:RBI/DOR/2025-26/164:resolution-plan-additional-provision-84a"], ["IMPLEMENTS"], "2026-06-30", direction="in")
     assert amended == []  # the clause only takes effect on 2026-07-01
+
+
+def test_prepayment_charge_showcase_matches_the_manifest(manifest):
+    """RBI/2025-26/64: charges levied on closed floating-rate retail loans, 9 after the 1 Jan 2026 effective date, 6 before."""
+    planted = manifest["planted"]["rbi_2025_26_64_prepayment_charges"]
+    by_id = {r["loan_id"]: r for r in rows("loans")}
+    charges = [e for e in rows("loan_events") if e["event_type"] == "PREPAYMENT_CHARGE_LEVIED"]
+    after = [e for e in charges if e["occurred_on"] >= planted["effective_date"]]
+    assert (len(after), len(charges) - len(after)) == (planted["count_after_effective_date"], planted["count_before_effective_date_allowed"]) == (9, 6)
+    assert all(by_id[e["loan_id"]]["status"] == "CLOSED" and by_id[e["loan_id"]]["rate_type"] == "FLOATING"
+               and e["occurred_on"] == by_id[e["loan_id"]]["closed_on"] for e in charges)
+
+
+def test_gold_loan_ltv_showcase_has_known_breaches():
+    """RBI/2025-26/47: tiered LTV caps (85% up to 2.5 lakh, 80% up to 5 lakh, 75% above) on the active gold book."""
+    gold = [r for r in rows("loans") if r["product_id"] == "product:gold-loan" and r["status"] == "ACTIVE"]
+
+    def cap(outstanding: float) -> float:
+        return 0.85 if outstanding <= 250_000 else 0.80 if outstanding <= 500_000 else 0.75
+
+    breaches = [r for r in gold if float(r["outstanding_balance"]) / float(r["security_value"]) > cap(float(r["outstanding_balance"]))]
+    assert (len(gold), len(breaches)) == (330, 11)
+    assert sum(float(r["outstanding_balance"]) / float(r["security_value"]) > 0.9 for r in gold) == 4
