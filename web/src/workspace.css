@@ -243,3 +243,20 @@ kbd { font-size: 10.5px; padding: 1px 5px; border-radius: 4px; border: 1px solid
 .analytical .finding h4 { margin: 0 0 4px; font-size: 13px; }
 .analytical details { margin-top: 6px; }
 .analytical pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Account menu: Google stack ------------------------------------------------------------------------ */
+.stack-list { display: flex; flex-wrap: wrap; gap: 4px 6px; list-style: none; margin: 8px 0 6px; padding: 0; }
+.stack-list li { padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-line); font-size: 11px; font-weight: 500; line-height: 1.5; }
+
+/* "Open in chat" on the report page */
+button.chat-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-soft); color: var(--accent); border-color: var(--accent-line); font-weight: 600; }
+button.chat-btn:hover:not(:disabled) { background: var(--accent-line); }
+
+/* PDF export: only the report sheet prints, whichever page started it ------------------------------ */
+.print-sheet { display: none; }
+@media print {
+  body.printing-reports #root { display: none !important; }
+  body.printing-reports .print-sheet { display: block; }
+  .print-report { break-after: page; } .print-report:last-child { break-after: auto; }
+  .print-report .card { box-shadow: none; }
+}

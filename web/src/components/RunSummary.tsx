@@ -1,6 +1,7 @@
 import type { ImpactReport, RunInfo } from "../types";
 import { inr, overallKey, overallMeta } from "../report-utils";
 import { OverallBadge } from "./StatusBadges";
+import { exportPdf } from "./PrintHost";
 import MetricStrip from "./MetricStrip";
 
 type Reference = { ref?: string; url?: string; relation?: string };
@@ -31,12 +32,13 @@ export default function RunSummary({ run, report, onOpenInReports, onCompare, on
         { label: "Checks with gaps", value: dash(s.gaps) },
         { label: "Loans with violations", value: dash(s.loans_with_violations) },
         { label: "Penalty exposure", value: dash(inr(s.statutory_penalty_inr)) },
-        { label: "Actions proposed", value: report.actions?.length ?? 0 },
+        { label: "Control gaps", value: dash(s.control_gaps?.length ?? 0) },
         { label: notApplicable ? "Rules not applicable" : "Products in scope", value: notApplicable || s.products_in_scope },
       ]} />
       <div className="buttons summary-actions">
         {onToggleExpand && <button className="primary" aria-expanded={expanded} onClick={onToggleExpand}>{expanded ? "Hide full report" : "Show full report"}</button>}
         <button className={onToggleExpand ? "" : "primary"} onClick={onOpenInReports}>Open full page in Reports</button>
+        <button onClick={() => exportPdf([report])}>Export PDF</button>
         {onCompare && <button onClick={onCompare}>Compare with previous run</button>}
       </div>
       {references.length > 0 && onAnalyseLink && (

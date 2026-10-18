@@ -5,6 +5,7 @@ import { api } from "./api";
 import { authEnabled, logOut, signIn, watchUser } from "./auth";
 import type { Config } from "./types";
 import { AppProvider, identityOf } from "./store";
+import PrintHost from "./components/PrintHost";
 import Shell from "./components/Shell";
 import { BrandMark } from "./components/Icons";
 import { Motif, Skeleton } from "./components/Motif";
@@ -43,6 +44,7 @@ export default function App() {
     <BrowserRouter>
       <AppProvider config={config} identity={identity} signOut={authEnabled ? () => void logOut() : undefined}>
         <Shell />
+        <PrintHost />
       </AppProvider>
     </BrowserRouter>
   );

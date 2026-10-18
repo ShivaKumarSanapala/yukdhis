@@ -6,6 +6,12 @@ import { conversationItem, groupByTime, runItem, type HistoryItem } from "../his
 import { seenWatcher } from "../links";
 import Icon, { BrandMark } from "./Icons";
 
+/** Shown in the account menu instead of the raw backend switches. */
+const GOOGLE_STACK = [
+  "Gemini 2.5 Pro (Vertex AI)", "Google ADK", "Spanner Graph", "Cloud SQL (Postgres)", "Document AI", "Cloud DLP",
+  "Memory Bank (Agent Engine)", "Pub/Sub", "Cloud Run", "Firebase",
+] as const;
+
 const NAV = [
   { to: "/", label: "Chat", icon: "chat", match: (p: string) => p === "/" || p.startsWith("/chat") },
   { to: "/reports", label: "Reports", icon: "reports", match: (p: string) => p.startsWith("/reports") },
@@ -170,7 +176,9 @@ export default function Sidebar({ collapsed, onCollapse, open, onClose, isNarrow
               <span className="pill neutral mono" title="Tenant">{config.tenant_id}</span>
               <span className={config.llm_ready ? "pill ok" : "pill warn"} role="status">{config.llm_ready ? config.reasoning_model : "LLM offline"}</span>
             </div>
-            <p className="muted user-menu-note mono">{Object.entries(config.backends).map(([k, v]) => `${k}=${v}`).join(" · ")}</p>
+            <ul className="stack-list" aria-label="Google Cloud technology stack">
+              {GOOGLE_STACK.map((t) => <li key={t}>{t}</li>)}
+            </ul>
             {signOut ? (
               <button role="menuitem" onClick={() => signOut()}><Icon name="signout" size={14} /> Sign out</button>
             ) : <p className="muted user-menu-note">Signed in locally (no sign-in required on this server).</p>}
