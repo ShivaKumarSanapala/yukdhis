@@ -11,6 +11,7 @@ import io
 import json
 import logging
 import os
+import re
 import time
 import uuid
 import zipfile
@@ -19,7 +20,7 @@ from datetime import date
 from pathlib import Path
 from typing import Literal
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Path, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -627,10 +628,10 @@ def list_conversations(user: User = Depends(current_user)) -> list[dict]:
 
 
 @app.get("/api/threads/{thread_id}/conversation")
-def thread_conversation(thread_id: str = Path(max_length=64, pattern=ID_PATTERN), user: User = Depends(current_user)) -> dict:
+def thread_conversation(thread_id: str, user: User = Depends(current_user)) -> dict:
     """The caller's own conversation about a run or report (null until they ask something); never anyone else's."""
     store = get_app_store()
-    if not store.thread_exists(thread_id):
+    if len(thread_id) > 64 or not re.match(ID_PATTERN, thread_id) or not store.thread_exists(thread_id):
         raise HTTPException(404, "Unknown run or report")
     conversation = store.thread_conversation(user.user_id, thread_id)
     if not conversation:

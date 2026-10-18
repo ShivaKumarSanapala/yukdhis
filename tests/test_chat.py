@@ -235,6 +235,7 @@ def test_two_users_chat_about_the_same_run_in_separate_conversations(chat, store
     import api.main as main
 
     client, _, _ = chat
+    main._hits.clear()  # the per-IP POST rate limit is shared by every test in the process
     monkeypatch.setattr(store, "thread_exists", lambda thread_id: thread_id == "run-shared")
     ask = lambda text: frames(client.post("/api/chat/stream", json={"text": text, "thread_id": "run-shared"}).text)  # noqa: E731
 
