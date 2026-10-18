@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 import type { User } from "firebase/auth";
 import { api } from "./api";
-import { authEnabled, logOut, signIn, signInWithPassword, watchUser } from "./auth";
+import { authEnabled, logOut, signIn, watchUser } from "./auth";
 import type { Config } from "./types";
 import { AppProvider, identityOf } from "./store";
 import LandingPage from "./components/LandingPage";
@@ -15,15 +15,6 @@ export default function App() {
   const [ready, setReady] = useState(!authEnabled);
   const [config, setConfig] = useState<Config | null>(null);
   const [error, setError] = useState("");
-  // Optional build-time demo credentials (VITE_DEMO_EMAIL / VITE_DEMO_PASSWORD) prefill the form for evaluators.
-  const [email, setEmail] = useState<string>(import.meta.env.VITE_DEMO_EMAIL ?? "");
-  const [password, setPassword] = useState<string>(import.meta.env.VITE_DEMO_PASSWORD ?? "");
-  const [signInError, setSignInError] = useState("");
-  const submitPassword = async (e: React.FormEvent) => {
-    e.preventDefault(); setSignInError("");
-    try { await signInWithPassword(email, password); } catch { setSignInError("Email or password is incorrect."); }
-  };
-
   useEffect(() => watchUser((u) => { setUser(u); setReady(true); }), []);
   useEffect(() => {
     if (ready && (!authEnabled || user)) api.config().then(setConfig).catch((e) => setError(e.message));
@@ -34,15 +25,6 @@ export default function App() {
     return (
       <LandingPage
         onSignIn={() => signIn()}
-        testLogin={
-          <form className="grid gap-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm" onSubmit={submitPassword}>
-            <p className="text-center text-sm text-zinc-600" style={{ margin: 0 }}>No Google account? Use the test account.</p>
-            <input className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200" type="email" autoComplete="username" placeholder="Email" aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <input className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200" type="password" autoComplete="current-password" placeholder="Password" aria-label="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            {signInError && <div className="text-sm text-red-700" role="alert">{signInError}</div>}
-            <button type="submit" className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700">Sign in with email</button>
-          </form>
-        }
       />
     );
   }
