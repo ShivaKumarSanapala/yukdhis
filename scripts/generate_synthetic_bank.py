@@ -41,6 +41,8 @@ from scripts.bank_data import (  # noqa: E402
 BANK = ROOT / "data" / "bank"
 REFERENCE_DATE = date(2026, 10, 17)
 DOC_RULE_EFFECTIVE = date(2023, 12, 1)
+PREPAY_RULE_EFFECTIVE = date(2026, 1, 1)   # RBI (Pre-payment Charges on Loans) Directions, 2025
+PLANT_PREPAY_AFTER, PLANT_PREPAY_BEFORE = 9, 6   # charges levied after the effective date (violations) and before it (allowed)
 AMENDMENT_EFFECTIVE = date(2026, 7, 1)  # IRACP Amendment Directions, 2026: 62A/62B, 84A-84D, 139A/139B
 SEED = 2026
 N_CUSTOMERS, N_MSME = 2500, 250
@@ -504,6 +506,23 @@ def build_closed_book(rng: random.Random, loans: list[dict], refs: set[str], cus
                                               "product:credit-card"]), closed_between(DOC_RULE_EFFECTIVE, REFERENCE_DATE - timedelta(days=40)))
 
 
+def plant_prepayment_charges(rng: random.Random, loans: list[dict], events: list[dict]) -> dict:
+    """Showcase for RBI/2025-26/64 (no pre-payment charges on floating-rate loans to individuals, from 1 Jan 2026): a few
+    closed floating-rate retail loans carry a PREPAYMENT_CHARGE_LEVIED event on their closing day. Charges before the
+    effective date are legitimate; the ones after it are the planted violations."""
+    floating = {"product:home-loan-floating", "product:auto-loan-floating", "product:personal-loan-floating"}
+    closed = sorted((l for l in loans if l["status"] == "CLOSED" and l["product_id"] in floating), key=lambda l: l["loan_id"])
+    after = [l for l in closed if date.fromisoformat(l["closed_on"]) >= PREPAY_RULE_EFFECTIVE]
+    before = [l for l in closed if date.fromisoformat(l["closed_on"]) < PREPAY_RULE_EFFECTIVE]
+    if len(after) < PLANT_PREPAY_AFTER or len(before) < PLANT_PREPAY_BEFORE:
+        raise SystemExit(f"only {len(after)} / {len(before)} closed floating loans after / before the pre-payment effective date")
+    chosen_after, chosen_before = rng.sample(after, PLANT_PREPAY_AFTER), rng.sample(before, PLANT_PREPAY_BEFORE)
+    for loan in chosen_after + chosen_before:
+        events.append({"loan_id": loan["loan_id"], "event_type": "PREPAYMENT_CHARGE_LEVIED", "occurred_on": loan["closed_on"]})
+    return {"count_after_effective_date": len(chosen_after), "count_before_effective_date_allowed": len(chosen_before),
+            "effective_date": PREPAY_RULE_EFFECTIVE.isoformat(), "event_type": "PREPAYMENT_CHARGE_LEVIED"}
+
+
 def active_events(rng: random.Random, loans: list[dict]) -> list[dict]:
     """Event log for the active book: disbursal, rate resets, overdue and classification events, restructuring."""
     events: list[dict] = []
@@ -557,6 +576,7 @@ def operational() -> tuple[dict[str, list[dict]], dict]:
     closed_events: list[dict] = []
     build_closed_book(stream("closed"), loans, refs, customers, sizes, closed_events)
     events = active_events(stream("events"), loans) + closed_events
+    planted["rbi_2025_26_64_prepayment_charges"] = plant_prepayment_charges(stream("prepayment"), loans, events)
     planted["kyc_periodic_updation_overdue"] = plant_overdue_kyc(stream("kyc"), customers)
     # Scenario manifest entries.
     planted["rbi_2023_24_60_document_release_violations"] = 12

@@ -6,7 +6,7 @@
     "branches": 20,
     "customers": 2500,
     "loans": 3998,
-    "loan_events": 16387
+    "loan_events": 16402
   },
   "asset_classification_mix_active_book": {
     "STANDARD": 3131,
@@ -66,6 +66,12 @@
         "doubtful-secured-portion-ageing": 3
       },
       "shortfall_inr": 4170133
+    },
+    "rbi_2025_26_64_prepayment_charges": {
+      "count_after_effective_date": 9,
+      "count_before_effective_date_allowed": 6,
+      "effective_date": "2026-01-01",
+      "event_type": "PREPAYMENT_CHARGE_LEVIED"
     },
     "kyc_periodic_updation_overdue": {
       "count": 22,
