@@ -3,6 +3,7 @@ import { BrandMark } from "./Icons";
 import ScreenshotCarousel from "./ScreenshotCarousel";
 
 const REPO_URL = "https://github.com/ShivaKumarSanapala/yukdhis";
+const LIVE_URL = "https://project-b3f4c857-8b43-4c3b-84c.web.app/";
 const DEMO_URL: string = import.meta.env.VITE_DEMO_VIDEO_URL ?? "https://youtu.be/ldPnE9XgWg4";
 
 const STEPS = [
@@ -136,6 +137,7 @@ export default function LandingPage({ onSignIn, testLogin }: { onSignIn: () => v
           <p className="text-zinc-500" style={{ margin: 0 }}>Built for the Google Cloud AI Builder Cup.</p>
           <div className="flex gap-6">
             <a href={REPO_URL} target="_blank" rel="noreferrer" className="text-zinc-600 no-underline hover:text-zinc-900">GitHub</a>
+            <a href={LIVE_URL} className="text-zinc-600 no-underline hover:text-zinc-900">Live demo</a>
             <a href={DEMO_URL} className="text-zinc-600 no-underline hover:text-zinc-900">Demo video</a>
           </div>
         </div>

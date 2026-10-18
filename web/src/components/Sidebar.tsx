@@ -1,16 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useApp } from "../store";
 import { conversationItem, groupByTime, runItem, type HistoryItem } from "../history-utils";
 import { seenWatcher } from "../links";
 import Icon, { BrandMark } from "./Icons";
-
-/** Shown in the account menu instead of the raw backend switches. */
-const GOOGLE_STACK = [
-  "Gemini 2.5 Pro (Vertex AI)", "Google ADK", "Spanner Graph", "Cloud SQL (Postgres)", "Document AI", "Cloud DLP",
-  "Memory Bank (Agent Engine)", "Pub/Sub", "Cloud Run", "Firebase",
-] as const;
+import { AccountMenu, StatusInfo } from "./AccountMenu";
 
 const NAV = [
   { to: "/", label: "Chat", icon: "chat", match: (p: string) => p === "/" || p.startsWith("/chat") },
@@ -53,24 +48,13 @@ function HistoryRow({ item, current, editing, onEdit, onSave, onCancelEdit, onDe
 export default function Sidebar({ collapsed, onCollapse, open, onClose, isNarrow }: {
   collapsed: boolean; onCollapse: () => void; open: boolean; onClose: () => void; isNarrow: boolean;
 }) {
-  const { config, identity, runs, inbox, conversations, setConversations, signOut, historyError } = useApp();
+  const { runs, inbox, conversations, setConversations, historyError } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
-  const [userMenu, setUserMenu] = useState(false);
   const [error, setError] = useState("");
-  const userRef = useRef<HTMLDivElement>(null);
   const railed = collapsed && !isNarrow;
-
-  useEffect(() => {
-    if (!userMenu) return;
-    const outside = (e: MouseEvent) => { if (!userRef.current?.contains(e.target as Node)) setUserMenu(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setUserMenu(false); };
-    document.addEventListener("mousedown", outside);
-    document.addEventListener("keydown", esc);
-    return () => { document.removeEventListener("mousedown", outside); document.removeEventListener("keydown", esc); };
-  }, [userMenu]);
 
   const seen = seenWatcher();
   const items = useMemo(() => {
@@ -169,31 +153,9 @@ export default function Sidebar({ collapsed, onCollapse, open, onClose, isNarrow
           </div>
         )}
       </div>
-      <div className="user-block" ref={userRef}>
-        {userMenu && (
-          <div className="user-menu" role="menu" aria-label="Account">
-            <div className="user-menu-status">
-              <span className="pill neutral mono" title="Tenant">{config.tenant_id}</span>
-              <span className={config.llm_ready ? "pill ok" : "pill warn"} role="status">{config.llm_ready ? config.reasoning_model : "LLM offline"}</span>
-            </div>
-            <ul className="stack-list" aria-label="Google Cloud technology stack">
-              {GOOGLE_STACK.map((t) => <li key={t}>{t}</li>)}
-            </ul>
-            {signOut ? (
-              <button role="menuitem" onClick={() => signOut()}><Icon name="signout" size={14} /> Sign out</button>
-            ) : <p className="muted user-menu-note">Signed in locally (no sign-in required on this server).</p>}
-          </div>
-        )}
-        <button className="user-btn" aria-haspopup="menu" aria-expanded={userMenu} onClick={() => setUserMenu(!userMenu)} title={`${identity.name} ${identity.email}`}>
-          <span className="avatar" aria-hidden="true">{identity.initials}</span>
-          {!railed && (
-            <>
-              <span className="user-text"><b>{identity.name}</b>{identity.email && <small>{identity.email}</small>}</span>
-              <span className={`dot ${config.llm_ready ? "ok" : "warn"}`} role="img" aria-label={config.llm_ready ? "LLM ready" : "LLM offline"} title={config.llm_ready ? "LLM ready" : "LLM offline"} />
-              <Icon name="more" size={16} />
-            </>
-          )}
-        </button>
+      <div className="user-block">
+        <AccountMenu railed={railed} />
+        <StatusInfo />
       </div>
     </aside>
   );
