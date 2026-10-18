@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 const REPO_URL = "https://github.com/ShivaKumarSanapala/yukdhis";
-const DEMO_URL: string = import.meta.env.VITE_DEMO_VIDEO_URL ?? "#demo";
+const DEMO_URL: string = import.meta.env.VITE_DEMO_VIDEO_URL ?? "https://youtu.be/ldPnE9XgWg4";
 
 const STEPS = [
   { n: 1, agent: "Reader", tech: "Document AI", verb: "Read", text: "Parses the circular and extracts grounded rules." },
