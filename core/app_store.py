@@ -71,6 +71,12 @@ chat_messages = Table("chat_messages", metadata,
                       Column("tenant_id", String(64)), Column("user_id", String(128)), Column("role", String(16)),
                       Column("content", Text), Column("trace", Text), Column("status", String(16)),
                       Column("created_at", String(40)))
+# Which of a user's conversations is about a run or report. The run/report is shared and immutable; the conversation is
+# private to one user, so each user has at most one conversation per thread (primary key) and never sees another's.
+conversation_threads = Table("conversation_threads", metadata,
+                             Column("tenant_id", String(64), primary_key=True), Column("user_id", String(128), primary_key=True),
+                             Column("thread_id", String(64), primary_key=True), Column("conversation_id", String(64), index=True),
+                             Column("created_at", String(40)))
 CHAT_STATUSES = {"complete", "stopped", "error"}
 # Run metadata lives beside ``runs`` (not as new columns) so existing databases need no ALTER TABLE; old runs have no row.
 # ``source`` and ``checkpoint`` are server-only: the full source (with local paths) and the paused state for review.
@@ -474,7 +480,30 @@ class AppStore:
     def _conversation(row: Any) -> dict:
         return {"conversation_id": row["conversation_id"], "title": row["title"] or "Untitled conversation",
                 "session_id": row["session_id"] or row["conversation_id"], "created_at": row["created_at"],
-                "updated_at": row["updated_at"] or row["created_at"]}
+                "updated_at": row["updated_at"] or row["created_at"], "thread_id": row.get("thread_id")}
+
+    def thread_exists(self, thread_id: str) -> bool:
+        """A run or report of this tenant (shared, so any signed-in user may discuss it)."""
+        return bool(self.get_run(thread_id) or self.get_report(thread_id))
+
+    def thread_conversation(self, user_id: str, thread_id: str) -> dict | None:
+        """This user's own conversation about the run or report, if they have started one."""
+        with self.engine.connect() as conn:
+            row = conn.execute(select(conversation_threads.c.conversation_id).where(
+                conversation_threads.c.tenant_id == self.tenant_id, conversation_threads.c.user_id == user_id,
+                conversation_threads.c.thread_id == thread_id)).first()
+        return self.get_conversation(row[0], user_id) if row else None
+
+    def link_thread(self, user_id: str, thread_id: str, conversation_id: str) -> bool:
+        """Attach a conversation the user owns to a thread; False when they already have one for it (first wins)."""
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(insert(conversation_threads).values(
+                    tenant_id=self.tenant_id, user_id=user_id, thread_id=thread_id, conversation_id=conversation_id,
+                    created_at=now_ms()))
+            return True
+        except Exception:  # primary-key collision: a concurrent first message already linked one
+            return False
 
     def create_conversation(self, user_id: str, title: str) -> dict:
         conversation_id, ts = new_id("conv"), now_ms()
@@ -486,19 +515,27 @@ class AppStore:
 
     def get_conversation(self, conversation_id: str, user_id: str) -> dict | None:
         with self.engine.connect() as conn:
-            row = conn.execute(select(conversations).where(conversations.c.conversation_id == conversation_id,
-                                                           self._owned(user_id))).mappings().first()
-        return self._conversation(row) if row else None
+            row = conn.execute(
+                select(conversations, conversation_threads.c.thread_id)
+                .outerjoin(conversation_threads, (conversation_threads.c.conversation_id == conversations.c.conversation_id)
+                           & (conversation_threads.c.user_id == conversations.c.user_id)
+                           & (conversation_threads.c.tenant_id == conversations.c.tenant_id))
+                .where(conversations.c.conversation_id == conversation_id, self._owned(user_id))).mappings().first()
+        return self._conversation(dict(row)) if row else None
 
     def list_conversations(self, user_id: str, limit: int = 100) -> list[dict]:
         counts = (select(chat_messages.c.conversation_id, func.count().label("n"))
                   .where(chat_messages.c.tenant_id == self.tenant_id, chat_messages.c.user_id == user_id)
                   .group_by(chat_messages.c.conversation_id).subquery())
-        query = (select(conversations, counts.c.n).outerjoin(counts, counts.c.conversation_id == conversations.c.conversation_id)
+        query = (select(conversations, counts.c.n, conversation_threads.c.thread_id)
+                 .outerjoin(counts, counts.c.conversation_id == conversations.c.conversation_id)
+                 .outerjoin(conversation_threads, (conversation_threads.c.conversation_id == conversations.c.conversation_id)
+                            & (conversation_threads.c.user_id == conversations.c.user_id)
+                            & (conversation_threads.c.tenant_id == conversations.c.tenant_id))
                  .where(self._owned(user_id)).order_by(conversations.c.updated_at.desc()).limit(limit))
         with self.engine.connect() as conn:
             rows = conn.execute(query).mappings().all()
-        return [{**self._conversation(r), "message_count": int(r["n"] or 0)} for r in rows]
+        return [{**self._conversation(dict(r)), "message_count": int(r["n"] or 0)} for r in rows]
 
     def rename_conversation(self, conversation_id: str, user_id: str, title: str) -> dict | None:
         with self.engine.begin() as conn:
@@ -515,6 +552,9 @@ class AppStore:
             conn.execute(delete(chat_messages).where(chat_messages.c.conversation_id == conversation_id,
                                                      chat_messages.c.tenant_id == self.tenant_id,
                                                      chat_messages.c.user_id == user_id))
+            conn.execute(delete(conversation_threads).where(conversation_threads.c.conversation_id == conversation_id,
+                                                            conversation_threads.c.tenant_id == self.tenant_id,
+                                                            conversation_threads.c.user_id == user_id))
         return True
 
     def add_chat_message(self, conversation_id: str, user_id: str, role: str, content: str,

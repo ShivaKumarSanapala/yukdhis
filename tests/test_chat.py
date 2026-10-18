@@ -229,3 +229,28 @@ def test_memory_copy_is_sanitized_and_drops_thoughts():
     dumped = copy.model_dump_json()
     assert "ABCPV1234K" not in dumped and "rahul@example.com" not in dumped and "secret plan" not in dumped
     assert session.events[0].content.parts[0].text.startswith("PAN ABCPV1234K")  # original untouched
+
+
+def test_two_users_chat_about_the_same_run_in_separate_conversations(chat, store, monkeypatch):
+    import api.main as main
+
+    client, _, _ = chat
+    monkeypatch.setattr(store, "thread_exists", lambda thread_id: thread_id == "run-shared")
+    ask = lambda text: frames(client.post("/api/chat/stream", json={"text": text, "thread_id": "run-shared"}).text)  # noqa: E731
+
+    alice_first = ask("Alice asks")[0][1]
+    assert alice_first["created"] is True
+    assert ask("Alice again")[0][1]["conversation_id"] == alice_first["conversation_id"]  # one thread conversation per user
+
+    main.app.dependency_overrides[current_user] = lambda: BOB
+    assert client.get("/api/threads/run-shared/conversation").json() == {"conversation": None}  # Bob does not see Alice's
+    bob_first = ask("Bob asks")[0][1]
+    assert bob_first["created"] is True and bob_first["conversation_id"] != alice_first["conversation_id"]
+    bob_conv = client.get("/api/threads/run-shared/conversation").json()["conversation"]
+    assert [m["content"] for m in bob_conv["messages"] if m["role"] == "user"] == ["Bob asks"]
+    assert client.get("/api/conversations").json()[0]["thread_id"] == "run-shared"
+    assert client.post("/api/chat/stream", json={"text": "x", "thread_id": "run-missing"}).status_code == 404
+
+    main.app.dependency_overrides[current_user] = lambda: ALICE
+    alice_conv = client.get("/api/threads/run-shared/conversation").json()["conversation"]
+    assert [m["content"] for m in alice_conv["messages"] if m["role"] == "user"] == ["Alice asks", "Alice again"]

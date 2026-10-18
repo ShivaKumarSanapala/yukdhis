@@ -19,7 +19,7 @@ from datetime import date
 from pathlib import Path
 from typing import Literal
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Path, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -582,6 +582,7 @@ class ChatContext(BaseModel):
 class ChatIn(BaseModel):
     text: str = Field(min_length=1, max_length=8000)
     conversation_id: str | None = Field(default=None, max_length=64, pattern=ID_PATTERN)
+    thread_id: str | None = Field(default=None, max_length=64, pattern=ID_PATTERN)  # the run or report being discussed
     context: ChatContext | None = None
 
 
@@ -600,12 +601,20 @@ def _my_conversation(conversation_id: str, user: User) -> dict:
 async def chat_stream(body: ChatIn, user: User = Depends(current_user)):
     """SSE answer stream; call the Cloud Run URL directly (Hosting rewrites buffer responses)."""
     store = get_app_store()
-    conversation = _my_conversation(body.conversation_id, user) if body.conversation_id else None
+    if body.thread_id:  # the server, not the browser, decides which of this user's conversations belongs to the thread
+        if not store.thread_exists(body.thread_id):
+            raise HTTPException(404, "Unknown run or report")
+        conversation = store.thread_conversation(user.user_id, body.thread_id)
+    else:
+        conversation = _my_conversation(body.conversation_id, user) if body.conversation_id else None
     if not settings.is_gcp_llm_ready:
         return sse_response(single_error("The assistant needs Gemini on Vertex AI (set GOOGLE_CLOUD_PROJECT on the API)."))
     created = conversation is None
     if conversation is None:
         conversation = store.create_conversation(user.user_id, auto_title(body.text))
+        if body.thread_id and not store.link_thread(user.user_id, body.thread_id, conversation["conversation_id"]):
+            store.delete_conversation(conversation["conversation_id"], user.user_id)  # lost a race with this user's other tab
+            conversation, created = store.thread_conversation(user.user_id, body.thread_id) or conversation, False
     return sse_response(stream_turn(
         store=store, runner=assistant_runner(), sessions=session_service(), memory=memory_service(),
         sanitizer=get_sanitizer(), app_name=ASSISTANT_APP, user_id=user.user_id, conversation=conversation,
@@ -615,6 +624,18 @@ async def chat_stream(body: ChatIn, user: User = Depends(current_user)):
 @app.get("/api/conversations")
 def list_conversations(user: User = Depends(current_user)) -> list[dict]:
     return get_app_store().list_conversations(user.user_id)
+
+
+@app.get("/api/threads/{thread_id}/conversation")
+def thread_conversation(thread_id: str = Path(max_length=64, pattern=ID_PATTERN), user: User = Depends(current_user)) -> dict:
+    """The caller's own conversation about a run or report (null until they ask something); never anyone else's."""
+    store = get_app_store()
+    if not store.thread_exists(thread_id):
+        raise HTTPException(404, "Unknown run or report")
+    conversation = store.thread_conversation(user.user_id, thread_id)
+    if not conversation:
+        return {"conversation": None}
+    return {"conversation": {**conversation, "messages": store.chat_messages(conversation["conversation_id"], user.user_id)}}
 
 
 @app.get("/api/conversations/{conversation_id}")

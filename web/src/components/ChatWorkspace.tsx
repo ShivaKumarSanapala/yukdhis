@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { api, followRun } from "../api";
 import { askAssistant, nodeContextLine, type NodeContext } from "../chat-stream";
 import type { ChatMessage, ImpactReport, RunEvent, RunInfo, StartedRuns } from "../types";
-import { conversationFor, linkConversation, markWatcherSeen, threadFor } from "../links";
+import { markWatcherSeen } from "../links";
 import {
   MAX_BATCH, MAX_QUESTION, MAX_TEXT_BYTES, detectIntent, isCircularUrl, textBytes, validateFiles, type Attachment, type Intent,
 } from "../intake";
@@ -83,8 +83,11 @@ export default function ChatWorkspace() {
     });
   }, [refreshHistory]);
 
-  const loadConversation = useCallback((cid: string, live: () => boolean) => {
-    api.conversation(cid).then((c) => { if (live()) setMessages(c.messages); }).catch(() => undefined);  // deleted conversation: start fresh
+  // The caller's own conversation about this run or report (the server keeps one per user and thread).
+  const loadThread = useCallback((threadId: string, live: () => boolean) => {
+    api.threadConversation(threadId).then(({ conversation: c }) => {
+      if (live() && c) { setConvId(c.conversation_id); setMessages(c.messages); }
+    }).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -103,22 +106,22 @@ export default function ChatWorkspace() {
       api.run(id, NO_EVENTS).then(({ run: r }) => {
         if (!live) return;
         setRun(r); setLoading(false); markWatcherSeen(id); follow(id);
-        const cid = conversationFor(id);
-        if (cid) { setConvId(cid); loadConversation(cid, alive); }
+        loadThread(id, alive);
       }).catch((e) => { if (live) { setLoadError((e as Error).message); setLoading(false); } });
     } else if (k === "conv") {
-      const owner = threadFor(id);
-      if (owner) { navigate(`/chat/${owner}`, { replace: true }); return; }
       setLoading(true); setConvId(id);
-      api.conversation(id).then((c) => { if (live) { setMessages(c.messages); setLoading(false); } })
+      api.conversation(id).then((c) => {
+        if (!live) return;
+        if (c.thread_id) { navigate(`/chat/${c.thread_id}`, { replace: true }); return; }  // it belongs to a run or report
+        setMessages(c.messages); setLoading(false);
+      })
         .catch((e) => { if (live) { setLoadError((e as Error).message); setLoading(false); } });
     } else {
       setLoading(true);
       api.report(id).then((r) => {
         if (!live) return;
         setReport(r); setLoading(false);
-        const cid = conversationFor(id);
-        if (cid) { setConvId(cid); loadConversation(cid, alive); }
+        loadThread(id, alive);
       }).catch((e) => { if (live) { setLoadError((e as Error).message); setLoading(false); } });
     }
     return () => { live = false; stopFollow.current?.(); stopFollow.current = null; };
@@ -242,15 +245,14 @@ export default function ChatWorkspace() {
     const controller = new AbortController();
     abortRef.current = controller;
     await askAssistant({
-      display: q, wire: node ? `${nodeContextLine(node)}\n\n${q}` : q, conversationId: convId,
+      display: q, wire: node ? `${nodeContextLine(node)}\n\n${q}` : q, conversationId: convId, threadId,
       reportId: !ctxDismissed || node ? report?.report_id : undefined, setMessages, signal: controller.signal,
       onStart: (d) => {
         setConvId(d.conversation_id);
         const now = new Date().toISOString();
         setConversations((list) => list.some((c) => c.conversation_id === d.conversation_id) ? list
           : [{ conversation_id: d.conversation_id, title: d.title, created_at: now, updated_at: now }, ...list]);
-        if (threadId) linkConversation(threadId, d.conversation_id);
-        else if (kind === "new") { skipLoad.current = d.conversation_id; navigate(`/chat/${d.conversation_id}`, { replace: true }); }
+        if (!threadId && kind === "new") { skipLoad.current = d.conversation_id; navigate(`/chat/${d.conversation_id}`, { replace: true }); }
       },
     });
     if (abortRef.current === controller) abortRef.current = null;

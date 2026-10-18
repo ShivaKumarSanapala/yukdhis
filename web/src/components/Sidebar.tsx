@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useApp } from "../store";
 import { conversationItem, groupByTime, runItem, type HistoryItem } from "../history-utils";
-import { linkedConversations, seenWatcher, unlinkConversation } from "../links";
+import { seenWatcher } from "../links";
 import Icon, { BrandMark } from "./Icons";
 
 const NAV = [
@@ -68,12 +68,12 @@ export default function Sidebar({ collapsed, onCollapse, open, onClose, isNarrow
 
   const seen = seenWatcher();
   const items = useMemo(() => {
-    const hidden = linkedConversations();
     const unseenInbox = new Set(inbox.filter((r) => !seen.has(r.run_id)).map((r) => r.run_id));
+    // conversations tied to a run or report are shown under that run, not on their own
     return {
       inbox: inbox.filter((r) => unseenInbox.has(r.run_id)).map((r) => runItem(r, seen)),
       all: [...runs.filter((r) => !unseenInbox.has(r.run_id)).map((r) => runItem(r, seen)),
-        ...conversations.filter((c) => !hidden.has(c.conversation_id)).map(conversationItem)],
+        ...conversations.filter((c) => !c.thread_id).map(conversationItem)],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runs, inbox, conversations, location.pathname]);
@@ -96,7 +96,6 @@ export default function Sidebar({ collapsed, onCollapse, open, onClose, isNarrow
     if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
     try {
       await api.deleteConversation(item.id);
-      unlinkConversation(item.id);
       setConversations((list) => list.filter((c) => c.conversation_id !== item.id));
       if (here === item.to) navigate("/");
     } catch (e) { setError((e as Error).message); }
