@@ -31,7 +31,7 @@ const PATHS: Record<string, ReactNode> = {
   expand: <path d="m5 9 7 7 7-7" />,
 };
 
-/** The Yukdhis mark: a four-point sparkle whose tips are knowledge-graph nodes. Decorative. */
+/** The Anuvi mark: a four-point sparkle whose tips are knowledge-graph nodes. Decorative. */
 export function BrandMark({ size = 18 }: { size?: number }) {
   return (
     <svg className="icon-svg" width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false">

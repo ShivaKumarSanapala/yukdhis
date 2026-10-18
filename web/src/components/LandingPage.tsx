@@ -43,7 +43,7 @@ export default function LandingPage({ onSignIn, testLogin }: { onSignIn: () => v
         <nav className={`${container} flex h-14 items-center justify-between`} aria-label="Primary">
           <a href="#top" className="flex items-center gap-2 text-white no-underline">
             <span aria-hidden="true" className="h-5 w-5 rounded-md bg-gradient-to-br from-indigo-400 to-violet-600 shadow-[0_0_16px_rgba(129,140,248,0.6)]" />
-            <span className="text-base font-semibold tracking-tight">Yukdhis</span>
+            <span className="text-base font-semibold tracking-tight">Anuvi</span>
           </a>
           <button type="button" onClick={onSignIn} className={signInButton}>Sign in with Google</button>
         </nav>
@@ -69,14 +69,14 @@ export default function LandingPage({ onSignIn, testLogin }: { onSignIn: () => v
           <div className="relative mx-auto mt-14 max-w-5xl">
             <div aria-hidden="true" className="lp-pulse-border absolute -inset-px rounded-2xl bg-gradient-to-r from-indigo-500/60 via-violet-500/40 to-emerald-400/50 blur-[2px]" />
             <div className={`${card} relative overflow-hidden p-2 sm:p-3`}>
-              <img src="/placeholder-dashboard.png" alt="Yukdhis chat and impact report dashboard on desktop" className="hidden w-full rounded-xl bg-zinc-900 sm:block" style={{ aspectRatio: "16 / 9" }} />
-              <img src="/placeholder-dashboard.png" alt="Yukdhis chat and impact report dashboard on mobile" className="mx-auto w-3/4 rounded-xl bg-zinc-900 sm:hidden" style={{ aspectRatio: "9 / 16" }} />
+              <img src="/placeholder-dashboard.png" alt="Anuvi chat and impact report dashboard on desktop" className="hidden w-full rounded-xl bg-zinc-900 sm:block" style={{ aspectRatio: "16 / 9" }} />
+              <img src="/placeholder-dashboard.png" alt="Anuvi chat and impact report dashboard on mobile" className="mx-auto w-3/4 rounded-xl bg-zinc-900 sm:hidden" style={{ aspectRatio: "9 / 16" }} />
             </div>
           </div>
         </section>
 
         {/* Problem vs solution */}
-        <Section eyebrow="Why Yukdhis" title="From weeks of manual cross-checking to one auditable run">
+        <Section eyebrow="Why Anuvi" title="From weeks of manual cross-checking to one auditable run">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
             <article className={`${card} p-6 sm:p-8 md:col-span-2`}>
               <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-xs text-red-300">The problem</span>
@@ -86,8 +86,8 @@ export default function LandingPage({ onSignIn, testLogin }: { onSignIn: () => v
             <article className={`${card} relative overflow-hidden p-6 sm:p-8 md:col-span-3`}>
               <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
               <span className="relative rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-300">The solution</span>
-              <h3 className="relative mt-4 text-xl font-semibold text-white" style={{ margin: "16px 0 0" }}>The Yukdhis way</h3>
-              <p className="relative mt-3 leading-relaxed">Yukdhis reads the circular, wires rules into a BIAN-aligned knowledge graph, and traces the blast radius. Code computes the penalty. Zero PII reaches the model.</p>
+              <h3 className="relative mt-4 text-xl font-semibold text-white" style={{ margin: "16px 0 0" }}>The Anuvi way</h3>
+              <p className="relative mt-3 leading-relaxed">Anuvi reads the circular, wires rules into a BIAN-aligned knowledge graph, and traces the blast radius. Code computes the penalty. Zero PII reaches the model.</p>
             </article>
           </div>
         </Section>

@@ -57,7 +57,7 @@ export default function ReportView({ report, embedded }: { report: ImpactReport;
   const kpi = (value: number | string) => (unassessed ? "—" : value);
   return (
     <div className="report">
-      <p className="print-only">Yukdhis impact report {report.report_id} · printed {new Date().toLocaleString()}</p>
+      <p className="print-only">Anuvi impact report {report.report_id} · printed {new Date().toLocaleString()}</p>
       {!embedded && <div className="card">
         <div className="report-head">
           <div>

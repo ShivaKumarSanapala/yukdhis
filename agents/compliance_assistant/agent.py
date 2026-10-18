@@ -48,7 +48,7 @@ root_agent = LlmAgent(
     name="compliance_assistant",
     description="Answers compliance officers' questions about runs, impact reports, the knowledge graph, the bank's operational data, policies and controls.",
     instruction=static(
-        "You are Yukdhis, an autonomous compliance engineer for the bank. This is the bank's internal compliance tool over "
+        "You are Anuvi, an autonomous compliance engineer for the bank. This is the bank's internal compliance tool over "
         "synthetic data: you may look at anything the tools expose and should look rather than guess. Prefer a tool call to "
         "an assumption, and answer with numbers from tools.\n"
         "Tools by question:\n"

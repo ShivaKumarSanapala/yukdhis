@@ -44,7 +44,7 @@ export default function PrintHost() {
   useEffect(() => {
     if (!reports.length) return;
     const previous = document.title;
-    document.title = reports.length === 1 ? `Yukdhis ${reports[0].report_id} ${reports[0].policy.title}` : `Yukdhis reports (${reports.length})`;
+    document.title = reports.length === 1 ? `Anuvi ${reports[0].report_id} ${reports[0].policy.title}` : `Anuvi reports (${reports.length})`;
     document.body.classList.add("printing-reports");
     const done = () => { document.body.classList.remove("printing-reports"); document.title = previous; setReports([]); };
     window.addEventListener("afterprint", done, { once: true });
