@@ -88,3 +88,17 @@ def test_fallback_narrative_summarises_gaps_without_an_llm():
     state = run({})
     text = stages.fallback_narrative(state)
     assert "checks were evaluated" in text and "did not finish" in text
+
+
+def test_a_circular_with_no_extractable_rules_still_reaches_a_report():
+    from pipeline.deterministic import EXTRACTION_KEYS, run_pipeline
+
+    source = {"path": "data/circulars/rbi_2023_09_13_release_of_property_documents.md",
+              "filename": "rbi_2023_09_13_release_of_property_documents.md"}
+    extracted = run_pipeline(source, stop_after="extract")
+    checkpoint = {k: extracted[k] for k in EXTRACTION_KEYS if k in extracted}
+    checkpoint["extraction"] = {**checkpoint["extraction"], "rules": []}  # nothing for a reviewer to approve or reject
+    state = run_pipeline(source, preset=checkpoint)
+    assert state["report_id"]
+    report = stages.get_app_store().get_report(state["report_id"])
+    assert report["summary"]["rules"] == 0 and report["summary"]["overall_status"] == "INCONCLUSIVE"
