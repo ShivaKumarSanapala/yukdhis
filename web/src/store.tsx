@@ -3,7 +3,7 @@ import { api } from "./api";
 import type { Config, Conversation, RunInfo, Sample, StartedRuns } from "./types";
 import { isActive, runStatusMeta, runTitle } from "./run-utils";
 
-export interface Identity { name: string; email: string; initials: string }
+export interface Identity { name: string; email: string; initials: string; photoURL?: string }
 
 export interface StartInput { sampleIds?: string[]; files?: File[]; text?: string; url?: string }
 
@@ -33,10 +33,10 @@ const initialsOf = (name: string) => {
   const words = name.replace(/@.*$/, "").split(/[\s._-]+/).filter(Boolean);
   return ((words[0]?.[0] ?? "?") + (words.length > 1 ? words[words.length - 1][0] : "")).toUpperCase();
 };
-export const identityOf = (name: string | null | undefined, email: string | null | undefined): Identity => {
+export const identityOf = (name: string | null | undefined, email: string | null | undefined, photoURL?: string | null): Identity => {
   const mail = email ?? "";
   const display = name?.trim() || (mail ? mail.replace(/@.*$/, "").replace(/[._-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Local user");
-  return { name: display, email: mail, initials: initialsOf(name?.trim() || mail || "Local user") };
+  return { name: display, email: mail, initials: initialsOf(name?.trim() || mail || "Local user"), photoURL: photoURL || undefined };
 };
 
 function notify(run: RunInfo, status: string) {

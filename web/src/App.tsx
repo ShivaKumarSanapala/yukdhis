@@ -28,7 +28,7 @@ export default function App() {
   useEffect(() => {
     if (ready && (!authEnabled || user)) api.config().then(setConfig).catch((e) => setError(e.message));
   }, [ready, user]);
-  const identity = useMemo(() => identityOf(user?.displayName, user?.email ?? config?.user), [user, config]);
+  const identity = useMemo(() => identityOf(user?.displayName, user?.email ?? config?.user, user?.photoURL), [user, config]);
 
   if (authEnabled && ready && !user) {
     return (

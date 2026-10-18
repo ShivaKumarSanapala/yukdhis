@@ -9,6 +9,18 @@ Document AI Layout Parser · Spanner Graph · Cloud SQL for PostgreSQL · Sensit
 Vertex AI Memory Bank · Cloud Run · Pub/Sub · Eventarc · Cloud Scheduler · Cloud Storage · Secret Manager ·
 Cloud Build / Artifact Registry · Firebase Hosting + Firebase Authentication.
 
+**Live demo:** https://project-b3f4c857-8b43-4c3b-84c.web.app/ (sign in with Google, or the email test account on the landing page).
+
+```mermaid
+flowchart LR
+    V[Visitor] --> L[Landing page]
+    L -->|Google| F[Firebase Auth]
+    L -->|Test account| F
+    F --> A[Workspace: Chat, Reports, Knowledge graph]
+    A --> M[Avatar menu: profile, Google account, Sign out]
+    A --> S[Status icon: tenant, model, Google Cloud stack]
+```
+
 ## What it does (demo data)
 
 | Circular | Blast radius | Finding |
