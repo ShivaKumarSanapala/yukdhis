@@ -22,7 +22,7 @@ from typing import Any
 from sqlalchemy import (Column, Index, Integer, MetaData, String, Table, Text, create_engine, delete, func, insert, select,
                         text, update)
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from core.config import Settings, get_settings
 
@@ -109,6 +109,11 @@ ACTIVE_RUN_STATUSES = ("QUEUED", "RUNNING", "CANCEL_REQUESTED")
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def is_unique_violation(error: DBAPIError) -> bool:
+    """Duplicate-key error on any driver: SQLite and psycopg raise IntegrityError; pg8000 only carries SQLSTATE 23505."""
+    return isinstance(error, IntegrityError) or "23505" in str(getattr(error, "orig", ""))
 
 
 def now_ms() -> str:
@@ -325,8 +330,9 @@ class AppStore:
             with self.engine.begin() as conn:
                 conn.execute(insert(doc_locks).values(lock_key=key, run_id=run_id, expires_at=t + ttl_s))
             return None
-        except IntegrityError:
-            pass
+        except DBAPIError as error:  # pg8000 reports a duplicate key as a generic DatabaseError, not IntegrityError
+            if not is_unique_violation(error):
+                raise
         with self.engine.begin() as conn:
             taken = conn.execute(update(doc_locks).where(doc_locks.c.lock_key == key,
                                                          (doc_locks.c.expires_at < t) | (doc_locks.c.run_id == run_id))

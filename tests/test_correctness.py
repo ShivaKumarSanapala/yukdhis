@@ -102,3 +102,13 @@ def test_a_circular_with_no_extractable_rules_still_reaches_a_report():
     assert state["report_id"]
     report = stages.get_app_store().get_report(state["report_id"])
     assert report["summary"]["rules"] == 0 and report["summary"]["overall_status"] == "INCONCLUSIVE"
+
+
+def test_duplicate_key_is_recognised_on_every_driver():
+    from sqlalchemy.exc import DBAPIError, IntegrityError
+
+    from core.app_store import is_unique_violation
+
+    pg8000 = DBAPIError("INSERT", {}, Exception("{'C': '23505', 'M': 'duplicate key value violates unique constraint'}"))
+    assert is_unique_violation(pg8000) and is_unique_violation(IntegrityError("INSERT", {}, Exception("UNIQUE")))
+    assert not is_unique_violation(DBAPIError("INSERT", {}, Exception("{'C': '42P01', 'M': 'relation does not exist'}")))
