@@ -40,7 +40,7 @@ export default function App() {
             <input className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-base text-white" type="email" autoComplete="username" placeholder="Email" aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <input className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-base text-white" type="password" autoComplete="current-password" placeholder="Password" aria-label="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             {signInError && <div className="text-sm text-red-400" role="alert">{signInError}</div>}
-            <button type="submit" className="rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800">Sign in with email</button>
+            <button type="submit" className="rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-400">Sign in with email</button>
           </form>
         }
       />
