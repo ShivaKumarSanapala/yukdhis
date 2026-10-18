@@ -28,7 +28,7 @@ STAGES: list[tuple[str, str, str, Callable]] = [
     ("evaluate", "evaluator", "Evaluate checks against operational data", stages.stage_evaluate),
 ]
 STAGE_KEYS = [key for key, *_ in STAGES]
-EXTRACTION_KEYS = ("document", "extraction", "validation_issues", "extraction_provenance")
+EXTRACTION_KEYS = ("document", "extraction", "validation_issues", "extraction_provenance", "analytical_objectives", "full_text_context")
 # The blast-radius traversal clears and then reads the graph store's process-wide ``query_log``; parallel runs (and
 # the agentic tool / graph endpoint) hold this lock around it so one run's queries never leak into another's report.
 GRAPH_TRAVERSAL_LOCK = threading.Lock()

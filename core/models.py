@@ -125,6 +125,24 @@ class ExtractedPolicy(BaseModel):
     rules: list[Rule]
     unexecutable: list[UnexecutableObligation] = Field(
         default_factory=list, description="Obligations that cannot be expressed with the available checks or data.")
+    analytical_objectives: list[str] = Field(
+        default_factory=list, max_length=8,
+        description="Data analyses worth running on the bank's portfolio because of this circular, one sentence each, "
+                    "e.g. 'Analyse the gold loan portfolio for loan-to-value above 90%'. Include metrics, limits and "
+                    "thresholds that are not obligations the checks can test.")
+
+
+class AnalyticalFinding(BaseModel):
+    """One guarded SQL analysis run for the circular. Rows come from the query result, never from the model."""
+
+    finding_id: str
+    objective: str
+    summary: str
+    sql: str
+    columns: list[str] = Field(default_factory=list)
+    rows: list[dict] = Field(default_factory=list)
+    row_count: int = 0
+    truncated: bool = False
 
 
 class DocumentChunk(BaseModel):
@@ -284,3 +302,5 @@ class ImpactReport(BaseModel):
     limitations: list[str] = Field(default_factory=list)
     validation_issues: list[ValidationIssue] = Field(default_factory=list)
     unexecutable: list[UnexecutableObligation] = Field(default_factory=list)
+    analytical_objectives: list[str] = Field(default_factory=list)
+    analytical_findings: list[AnalyticalFinding] = Field(default_factory=list)

@@ -11,8 +11,8 @@ import { downloadReportList, inr, overallKey, overallMeta } from "../report-util
 
 const time = (value: string) => { const t = Date.parse(value); return Number.isNaN(t) ? 0 : t; };
 const FILTER_KEY = "yukdhis.reports.filters";
-const STATUSES = ["NON_COMPLIANT", "COMPLIANT", "INCONCLUSIVE", "UPCOMING"] as const;
-const STATUS_LABEL: Record<string, string> = { NON_COMPLIANT: "Non compliant", COMPLIANT: "Compliant", INCONCLUSIVE: "Cannot assess", UPCOMING: "Upcoming" };
+const STATUSES = ["NON_COMPLIANT", "COMPLIANT", "INCONCLUSIVE", "UPCOMING", "ANALYTICAL_INSIGHTS"] as const;
+const STATUS_LABEL: Record<string, string> = { NON_COMPLIANT: "Non compliant", COMPLIANT: "Compliant", INCONCLUSIVE: "Cannot assess", UPCOMING: "Upcoming", ANALYTICAL_INSIGHTS: "Analytical insights" };
 
 type SortKey = "created" | "status" | "violations" | "penalty" | "policy";
 interface Filters { q: string; statuses: string[]; from: string; to: string; mode: string; sort: SortKey; dir: "asc" | "desc" }
@@ -22,7 +22,7 @@ function loadFilters(): Filters {
   try { return { ...DEFAULTS, ...JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? "{}") }; } catch { return DEFAULTS; }
 }
 
-const unassessedOf = (r: ReportListItem) => ["INCONCLUSIVE", "UPCOMING"].includes(overallKey(r.summary));
+const unassessedOf = (r: ReportListItem) => ["INCONCLUSIVE", "UPCOMING", "ANALYTICAL_INSIGHTS"].includes(overallKey(r.summary));
 
 function SortTh({ k, children, num, f, onSort }: { k: SortKey; children: string; num?: boolean; f: Filters; onSort: (k: SortKey) => void }) {
   const sort = f.sort === k ? (f.dir === "asc" ? "ascending" : "descending") : "none";

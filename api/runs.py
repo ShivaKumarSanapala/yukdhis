@@ -466,7 +466,7 @@ async def _agentic(run_id: str, source: dict, user_id: str, as_of: str, local: _
     finally:
         await events.aclose()  # same task that iterates it (see module docstring)
     final = await service.get_session(app_name=PIPELINE_APP, user_id=user_id, session_id=session.id)
-    if gave_up and not final.state.get("report_id") and final.state.get("results"):
+    if gave_up and not final.state.get("report_id") and "results" in final.state:
         state = dict(final.state)
         store.add_event(run_id, "orchestrator", "orchestrator_stopped", {
             "reason": "tool-call or time budget exceeded", "tool_calls": orchestrator_calls})

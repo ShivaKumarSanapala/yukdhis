@@ -236,3 +236,10 @@ kbd { font-size: 10.5px; padding: 1px 5px; border-radius: 4px; border: 1px solid
 .hist-lead { flex: none; width: 14px; display: grid; place-items: center; color: var(--subtle); }
 .hist-row.active .hist-lead { color: var(--accent); }
 .omni-box textarea { overflow-y: hidden; }
+
+/* Analytical insights ------------------------------------------------------------------------------- */
+.analytical .finding { padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--line); }
+.analytical .finding:first-of-type { border-top: 0; margin-top: 0; }
+.analytical .finding h4 { margin: 0 0 4px; font-size: 13px; }
+.analytical details { margin-top: 6px; }
+.analytical pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }

@@ -9,6 +9,7 @@ const OVERALL: Record<string, StatusMeta> = {
   UPCOMING: { label: "UPCOMING", tone: "info", hint: "The rules take effect after the analysis date, so they were not evaluated." },
   INCONCLUSIVE: { label: "Cannot assess", tone: "warn", hint: "Scope or data was not sufficient to assess compliance. This is not a clean result." },
   COMPLIANT: { label: "COMPLIANT", tone: "ok", hint: "All evaluated checks passed." },
+  ANALYTICAL_INSIGHTS: { label: "Analytical insights found", tone: "info", hint: "No rule could be mapped, so there is no compliance verdict. The analyses below were run on the portfolio from the circular's text." },
 };
 
 const CHECK: Record<string, StatusMeta> = {

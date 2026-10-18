@@ -23,7 +23,7 @@ from core.config import Settings, get_settings
 
 log = logging.getLogger(__name__)
 
-EXTRACTOR_VERSION = "2026-10-17.2"  # bump when the prompt, schema, validator or templates change (.2: unexecutable obligations, capability_description)
+EXTRACTOR_VERSION = "2026-10-18.1"  # bump when the prompt, schema, validator or templates change (.2: unexecutable obligations, capability_description; 10-18.1: analytical_objectives)
 PREFIX = "extraction-cache/"
 SHA_RX = re.compile(r"^[0-9a-f]{64}$")
 

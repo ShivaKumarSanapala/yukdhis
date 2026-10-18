@@ -61,7 +61,7 @@ def validate_extraction(extraction: ExtractedPolicy, document: ParsedDocument | 
         add("ERROR", "policy.effective_date", f"Not an ISO date: {policy.effective_date!r}")
     if not policy.reference.strip():
         add("ERROR", "policy.reference", "Circular reference number is required.")
-    if not extraction.rules and not extraction.unexecutable:
+    if not extraction.rules and not extraction.unexecutable and not extraction.analytical_objectives:
         add("ERROR", "rules", "No rules extracted.")
     seen: set[str] = set()
     source = " ".join((document.text if document else "").lower().split())

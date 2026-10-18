@@ -34,6 +34,13 @@ export interface Summary {
   unresolved_rules?: string[];
   /** Newer reports only: obligations that cannot be machine-checked. */
   unexecutable_obligations?: number;
+  /** Newer reports only: SQL findings recorded by the Data Analyst. */
+  analytical_findings?: number;
+}
+/** One guarded SQL analysis for the circular; rows are the query result. */
+export interface AnalyticalFinding {
+  finding_id: string; objective: string; summary: string; sql: string; columns: string[];
+  rows: Record<string, unknown>[]; row_count: number; truncated: boolean;
 }
 /** An obligation the engine cannot check with its check kinds or data (newer reports only). */
 export interface Unexecutable { citation: string; reason: string; missing_data: string[] }
@@ -71,6 +78,7 @@ export interface ImpactReport {
   data_profile: { executed_sql?: string; rows?: Record<string, unknown>[] };
   /** Newer reports only; may be absent or malformed in old ones, so read it through unexecutableOf(). */
   unexecutable?: unknown;
+  analytical_findings?: AnalyticalFinding[]; analytical_objectives?: string[];
 }
 
 // Assistant chat ----------------------------------------------------------------

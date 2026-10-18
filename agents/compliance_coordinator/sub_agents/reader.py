@@ -27,7 +27,9 @@ reader_agent = LlmAgent(
     instruction=static(
         "You are the Reader. Call parse_regulatory_document, then extract_and_validate_rules. Summarise the policy "
         "(issuer, reference, effective date) and list each rule with its checks and verbatim citation. Call out "
-        "validation warnings and the extraction method (template of record vs Gemini) so reviewers know what to verify."
+        "validation warnings and the extraction method (template of record vs Gemini) so reviewers know what to verify. Also "
+        "list the analytical_objectives that were suggested for the data analysis. A circular with no executable rule can "
+        "still have objectives; say so instead of calling the document empty."
     ),
     tools=[parse_regulatory_document, extract_and_validate_rules],
     output_key="reader_summary",
