@@ -82,3 +82,9 @@ def test_proposed_control_pending_review_is_not_a_gap():
     summary = stages.get_app_store().get_report(state["report_id"])["summary"]
     assert set(required) <= set(summary["controls_pending_review"]) and not summary["control_gaps"]
     assert summary["overall_status"] == "INCONCLUSIVE" and summary["gaps"] == 0
+
+
+def test_fallback_narrative_summarises_gaps_without_an_llm():
+    state = run({})
+    text = stages.fallback_narrative(state)
+    assert "checks were evaluated" in text and "did not finish" in text

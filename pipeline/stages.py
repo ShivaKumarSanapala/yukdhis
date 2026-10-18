@@ -385,6 +385,19 @@ def overall_status(results: list[CheckResult], unresolved_rules: list[str], unex
     return "COMPLIANT"
 
 
+def fallback_narrative(state: State) -> str:
+    """Plain executive summary from the evaluated results, used when the Orchestrator agent could not finish."""
+    results = [CheckResult.model_validate(r) for r in state.get("results", [])]
+    gaps = [r for r in results if r.status == "GAP"]
+    lines = ["## Summary", "", f"{len(results)} checks were evaluated; {len(gaps)} have gaps.",
+             "This summary was generated from the evaluated results because the Orchestrator agent did not finish in time."]
+    for r in gaps:
+        lines.append(f"- {r.description}: {r.violations} of {r.in_scope} in scope"
+                     + (f", statutory penalty INR {r.penalty_inr:,.0f}" if r.penalty_inr else "") + ".")
+    lines += ["", "Remediation actions below are proposed for human approval."]
+    return "\n".join(lines)
+
+
 def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> dict:
     store = get_app_store()
     extras = default_actions(state)
