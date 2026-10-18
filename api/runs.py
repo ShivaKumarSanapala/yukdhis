@@ -325,6 +325,10 @@ async def _execute(run_id: str, source: dict, user_id: str, mode: str, as_of: st
             preset = await _pause_for_review(run_id, source, as_of, local)
             if preset is None:  # paused for review
                 return
+        if preset and not preset["extraction"]["rules"]:
+            # Nothing for the agents to analyse: the deterministic pipeline produces the report (blast radius and
+            # evaluation are empty), where the agent tools would fail on their missing inputs.
+            mode = "deterministic"
         if mode == "agentic":
             report_id = await _agentic(run_id, source, user_id, as_of, local, preset)
         else:
