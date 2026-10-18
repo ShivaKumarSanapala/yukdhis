@@ -262,7 +262,7 @@ def finalize_impact_report(narrative: str, tool_context: ToolContext) -> dict:
     """Persist the impact report with your executive narrative; adds deterministic actions for any uncovered gap.
 
     Args:
-        narrative: Markdown executive summary: what changed, blast radius, gaps with numbers, recommended actions.
+        narrative: Markdown executive summary: what changed, gaps with numbers, recommended actions.
     """
     _need(tool_context.state, "results", "evaluate_compliance has not run")
     return stages.stage_finalize(tool_context.state, narrative=narrative, mode="agentic")

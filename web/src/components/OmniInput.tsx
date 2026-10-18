@@ -31,8 +31,6 @@ interface Props {
   blocked: string;
   notices: string[];
   onDismissNotices: () => void;
-  reviewRules: boolean;
-  onReviewRules: (value: boolean) => void;
   inputRef: RefObject<HTMLTextAreaElement | null>;
   placeholder?: string;
   llmReady: boolean;
@@ -164,11 +162,6 @@ export default function OmniInput(p: Props) {
                 <button role="menuitem" onClick={() => { fileRef.current?.click(); closeMenu(false); }}><Icon name="attach" size={15} /> Upload file(s)</button>
                 <button role="menuitem" onClick={() => setView("samples")}><Icon name="reports" size={15} /> Sample circular</button>
                 <button role="menuitem" onClick={() => setView("url")}><Icon name="link" size={15} /> From URL</button>
-                <div className="menu-sep" role="separator" />
-                <label className="inline menu-check" role="menuitemcheckbox" aria-checked={p.reviewRules}>
-                  <input type="checkbox" checked={p.reviewRules} onChange={(e) => p.onReviewRules(e.target.checked)} />
-                  <span>Pause to review extracted rules<small className="muted">Advanced: edit rules before they reach the graph.</small></span>
-                </label>
               </>
             )}
             {view === "samples" && (

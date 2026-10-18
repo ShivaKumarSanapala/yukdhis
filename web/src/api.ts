@@ -1,6 +1,6 @@
 import { idToken } from "./auth";
 import type {
-  Config, Conversation, ConversationDetail, ExtractedRule, ImpactReport, ReportListItem, RunEvent, RunInfo, Sample, StartedRuns,
+  Config, Conversation, ConversationDetail, ImpactReport, ReportListItem, RunEvent, RunInfo, Sample, StartedRuns,
   ToolCallTrace,
 } from "./types";
 
@@ -50,7 +50,7 @@ export const api = {
     return call<RunInfo[]>(`/api/runs?${q}`);
   },
   /** One run per sample, file, pasted text or URL; all are validated before any starts. */
-  startRuns: (input: { sampleIds?: string[]; files?: File[]; text?: string; url?: string; mode: string; asOf: string; reviewRules?: boolean }) => {
+  startRuns: (input: { sampleIds?: string[]; files?: File[]; text?: string; url?: string; mode: string; asOf: string }) => {
     const form = new FormData();
     input.sampleIds?.forEach((id) => form.append("sample_ids", id));
     input.files?.forEach((file) => form.append("files", file));
@@ -58,20 +58,15 @@ export const api = {
     if (input.url) form.set("url", input.url);
     form.set("mode", input.mode);
     if (input.asOf) form.set("as_of", input.asOf);
-    if (input.reviewRules) form.set("review_rules", "true");
     return call<StartedRuns>("/api/runs", { method: "POST", body: form });
   },
   cancelRun: (id: string) => call<{ run_id: string; status: string }>(`${runPath(id)}/cancel`, { method: "POST" }),
-  reviewRun: (id: string, decision: "APPROVE" | "REJECT", rules?: ExtractedRule[]) =>
-    call<{ run_id: string; status: string }>(`${runPath(id)}/review`, json({ decision, rules })),
-  rerun: (id: string, input: { asOf?: string; mode?: string; reviewRules?: boolean } = {}) =>
-    call<StartedRuns>(`${runPath(id)}/rerun`, json({ as_of: input.asOf || null, mode: input.mode || null, review_rules: Boolean(input.reviewRules) })),
+  rerun: (id: string, input: { asOf?: string; mode?: string } = {}) =>
+    call<StartedRuns>(`${runPath(id)}/rerun`, json({ as_of: input.asOf || null, mode: input.mode || null })),
   decide: (actionId: string, decision: "APPROVED" | "REJECTED") =>
     call<{ status: string }>(`/api/actions/${actionId}/decision`, json({ decision })),
   outbox: (actionId: string) =>
     call<{ channel: string; recipient: string; body: string }[]>(`/api/actions/${actionId}/outbox`),
-  reviewRule: (ruleId: string, decision: "APPROVED" | "REJECTED", reportId?: string) =>
-    call<{ status: string; edges_versioned: number }>("/api/rules/review", json({ rule_id: ruleId, decision, report_id: reportId })),
   graph: (asOf: string) => call<GraphSnapshot>(`/api/graph?as_of=${asOf}`),
   sanitize: (text: string) =>
     call<{ sanitized: string; entity_counts: Record<string, number>; engine: string }>("/api/privacy/sanitize", json({ text })),

@@ -32,7 +32,7 @@ function HistoryRow({ item, current, editing, onEdit, onSave, onCancelEdit, onDe
   }
   return (
     <li className={`hist-row${current ? " active" : ""}`}>
-      <Link to={item.to} className="hist-link" aria-current={current ? "page" : undefined} title={item.title}>
+      <Link to={item.to} className="hist-link" aria-current={current ? "page" : undefined} title={item.by ? `${item.title}\nTriggered by ${item.by}` : item.title}>
         <span className="hist-lead" aria-hidden="true">
           {item.kind === "run" ? <span className={`dot ${item.tone ?? "neutral"}`} /> : <Icon name="chat" size={13} />}
         </span>

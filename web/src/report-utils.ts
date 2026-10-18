@@ -109,7 +109,7 @@ export function kpiRows(a: ImpactReport, b: ImpactReport): KpiRow[] {
   const row = (label: string, f: (s: Summary) => number | undefined, money = false): KpiRow => ({ label, a: f(a.summary) ?? 0, b: f(b.summary) ?? 0, money });
   return [
     row("Rules", (s) => s.rules), row("Checks", (s) => s.checks), row("Gaps", (s) => s.gaps),
-    row("Products in blast radius", (s) => s.products_in_scope), row("Loans with violations", (s) => s.loans_with_violations),
+    row("Products in scope", (s) => s.products_in_scope), row("Loans with violations", (s) => s.loans_with_violations),
     row("Customers affected", (s) => s.customers_with_violations), row("Control gaps", (s) => s.control_gaps?.length),
     row("Loans on gapped products", (s) => s.loans_exposed_to_control_gaps), row("Statutory penalty exposure", (s) => s.statutory_penalty_inr, true),
     row("Unresolved-scope rules", (s) => s.unresolved_rules?.length),

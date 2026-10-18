@@ -7,13 +7,12 @@ import { markWatcherSeen } from "../links";
 import {
   MAX_BATCH, MAX_QUESTION, MAX_TEXT_BYTES, detectIntent, isCircularUrl, textBytes, validateFiles, type Attachment, type Intent,
 } from "../intake";
-import { SOURCE_LABEL, canCancel, canRerun, extractedRules, isActive, runStatusMeta, runTitle } from "../run-utils";
+import { SOURCE_LABEL, canCancel, canRerun, isActive, runStatusMeta, runTitle } from "../run-utils";
 import { formatDateTime } from "../format";
 import { useApp } from "../store";
 import { OverallBadge } from "./StatusBadges";
 import ChatMessageView from "./ChatMessageView";
 import RunTimeline from "./RunTimeline";
-import RuleReview from "./RuleReview";
 import ReportCard from "./ReportCard";
 import OmniInput, { type ContextPill } from "./OmniInput";
 import { Greeting, Suggestions } from "./EmptyHero";
@@ -57,7 +56,6 @@ export default function ChatWorkspace() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [override, setOverride] = useState<Intent | null>(null);
   const [notices, setNotices] = useState<string[]>([]);
-  const [reviewRules, setReviewRules] = useState(() => { try { return localStorage.getItem("yukdhis.reviewRules") === "1"; } catch { return false; } });
   const [nodeCtx, setNodeCtx] = useState<NodeContext | null>(null);
   const [ctxDismissed, setCtxDismissed] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -233,9 +231,9 @@ export default function ChatWorkspace() {
   const analyse = async (input: { sampleIds?: string[]; files?: File[]; texts?: string[]; urls?: string[] }) => {
     setError(""); setBusy(true);
     try {
-      const calls = [{ sampleIds: input.sampleIds, files: input.files, text: input.texts?.[0], url: input.urls?.[0], reviewRules }];
-      for (const url of (input.urls ?? []).slice(1)) calls.push({ sampleIds: undefined, files: undefined, text: undefined, url, reviewRules });
-      for (const t of (input.texts ?? []).slice(1)) calls.push({ sampleIds: undefined, files: undefined, text: t, url: undefined, reviewRules });
+      const calls = [{ sampleIds: input.sampleIds, files: input.files, text: input.texts?.[0], url: input.urls?.[0] }];
+      for (const url of (input.urls ?? []).slice(1)) calls.push({ sampleIds: undefined, files: undefined, text: undefined, url });
+      for (const t of (input.texts ?? []).slice(1)) calls.push({ sampleIds: undefined, files: undefined, text: t, url: undefined });
       const started: StartedRuns[] = [];
       for (const call of calls) started.push(await startAnalysis(call));
       setText(""); setAttachments([]); setOverride(null); setNotices([]);
@@ -314,7 +312,6 @@ export default function ChatWorkspace() {
       requestAnimationFrame(() => document.getElementById("feed-compare")?.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" }));
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
-  const afterReview = () => { if (run) { follow(run.run_id); api.run(run.run_id, NO_EVENTS).then(({ run: r }) => setRun(r)).catch(() => undefined); void refreshHistory(); } };
   const share = () => { void navigator.clipboard?.writeText(`${window.location.origin}${location.pathname}`).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }); };
 
   // ------------------------------------------------------------------ scroll behaviour
@@ -404,15 +401,12 @@ export default function ChatWorkspace() {
               {run && (
                 <>
                   <div className="msg user file">
-                    <span className="file-chip">
+                    <span className="file-chip" title={run.created_by ? `Triggered by ${run.created_by}${run.is_mine ? " (you)" : ""}` : undefined}>
                       <Icon name={run.source_kind === "url" ? "link" : "file"} size={16} />
                       <span><b>{runTitle(run)}</b><small>{SOURCE_LABEL[run.source_kind ?? ""] ?? "Upload"}{run.as_of ? ` · as of ${formatDateTime(run.as_of)}` : ""}</small></span>
                     </span>
                   </div>
                   <RunTimeline key={run.run_id} run={run} events={events} />
-                  {run.status === "AWAITING_REVIEW" && (
-                    <RuleReview key={`${run.run_id}-${extractedRules(run, events).length}`} run={run} rules={extractedRules(run, events)} onDone={afterReview} />
-                  )}
                 </>
               )}
               {report && (
@@ -442,7 +436,6 @@ export default function ChatWorkspace() {
           context={pill} onClearContext={() => { if (nodeCtx) setNodeCtx(null); else setCtxDismissed(true); }}
           streaming={streaming} runActive={runActive} onSend={send} onStop={stop} blocked={blocked}
           notices={notices} onDismissNotices={() => setNotices([])}
-          reviewRules={reviewRules} onReviewRules={(v) => { setReviewRules(v); try { localStorage.setItem("yukdhis.reviewRules", v ? "1" : "0"); } catch { /* private mode */ } }}
           inputRef={inputRef} llmReady={config.llm_ready}
           placeholder={report ? "Ask about this report" : run ? "Ask about this document or your bank" : undefined}
         />
