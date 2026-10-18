@@ -322,8 +322,9 @@ async def _execute(run_id: str, source: dict, user_id: str, mode: str, as_of: st
         store.add_event(run_id, "pipeline", "run_resumed" if preset else "run_started",
                         {"mode": mode, "as_of": as_of, "document": source.get("filename"), "review_rules": review})
         if review and not preset:
-            await _pause_for_review(run_id, source, as_of, local)
-            return
+            preset = await _pause_for_review(run_id, source, as_of, local)
+            if preset is None:  # paused for review
+                return
         if mode == "agentic":
             report_id = await _agentic(run_id, source, user_id, as_of, local, preset)
         else:
@@ -394,7 +395,9 @@ async def _deterministic(run_id: str, source: dict, as_of: str, local: _Local, p
         raise
 
 
-async def _pause_for_review(run_id: str, source: dict, as_of: str, local: _Local) -> None:
+async def _pause_for_review(run_id: str, source: dict, as_of: str, local: _Local) -> dict | None:
+    """Pause after extraction for human review. Returns the checkpoint to continue from when there is nothing to review
+    (a circular with no extractable rules still gets a report); returns None when the run is now paused."""
     store = get_app_store()
     state = await _deterministic(run_id, source, as_of, local, stop_after="extract")
     checkpoint = {k: state[k] for k in EXTRACTION_KEYS if k in state}
@@ -402,10 +405,14 @@ async def _pause_for_review(run_id: str, source: dict, as_of: str, local: _Local
     store.add_event(run_id, "reader", "rules_extracted", {
         "policy": extraction["policy"], "rules": extraction["rules"], "issues": state.get("validation_issues", []),
         "provenance": state.get("extraction_provenance", {})})
+    if not extraction["rules"]:
+        store.add_event(run_id, "pipeline", "no_rules_to_review", {})
+        return checkpoint
     if not store.transition_run(run_id, {"RUNNING"}, "AWAITING_REVIEW", checkpoint=checkpoint, rules=extraction["rules"],
                                 current_stage="review"):
         raise RunCancelled()
     store.add_event(run_id, "pipeline", "awaiting_review", {"rules": len(extraction["rules"])})
+    return None
 
 
 async def _agentic(run_id: str, source: dict, user_id: str, as_of: str, local: _Local, preset: dict | None = None) -> str | None:
