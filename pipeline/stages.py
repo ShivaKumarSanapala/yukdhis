@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, MutableMapping
 
 from bank_mcp_server.secure_engine import SecureEngine
+from core import circular_index
 from core.app_store import get_app_store, new_id, now
 from core.config import DATA_DIR, get_settings
 from core.models import (Applicability, BlastRadius, CheckResult, ControlDecision, ExtractedPolicy, ImpactReport,
@@ -93,6 +94,7 @@ def stage_parse(state: State) -> dict:
     content = _source_bytes(source)
     document = parse_document(content, source["filename"], source.get("gcs_uri") or source.get("display_uri"))
     state["document"] = document.model_dump()
+    circular_index.index_document_safely(document)  # best effort: the assistant can then search this circular's text
     state["document_sha256"] = hashlib.sha256(content).hexdigest()
     state["source_links"] = pdf_link_uris(content) if guess_mime(source["filename"]) == "application/pdf" else []
     classification = _classify(state, document)

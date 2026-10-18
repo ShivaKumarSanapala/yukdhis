@@ -14,7 +14,7 @@ from google.genai import types
 from agents.compliance_assistant.tools import (compare_runs, get_control, get_impact_report, get_node, get_ontology, get_policy,
                                                get_report_checks, get_run, get_run_events, list_controls, list_impact_reports,
                                                list_policies, list_report_actions, list_runs, neighbours, query_graph,
-                                               readiness_gaps, time_travel_blast_radius)
+                                               readiness_gaps, search_circulars, time_travel_blast_radius)
 from agents.compliance_coordinator.sub_agents._common import llm_options, static
 from agents.compliance_coordinator.tools import describe_bank_data, get_graph_ontology, run_safe_sql
 
@@ -37,7 +37,7 @@ ASSISTANT_TOOLS = [
     list_impact_reports, get_impact_report, get_report_checks, list_report_actions,
     get_graph_ontology, get_node, neighbours, query_graph, time_travel_blast_radius, get_ontology,
     describe_bank_data, run_safe_sql,
-    list_policies, get_policy, list_controls, get_control, readiness_gaps,
+    list_policies, get_policy, list_controls, get_control, readiness_gaps, search_circulars,
 ]
 
 _options = llm_options(reasoning=True)
@@ -66,6 +66,8 @@ root_agent = LlmAgent(
         "status and risk, dates, exposure).\n"
         "- Policies, controls, readiness: list_policies, get_policy (clauses, RBI paragraphs, controls), list_controls, "
         "get_control, readiness_gaps(as_of).\n"
+        "- What a circular actually says (wording, thresholds, exceptions, paragraph numbers): search_circulars, then quote "
+        "the passage and cite its title, pages and chunk id; say so if nothing relevant is indexed.\n"
         "Also load_memory for earlier conversations. A leading '[UI context: ...]' line tells you what the officer has open; "
         "use it to resolve 'this report' or 'this run'.\n"
         "Privacy line: names, e-mail addresses, phone numbers, addresses, PAN, Aadhaar, account numbers, dates of birth and "
