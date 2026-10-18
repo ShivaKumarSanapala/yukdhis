@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 import type { User } from "firebase/auth";
 import { api } from "./api";
-import { authEnabled, logOut, signIn, watchUser } from "./auth";
+import { authEnabled, logOut, signIn, signInWithPassword, watchUser } from "./auth";
 import type { Config } from "./types";
 import { AppProvider, identityOf } from "./store";
 import PrintHost from "./components/PrintHost";
@@ -15,6 +15,13 @@ export default function App() {
   const [ready, setReady] = useState(!authEnabled);
   const [config, setConfig] = useState<Config | null>(null);
   const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [signInError, setSignInError] = useState("");
+  const submitPassword = async (e: React.FormEvent) => {
+    e.preventDefault(); setSignInError("");
+    try { await signInWithPassword(email, password); } catch { setSignInError("Email or password is incorrect."); }
+  };
 
   useEffect(() => watchUser((u) => { setUser(u); setReady(true); }), []);
   useEffect(() => {
@@ -30,6 +37,13 @@ export default function App() {
         <h1>Yukdhis</h1>
         <p className="muted">Autonomous Compliance Engineer for banking</p>
         <button className="primary" onClick={() => signIn()}>Sign in with Google</button>
+        <form className="signin-form" onSubmit={submitPassword}>
+          <p className="muted">No Google account? Use the test account.</p>
+          <input type="email" autoComplete="username" placeholder="Email" aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input type="password" autoComplete="current-password" placeholder="Password" aria-label="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          {signInError && <div className="banner error" role="alert">{signInError}</div>}
+          <button type="submit">Sign in with email</button>
+        </form>
       </main>
     );
   }

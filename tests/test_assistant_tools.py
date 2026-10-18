@@ -353,3 +353,15 @@ def test_masking_callback_keeps_ids_in_text_and_tool_responses():
     assert OPAQUE[0] in text and OPAQUE[1] in text and OPAQUE[4] in text and "a@b.com" not in text
     response = request.contents[1].parts[0].function_response.response
     assert response["run_id"] == OPAQUE[0] and response["rows"][0]["customer_ref"] == OPAQUE[5] and "a@b.com" not in response["note"]
+
+
+def test_every_assistant_tool_is_registered_with_the_agent():
+    import inspect
+
+    from agents.compliance_assistant import tools as module
+    defined = {name for name, fn in inspect.getmembers(module, inspect.isfunction)
+               if hasattr(fn, "__wrapped__") and fn.__module__ == module.__name__ and not name.startswith("_")}
+    assert defined, "no decorated tools found"
+    assert defined <= {t.__name__ for t in ASSISTANT_TOOLS}, defined - {t.__name__ for t in ASSISTANT_TOOLS}
+    assert {t.__name__ for t in ASSISTANT_TOOLS} >= {"search_circulars", "run_safe_sql", "describe_bank_data", "get_graph_ontology"}
+    assert {"load_memory", "preload_memory"} <= {t.name for t in root_agent.tools if hasattr(t, "name")}
