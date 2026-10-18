@@ -49,6 +49,8 @@
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 * { box-sizing: border-box; }
 body { margin: 0; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: clip; max-width: 100vw; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .skip-link { position: absolute; left: 8px; top: -60px; z-index: 100; background: var(--accent); color: var(--accent-ink); padding: 8px 12px; border-radius: var(--radius); text-decoration: none; }
 .skip-link:focus { top: 8px; }
@@ -395,6 +397,8 @@ button.step-head:hover:not(:disabled) { background: var(--hover); }
 }
 @media (pointer: coarse) {
   :root { --control-h: 44px; }
+  /* iOS Safari zooms the page when a field under 16px is focused and never zooms back out. */
+  select, input:not([type=checkbox]):not([type=range]), textarea, .omni-box textarea { font-size: 16px; }
   button, select, input:not([type=checkbox]):not([type=range]) { min-height: 44px; }
   .nav-item { height: 44px; }
   .chip-btn, .segmented .tab { min-height: 44px; height: 44px; }

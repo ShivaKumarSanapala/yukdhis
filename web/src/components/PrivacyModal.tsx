@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../api";
 import Icon from "./Icons";
 
@@ -36,7 +37,9 @@ export default function PrivacyModal({ initialText, onInsert, onClose }: { initi
     try { setOut(await api.sanitize(text)); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
   const total = out ? Object.values(out.entity_counts).reduce((n, v) => n + v, 0) : 0;
-  return (
+  // Portal to <body>: the composer dock is transformed, which would make this fixed dialog position against the dock
+  // (backdrop and buttons pushed below the viewport) instead of the window.
+  return createPortal(
     <>
       <div className="modal-backdrop no-print" onClick={onClose} aria-hidden="true" />
       <div ref={panel} className="modal no-print" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
@@ -67,6 +70,7 @@ export default function PrivacyModal({ initialText, onInsert, onClose }: { initi
           <button className="primary" disabled={!out} onClick={() => { if (out) { onInsert(out.sanitized); onClose(); } }}>Insert sanitized text</button>
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
