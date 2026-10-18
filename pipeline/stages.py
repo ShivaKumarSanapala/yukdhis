@@ -314,6 +314,8 @@ def stage_propose(state: State, workflow_id: str, rule_id: str, worklist_id: str
     assessment = _applicability(state).get(rule_id) if "extraction" in state else None
     if gate.is_gated(assessment):
         raise ValueError(f"No action can be proposed for {rule_id}. {gate.evidence(assessment)}")
+    if match.status != "GAP":
+        raise ValueError(f"No action can be proposed for {rule_id}: its check is {match.status}, not a GAP. {match.evidence}")
     owner = owner or _owner_for(state, rule_id)
     action = SecureEngine().propose_workflow(workflow_id, rule_id, worklist_id, match.violations, notice_template, owner)
     state["actions"] = [*state.get("actions", []), action.model_dump()]
@@ -411,7 +413,9 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
         "customers_with_violations": len({l["customer_ref"] for l in loans.values()}),
         "loans_exposed_to_control_gaps": len(exposed),
         "statutory_penalty_inr": sum(r.penalty_inr for r in results),
-        "control_gaps": sorted({f"{pid}: {c}" for r in radii for pid, gaps in r.control_gaps.items() for c in gaps}),
+        "control_gaps": sorted({f"{pid}: {c}" for r in radii for pid, gaps in r.control_gaps.items() for c in gaps
+                                if c not in r.pending_controls}),
+        "controls_pending_review": sorted({c for r in radii for c in r.pending_controls}),
         "by_branch": dict(Counter(branch_names.get(l["branch_id"], l["branch_id"]) for l in loans.values()).most_common()),
         "overall_status": overall_status(results, unresolved, len(extraction.unexecutable)),
         "unresolved_rules": unresolved,

@@ -139,6 +139,11 @@ class SecureEngine:
             # The mapper stamps the canonical control id; older extractions fall back to the capability's own id.
             control = check.control_id or CAPABILITIES.get(check.capability or "", f"control:{(check.capability or '').replace('_', '-')}")
             missing = sorted(pid for pid, gaps in radius.control_gaps.items() if control in gaps)
+            if missing and control in radius.pending_controls:
+                # A control the mapper has just proposed cannot be provided by any product yet, so "missing" says nothing
+                # about the bank until a reviewer approves it into the ontology.
+                return base.model_copy(update={"evidence": f"{control} is a proposed control awaiting review; it is not evaluated "
+                                                           "until a reviewer approves it into the ontology."})
             rows = self._loans(product_ids, status)
             bad = [r for r in rows if r["product_id"] in missing]
             result = self._finish(base, rule, rows, bad, f"graph: products without PROVIDES->{control} as of {as_of}")

@@ -28,7 +28,7 @@ export interface ReportListItem { report_id: string; title: string; created_at: 
 export interface Summary {
   rules: number; checks: number; gaps: number; products_in_scope: number;
   loans_with_violations: number; customers_with_violations: number; loans_exposed_to_control_gaps: number;
-  statutory_penalty_inr: number; control_gaps: string[]; by_branch: Record<string, number>;
+  statutory_penalty_inr: number; control_gaps: string[]; controls_pending_review?: string[]; by_branch: Record<string, number>;
   overall_status: string; privacy_redactions: number;
   /** Newer reports only: rule ids whose scope could not be resolved. */
   unresolved_rules?: string[];

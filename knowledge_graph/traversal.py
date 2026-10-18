@@ -27,6 +27,7 @@ def blast_radius(store: GraphStore, rule_id: str, as_of: str | date | None = Non
     products = [] if scope_status == "UNRESOLVED" else by_type.get("GOVERNS", [])
     processes = {p["id"]: p for p in by_type.get("APPLIES_TO", [])}
     required = sorted(c["id"] for c in by_type.get("REQUIRES", []))
+    pending = sorted(c["id"] for c in by_type.get("REQUIRES", []) if c.get("attributes", {}).get("needs_review"))
     product_ids = [p["id"] for p in products]
 
     hop2 = store.neighbours(product_ids, ["USES", "PROVIDES", "OWNED_BY"], as_of)
@@ -55,6 +56,7 @@ def blast_radius(store: GraphStore, rule_id: str, as_of: str | date | None = Non
                     "owner": owners.get(p["id"], {}).get("team")} for p in processes.values()],
         controls_required=required,
         control_gaps={pid: missing for pid, missing in gaps.items() if missing},
+        pending_controls=pending,
         owners=sorted(owners.values(), key=lambda o: o["owner_of"]),
         segments=[{"id": s["id"], "name": s["name"]} for s in by_type.get("TARGETS", [])],
         scope_status=scope_status, scope_notes=list(rule_attrs.get("scope_notes", [])),

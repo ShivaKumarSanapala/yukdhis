@@ -37,10 +37,12 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
     } catch (e) { setMsg((e as Error).message); } finally { setBusy(""); }
   };
   const review = async (ruleId: string, decision: "APPROVED" | "REJECTED") => {
+    setBusy(ruleId); setMsg("");
     try {
-      const r = await api.reviewRule(ruleId, decision);
+      const r = await api.reviewRule(ruleId, decision, report.report_id);
       setMsg(`${short(ruleId)} ${r.status.toLowerCase()} · ${r.edges_versioned} graph edges re-versioned`);
-    } catch (e) { setMsg((e as Error).message); }
+      await refresh();  // the rule's status pill comes from the stored report
+    } catch (e) { setMsg((e as Error).message); } finally { setBusy(""); }
   };
 
   return (
@@ -83,6 +85,16 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {(s.controls_pending_review ?? []).length > 0 && (
+        <div className="banner warn" role="status">
+          <b>{s.controls_pending_review!.length} proposed control{s.controls_pending_review!.length > 1 ? "s" : ""} awaiting review.</b>{" "}
+          The mapper created {s.controls_pending_review!.length > 1 ? "them" : "it"} for this document, so no product can provide
+          {s.controls_pending_review!.length > 1 ? " them" : " it"} yet. Checks that depend on {s.controls_pending_review!.length > 1 ? "them are" : "it is"} not
+          evaluated and raise no gaps or actions until a reviewer approves {s.controls_pending_review!.length > 1 ? "them" : "it"}.
+          <ul>{s.controls_pending_review!.map((c) => <li key={c}><code>{c}</code></li>)}</ul>
         </div>
       )}
 
@@ -136,12 +148,16 @@ export default function ReportView({ report, onChange }: { report: ImpactReport;
           <section key={rule.rule_id} className="rule" aria-label={rule.title}>
             <div className="rule-head">
               <div>
-                <b>{rule.title}</b> <span className={`pill risk-${rule.penalty_risk}`}>{rule.penalty_risk}</span> <ModalityBadge modality={modalityOf(rule)} />
+                <b>{rule.title}</b> <span className={`pill risk-${rule.penalty_risk}`}>{rule.penalty_risk}</span> <ModalityBadge modality={modalityOf(rule)} /> <span className={`pill ${rule.status === "APPROVED" ? "ok" : rule.status === "REJECTED" ? "bad" : "warn"}`}>{rule.status.replace("_", " ")}</span>
                 {isUnresolved(radiusFor(report, rule.rule_id)) && <> <span className="pill warn" title="Scope could not be resolved">SCOPE UNRESOLVED</span></>}
               </div>
               <div className="buttons no-print">
-                <button onClick={() => review(rule.rule_id, "APPROVED")}>Approve rule</button>
-                <button className="danger" onClick={() => review(rule.rule_id, "REJECTED")}>Reject</button>
+                <button disabled={busy === rule.rule_id || rule.status === "APPROVED"} onClick={() => review(rule.rule_id, "APPROVED")}>
+                  {rule.status === "APPROVED" ? "Approved" : "Approve rule"}
+                </button>
+                <button className="danger" disabled={busy === rule.rule_id || rule.status === "REJECTED"} onClick={() => review(rule.rule_id, "REJECTED")}>
+                  {rule.status === "REJECTED" ? "Rejected" : "Reject"}
+                </button>
               </div>
             </div>
             <blockquote>“{rule.citation.snippet}”</blockquote>
