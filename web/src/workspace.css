@@ -257,6 +257,14 @@ button.chat-btn:hover:not(:disabled) { background: var(--accent-line); }
 @media print {
   body.printing-reports #root { display: none !important; }
   body.printing-reports .print-sheet { display: block; }
-  .print-report { break-after: page; } .print-report:last-child { break-after: auto; }
-  .print-report .card { box-shadow: none; }
+  html, body { height: auto !important; overflow: visible !important; max-width: none; }
+  .print-report { break-after: page; max-width: none; margin: 0; padding: 0; } .print-report:last-child { break-after: auto; }
+  .print-report .card { box-shadow: none; break-inside: auto; margin-bottom: 10px; }
+  .print-report .report { display: flex; flex-direction: column; gap: 10px; }
+  .print-report .metrics { grid-template-columns: repeat(3, 1fr); }
+  .print-report .narrative, .print-report .finding { break-inside: auto; }
+  .print-report .table-wrap { overflow: visible; max-height: none; }
+  .print-report table { width: 100%; table-layout: auto; } .print-report tr { break-inside: avoid; }
+  .print-report pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .print-report .print-only { display: block; }
 }
