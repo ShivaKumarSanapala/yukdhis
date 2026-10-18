@@ -35,12 +35,12 @@ export default function App() {
       <LandingPage
         onSignIn={() => signIn()}
         testLogin={
-          <form className="grid gap-2 rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-4 backdrop-blur-md" onSubmit={submitPassword}>
-            <p className="text-center text-sm text-zinc-400" style={{ margin: 0 }}>No Google account? Use the test account.</p>
-            <input className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-base text-white" type="email" autoComplete="username" placeholder="Email" aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <input className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-base text-white" type="password" autoComplete="current-password" placeholder="Password" aria-label="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            {signInError && <div className="text-sm text-red-400" role="alert">{signInError}</div>}
-            <button type="submit" className="rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-400">Sign in with email</button>
+          <form className="grid gap-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm" onSubmit={submitPassword}>
+            <p className="text-center text-sm text-zinc-600" style={{ margin: 0 }}>No Google account? Use the test account.</p>
+            <input className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200" type="email" autoComplete="username" placeholder="Email" aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200" type="password" autoComplete="current-password" placeholder="Password" aria-label="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            {signInError && <div className="text-sm text-red-700" role="alert">{signInError}</div>}
+            <button type="submit" className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700">Sign in with email</button>
           </form>
         }
       />
