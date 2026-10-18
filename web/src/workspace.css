@@ -217,6 +217,11 @@ kbd { font-size: 10.5px; padding: 1px 5px; border-radius: 4px; border: 1px solid
   .omni-hint:has(.field-error) { display: block; }
   .msg.user { max-width: 94%; }
 }
+@media (pointer: coarse), (max-width: 900px) {
+  /* iOS (Safari and Chrome) zooms the page when a field under 16px is focused and leaves it zoomed and panned. This
+     sits after the .omni-box rule above so it wins over the 14.5px desktop size. */
+  .omni-box textarea, .omni-menu input, .modal textarea { font-size: 16px; }
+}
 @media (pointer: coarse) {
   button.round { width: 44px; min-height: 44px; }
   .send { width: 44px; height: 44px; min-height: 44px; }
