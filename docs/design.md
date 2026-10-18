@@ -194,6 +194,19 @@ flowchart LR
 
 ---
 
+### 4.1 Analytical objectives and findings
+
+A circular can carry metrics the rule checks cannot test (for example a loan-to-value limit). The Reader therefore also emits
+`ExtractedPolicy.analytical_objectives` (up to 8 one-sentence analyses), and the pipeline keeps the circular's cleaned text in
+session state as `full_text_context` (60k characters, masked, built deterministically rather than asked of the model). A document
+with objectives but no rules is a valid extraction. The Data Analyst reads both in its prompt and runs each objective with
+`record_analytical_finding(objective, summary, sql)`: the tool executes the guarded SQL itself and stores the real rows, so a
+finding cannot contain numbers the query did not return (max 8 per run, 50 rows each). With no checks at all and at least one
+finding the report status is `ANALYTICAL_INSIGHTS` ("Analytical insights found"), not "Cannot assess"; with checks, the status is
+unchanged and the findings are shown beside it. The report carries `analytical_findings` and `analytical_objectives`, and the UI
+renders each finding as a table with its query. Extra tools: `get_circular_text` and `search_circulars` (Data Analyst, Mapper),
+`run_safe_sql` and `describe_bank_data` for cross-checks (Evaluator). The Orchestrator proposes no workflows when no rule was mapped.
+
 ## 5. Agent pipeline (Google ADK)
 
 ```mermaid

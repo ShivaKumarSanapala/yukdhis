@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, Callable
+
 from google.genai import types
 
 from core.config import get_settings
@@ -18,6 +20,19 @@ GUARDRAILS = (
 def static(text: str):
     """InstructionProvider: bypasses ADK {state} templating so literal braces are safe."""
     return lambda _context: text + GUARDRAILS
+
+
+def with_state(text: str, extra: Callable[[Any], str]):
+    """InstructionProvider whose text is extended from session state at call time (objectives, recorded findings).
+    Like ``static`` it bypasses ADK ``{state}`` templating, so literal braces are safe."""
+    def provider(context):
+        try:
+            more = extra(context.state)
+        except Exception:  # noqa: BLE001 - a missing key must never stop the agent
+            more = ""
+        return text + (("\n\n" + more) if more else "") + GUARDRAILS
+
+    return provider
 
 
 def llm_options(reasoning: bool = False) -> dict:

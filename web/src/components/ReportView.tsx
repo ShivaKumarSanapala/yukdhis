@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { api } from "../api";
-import type { Action, ImpactReport } from "../types";
+import type { Action, AnalyticalFinding, ImpactReport } from "../types";
 import BarList from "./BarList";
 import Markdown from "./Markdown";
 import MetricStrip from "./MetricStrip";
@@ -13,13 +13,49 @@ import {
 
 const SCOPE_DEFAULT = "Scope could not be resolved from the circular's wording; no products assessed.";
 
+const cellText = (v: unknown) => (v === null || v === undefined ? "" : typeof v === "number" ? v.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : String(v));
+
+/** SQL findings the Data Analyst recorded for the circular; the rows are the query result, not model text. */
+function AnalyticalInsights({ findings, objectives }: { findings: AnalyticalFinding[]; objectives: string[] }) {
+  if (!findings.length && !objectives.length) return null;
+  return (
+    <div className="card analytical" role="region" aria-label="Analytical insights">
+      <h3>Analytical insights {findings.length > 0 && <span className="pill info">{findings.length}</span>}</h3>
+      {!findings.length && (
+        <>
+          <p className="muted">These analyses were suggested from the circular but none was run or could be measured with the onboarded data.</p>
+          <ul>{objectives.map((o) => <li key={o}>{o}</li>)}</ul>
+        </>
+      )}
+      {findings.map((f) => (
+        <section key={f.finding_id} className="finding">
+          <h4>{f.objective}</h4>
+          <p>{f.summary}</p>
+          {f.rows.length > 0 && (
+            <div className="table-wrap" tabIndex={0} role="region" aria-label={`Result table for ${f.objective}`}>
+              <table>
+                <thead><tr>{f.columns.map((c) => <th key={c} scope="col" className={typeof f.rows[0][c] === "number" ? "num" : undefined}>{c.replaceAll("_", " ")}</th>)}</tr></thead>
+                <tbody>{f.rows.map((row, i) => (
+                  <tr key={i}>{f.columns.map((c) => <td key={c} className={typeof row[c] === "number" ? "num" : undefined}>{cellText(row[c])}</td>)}</tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+          {f.truncated && <p className="muted">Showing the first {f.rows.length} of {f.row_count} rows.</p>}
+          <details><summary>Query</summary><pre className="wrap">{f.sql}</pre></details>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 export default function ReportView({ report, onChange, embedded }: { report: ImpactReport; onChange?: (r: ImpactReport) => void; embedded?: boolean }) {
   const s = report.summary;
   const overall = overallMeta(s);
   const unexecutable = unexecutableOf(report);
   // Obligations that cannot be machine-checked make the report INCONCLUSIVE even when the other checks were measured.
   const measured = (report.results ?? []).some((r) => isMeasured(r.status));
-  const unassessed = ["INCONCLUSIVE", "UPCOMING"].includes(overallKey(s)) && !(unexecutable.length > 0 && measured);
+  const unassessed = ["INCONCLUSIVE", "UPCOMING", "ANALYTICAL_INSIGHTS"].includes(overallKey(s)) && !(unexecutable.length > 0 && measured);
   const unresolved = unresolvedRadii(report);
   const shownRadius = (report.blast_radius ?? []).find((r) => !isUnresolved(r));
   const kpi = (value: number | string) => (unassessed ? "—" : value);
@@ -98,6 +134,8 @@ export default function ReportView({ report, onChange, embedded }: { report: Imp
           <ul>{s.controls_pending_review!.map((c) => <li key={c}><code>{c}</code></li>)}</ul>
         </div>
       )}
+
+      <AnalyticalInsights findings={report.analytical_findings ?? []} objectives={report.analytical_objectives ?? []} />
 
       {unexecutable.length > 0 && (
         <div className="card unexecutable" role="region" aria-label="Not machine-checkable obligations">

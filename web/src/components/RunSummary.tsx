@@ -11,7 +11,7 @@ export default function RunSummary({ run, report, onOpenInReports, onCompare, on
   onAnalyseLink?: (url: string) => void; expanded?: boolean; onToggleExpand?: () => void;
 }) {
   const s = report.summary;
-  const unassessed = ["INCONCLUSIVE", "UPCOMING"].includes(overallKey(s));
+  const unassessed = ["INCONCLUSIVE", "UPCOMING", "ANALYTICAL_INSIGHTS"].includes(overallKey(s));
   const dash = (v: string | number) => (unassessed ? "—" : v);
   const references = ((report as unknown as { references?: Reference[] }).references ?? []).filter((r) => r?.url);
   const notApplicable = (s as unknown as { not_applicable_rules?: unknown[] }).not_applicable_rules?.length ?? 0;
@@ -25,6 +25,7 @@ export default function RunSummary({ run, report, onOpenInReports, onCompare, on
         <div className="head-side" role="status" aria-label="Overall status"><OverallBadge summary={s} large /></div>
       </div>
       {overallMeta(s).hint && <p className="muted status-hint">{overallMeta(s).hint}</p>}
+      {(s.analytical_findings ?? 0) > 0 && <p className="muted">{s.analytical_findings} analytical finding{s.analytical_findings === 1 ? "" : "s"} from the portfolio data, shown in the full report.</p>}
       <MetricStrip metrics={[
         { label: "Rules", value: s.rules },
         { label: "Checks with gaps", value: dash(s.gaps) },

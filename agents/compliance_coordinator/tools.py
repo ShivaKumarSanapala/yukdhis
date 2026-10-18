@@ -169,6 +169,59 @@ def run_safe_sql(sql: str, intent: str, tool_context: ToolContext, row_level: bo
     return SecureEngine().run_safe_sql(sql, intent, actor=actor, row_level=bool(row_level))
 
 
+@_guarded
+def record_analytical_finding(objective: str, summary: str, sql: str, tool_context: ToolContext, row_level: bool = False) -> dict:
+    """Run one guarded SQL analysis for an analytical objective and record it as a finding in the report.
+
+    The query is executed here and the report shows its real result rows; you supply only the objective, a one-sentence
+    summary of what the result means, and the SQL. Use it even when no rule was mapped. At most 8 findings per run.
+
+    Args:
+        objective: the analytical objective this answers (copy or refine one of the listed objectives).
+        summary: one or two sentences with the key numbers, which must come from this query's result.
+        sql: PostgreSQL SELECT over the sanitized vw_* views (same guard as run_safe_sql). Compute ratios with
+            CAST(outstanding_balance AS DOUBLE PRECISION) / NULLIF(security_value, 0).
+        row_level: true to return per-loan rows keyed by opaque refs; false (default) for aggregates.
+    """
+    return stages.stage_record_finding(tool_context.state, objective, summary, sql, bool(row_level))
+
+
+@_guarded
+def get_circular_text(tool_context: ToolContext, offset: int = 0, limit: int = 15000) -> dict:
+    """Read the circular's cleaned full text (not only the extracted rules), plus the suggested analytical objectives.
+
+    Args:
+        offset: character offset to start from.
+        limit: characters to return (at most 20000).
+    """
+    _need(tool_context.state, "full_text_context", "extract_and_validate_rules has not run")
+    text = tool_context.state["full_text_context"]
+    start, size = max(0, int(offset)), max(1, min(int(limit), 20000))
+    return {"total_chars": len(text), "offset": start, "text": text[start:start + size],
+            "analytical_objectives": tool_context.state.get("analytical_objectives", [])}
+
+
+@_guarded
+def search_circulars(query: str, tool_context: ToolContext, top_k: int = 5, document_id: str = "") -> dict:
+    """Search the indexed text of ingested circulars by meaning; returns passages with title, pages and chunk id.
+
+    Args:
+        query: what to look for, in natural language.
+        top_k: number of passages (1-10).
+        document_id: restrict to one document (doc-...); empty searches all.
+    """
+    from core import circular_index
+
+    if not query.strip():
+        raise ValueError("query is required")
+    if not circular_index.enabled():
+        raise NotImplementedError("Circular search needs the GCP backend (Vertex AI embeddings).")
+    hits = circular_index.search(query.strip()[:1000], top_k, document_id.strip())
+    for hit in hits:
+        hit["text"] = hit["text"][:1500]
+    return {"count": len(hits), "passages": hits}
+
+
 # Evaluator ---------------------------------------------------------------------
 @_guarded
 def evaluate_compliance(tool_context: ToolContext) -> dict:

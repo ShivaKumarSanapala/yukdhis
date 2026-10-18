@@ -23,7 +23,7 @@ from bank_mcp_server.secure_engine import SecureEngine
 from core import circular_index
 from core.app_store import get_app_store, new_id, now
 from core.config import DATA_DIR, get_settings
-from core.models import (Applicability, BlastRadius, CheckResult, ControlDecision, ExtractedPolicy, ImpactReport,
+from core.models import (AnalyticalFinding, Applicability, BlastRadius, CheckResult, ControlDecision, ExtractedPolicy, ImpactReport,
                          ParsedDocument, ProposedAction, Rule, RuleMapping, ValidationIssue)
 from ingestion import extractor
 from ingestion.cache import EXTRACTOR_VERSION, ExtractionCache
@@ -114,6 +114,21 @@ def _classified_payload(classification: dict) -> dict:
     return {k: classification.get(k) for k in ("doc_type", "confidence", "reason")}
 
 
+FULL_TEXT_CHARS = 60_000   # about 15k tokens: what the analyst agents read beside the extracted rules
+
+
+def circular_context(document: ParsedDocument) -> str:
+    """The circular's text, cleaned and capped, for agents that reason about it beyond the extracted rules. Personal
+    identifiers are masked locally; the model-bound callback masks again before anything reaches Gemini."""
+    from privacy.sanitizer import get_sanitizer
+
+    text = "\n\n".join(f"{' > '.join(c.headings)}\n{c.content}".strip() if c.headings else c.content for c in document.chunks)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    text = get_sanitizer().sanitize(text, f"context-{document.document_id}", local=True).text
+    return text[:FULL_TEXT_CHARS]
+
+
 def stage_extract(state: State) -> dict:
     """Document-type gate, then rule extraction, served from the extraction cache when the same document bytes were
     extracted before by the same extractor version and model. ``source["refresh_extraction"]`` bypasses the cache."""
@@ -150,6 +165,8 @@ def stage_extract(state: State) -> dict:
     references = [r for r in references if r.ref.lower() not in own]
     state["references"] = [r.model_dump() for r in references]
     state["extraction"] = extraction.model_dump()
+    state["analytical_objectives"] = list(extraction.analytical_objectives)
+    state["full_text_context"] = circular_context(document)
     state["validation_issues"] = [i.model_dump() for i in issues]
     state["extraction_provenance"] = provenance
     return {"policy": extraction.policy.model_dump(), "provenance": provenance, "cached": provenance["cached"],
@@ -157,6 +174,7 @@ def stage_extract(state: State) -> dict:
             "rules": [{"rule_id": r.rule_id, "title": r.title, "effective_date": r.effective_date,
                        "checks": [c.kind for c in r.checks], "citation": r.citation.snippet} for r in extraction.rules],
             "unexecutable": [u.model_dump() for u in extraction.unexecutable],
+            "analytical_objectives": state["analytical_objectives"],
             "issues": state["validation_issues"]}
 
 
@@ -374,10 +392,14 @@ def _owner_for(state: State, rule_id: str, workflow_id: str = "") -> str:
     return "Compliance"
 
 
-def overall_status(results: list[CheckResult], unresolved_rules: list[str], unexecutable: int = 0) -> str:
-    """Obligations that cannot be machine-checked (``unexecutable``) mean the report can never be COMPLIANT."""
+def overall_status(results: list[CheckResult], unresolved_rules: list[str], unexecutable: int = 0, findings: int = 0) -> str:
+    """Obligations that cannot be machine-checked (``unexecutable``) mean the report can never be COMPLIANT.
+    With no checks at all (no rules were mapped) but analytical findings, the report is ANALYTICAL_INSIGHTS instead of
+    "cannot assess": it says what the data shows, not that the bank complies."""
     if any(r.status == "GAP" for r in results):
         return "NON_COMPLIANT"
+    if not results and findings:
+        return "ANALYTICAL_INSIGHTS"
     if unexecutable:
         return "INCONCLUSIVE"
     if any(r.status == "UPCOMING" for r in results):
@@ -385,6 +407,33 @@ def overall_status(results: list[CheckResult], unresolved_rules: list[str], unex
     if not results or unresolved_rules or any(r.status == "NOT_EVALUATED" for r in results):
         return "INCONCLUSIVE"
     return "COMPLIANT"
+
+
+MAX_FINDINGS, MAX_FINDING_ROWS = 8, 50
+
+
+def stage_record_finding(state: State, objective: str, summary: str, sql: str, row_level: bool = False) -> dict:
+    """Run one guarded SQL analysis for the circular and keep the query and its real result as a finding.
+
+    The rows are whatever the database returned (the model supplies only the objective and a one-line summary), so a
+    finding cannot contain numbers the query did not produce."""
+    findings = list(state.get("analytical_findings", []))
+    if len(findings) >= MAX_FINDINGS:
+        raise ValueError(f"At most {MAX_FINDINGS} findings per run; summarise what you have.")
+    if not objective.strip() or not summary.strip():
+        raise ValueError("objective and summary are required")
+    result = SecureEngine().run_safe_sql(sql, f"Analytical objective: {objective.strip()[:200]}", actor="data_analyst_agent",
+                                         row_level=row_level)
+    if result.get("status") != "success":
+        raise ValueError(result.get("reason") or result.get("message") or "the query was rejected")
+    rows = result["rows"]
+    finding = AnalyticalFinding(
+        finding_id=new_id("fnd"), objective=objective.strip()[:300], summary=summary.strip()[:1200], sql=result["executed_sql"],
+        columns=list(rows[0]) if rows else [], rows=rows[:MAX_FINDING_ROWS], row_count=len(rows), truncated=len(rows) > MAX_FINDING_ROWS)
+    findings.append(finding.model_dump())
+    state["analytical_findings"] = findings
+    return {"finding_id": finding.finding_id, "row_count": finding.row_count, "recorded": len(findings),
+            "columns": finding.columns, "rows": finding.rows[:20]}
 
 
 def fallback_narrative(state: State) -> str:
@@ -396,6 +445,8 @@ def fallback_narrative(state: State) -> str:
     for r in gaps:
         lines.append(f"- {r.description}: {r.violations} of {r.in_scope} in scope"
                      + (f", statutory penalty INR {r.penalty_inr:,.0f}" if r.penalty_inr else "") + ".")
+    for f in state.get("analytical_findings", []):
+        lines.append(f"- Analysis: {f['objective']}: {f['summary']}")
     lines += ["", "Remediation actions below are proposed for human approval."]
     return "\n".join(lines)
 
@@ -419,6 +470,7 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
     assessments = _applicability(state)
     gated = {rid for rid, a in assessments.items() if gate.is_gated(a)}
     actions = [a for a in actions if a.rule_id not in gated]  # belt and braces: gated rules never carry actions
+    findings = [AnalyticalFinding.model_validate(f) for f in state.get("analytical_findings", [])]
     summary = {
         "rules": len(extraction.rules),
         "checks": len(results),
@@ -432,7 +484,8 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
                                 if c not in r.pending_controls}),
         "controls_pending_review": sorted({c for r in radii for c in r.pending_controls}),
         "by_branch": dict(Counter(branch_names.get(l["branch_id"], l["branch_id"]) for l in loans.values()).most_common()),
-        "overall_status": overall_status(results, unresolved, len(extraction.unexecutable)),
+        "overall_status": overall_status(results, unresolved, len(extraction.unexecutable), len(findings)),
+        "analytical_findings": len(findings),
         "unresolved_rules": unresolved,
         "unexecutable_obligations": len(extraction.unexecutable),
         "not_applicable_rules": sorted(rid for rid, a in assessments.items() if a.applicable is False),
@@ -446,7 +499,8 @@ def stage_finalize(state: State, narrative: str = "", mode: str = "agentic") -> 
         generated_at=now(), as_of=state["as_of"], mode=mode, blast_radius=radii, results=results, summary=summary,
         actions=actions, narrative=narrative.strip(),
         validation_issues=[ValidationIssue.model_validate(i) for i in state.get("validation_issues", [])],
-        unexecutable=extraction.unexecutable,
+        unexecutable=extraction.unexecutable, analytical_objectives=list(state.get("analytical_objectives", [])),
+        analytical_findings=findings,
         limitations=[
             "Synthetic data: every customer, loan and branch is fictional.",
             "Decision support only: actions stay PENDING_APPROVAL until a compliance officer approves them.",

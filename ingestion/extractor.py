@@ -48,6 +48,12 @@ goes only in `unexecutable`.
 Use scope.product_terms for product wording exactly as written and the attribute filters only when the text
 states them. Prefix rule ids with "rule:<reference>:" and the policy id with "policy:<reference>".
 Set confidence below 0.8 for anything ambiguous.
+Also fill `analytical_objectives` (at most 6) with data analyses a compliance analyst should run on the bank's loan
+portfolio because of this circular, one sentence each, naming the metric, product and threshold (for example "Analyse
+the gold loan portfolio for loan-to-value above 90%" or "Compare outstanding balance with security value for gold
+loans"). Include limits, ratios and thresholds that are not obligations the checks can test. A circular with no
+rules can still have objectives. Use only metrics the portfolio can plausibly hold (balances, security value, days past
+due, asset classification, provisions, KYC status, product, branch).
 
 DOCUMENT {document_id} ({parser})
 {chunks}
