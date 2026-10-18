@@ -495,7 +495,10 @@ Extraction quality is now measured against the templates of record (`scripts/eva
 modality, effective-date and capability accuracy).
 
 Also shipped with the fixes: UI badges for all four overall statuses, an unresolved-scope warning, run comparison,
-CSV export and print-to-PDF, stage timings, and responsive, dark-mode and accessibility improvements.
+CSV export and print-to-PDF, stage timings, and responsive, dark-mode and accessibility improvements. Report summaries
+and assistant answers now render Mermaid diagrams (`web/src/components/MermaidBlock.tsx`, used by `Markdown.tsx`), and a
+finished pipeline run card shows a single **Open report** button that opens the report in Reports. Report finalisation
+is idempotent.
 
 Data gaps for the next scenarios:
 

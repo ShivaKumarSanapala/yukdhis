@@ -489,6 +489,7 @@ def action_outbox(action_id: str, user: User = Depends(current_user)) -> list[di
 
 class RuleReview(Decision):
     rule_id: str = Field(max_length=300)
+    report_id: str | None = Field(default=None, max_length=100)  # report whose stored copy of the rule should show the decision
 
 
 @app.post("/api/rules/review")
@@ -497,7 +498,14 @@ def rule_review(body: RuleReview, user: User = Depends(current_user)) -> dict:
         result = review_rule(get_graph_store(), body.rule_id, body.decision, user.email, date.today().isoformat())
     except KeyError:
         raise HTTPException(404, "Unknown rule")
-    get_app_store().audit(user.email, "rule_review", body.model_dump(), body.decision, result)
+    store = get_app_store()
+    report = store.get_report(body.report_id) if body.report_id else None  # tenant-scoped lookup
+    if report:
+        for rule in report.get("rules", []):
+            if rule.get("rule_id") == body.rule_id:
+                rule["status"] = body.decision
+        store.save_report(report)  # keeps the decision across reloads; decided actions are untouched
+    store.audit(user.email, "rule_review", body.model_dump(), body.decision, result)
     return result
 
 

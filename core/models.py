@@ -228,6 +228,7 @@ class BlastRadius(BaseModel):
     processes: list[dict]
     controls_required: list[str]
     control_gaps: dict[str, list[str]]
+    pending_controls: list[str] = Field(default_factory=list)  # required controls the mapper proposed that nobody has reviewed yet
     owners: list[dict]
     segments: list[dict]
     paths: list[list[str]]

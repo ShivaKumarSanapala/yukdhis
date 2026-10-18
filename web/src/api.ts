@@ -70,8 +70,8 @@ export const api = {
     call<{ status: string }>(`/api/actions/${actionId}/decision`, json({ decision })),
   outbox: (actionId: string) =>
     call<{ channel: string; recipient: string; body: string }[]>(`/api/actions/${actionId}/outbox`),
-  reviewRule: (ruleId: string, decision: "APPROVED" | "REJECTED") =>
-    call<{ status: string; edges_versioned: number }>("/api/rules/review", json({ rule_id: ruleId, decision })),
+  reviewRule: (ruleId: string, decision: "APPROVED" | "REJECTED", reportId?: string) =>
+    call<{ status: string; edges_versioned: number }>("/api/rules/review", json({ rule_id: ruleId, decision, report_id: reportId })),
   graph: (asOf: string) => call<GraphSnapshot>(`/api/graph?as_of=${asOf}`),
   sanitize: (text: string) =>
     call<{ sanitized: string; entity_counts: Record<string, number>; engine: string }>("/api/privacy/sanitize", json({ text })),
