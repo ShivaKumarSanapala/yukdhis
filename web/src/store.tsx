@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { api } from "./api";
 import type { Config, Conversation, RunInfo, Sample, StartedRuns } from "./types";
 import { isActive, runStatusMeta, runTitle } from "./run-utils";
+import { setLinkScope } from "./links";
 
 export interface Identity { name: string; email: string; initials: string }
 
@@ -46,6 +47,7 @@ function notify(run: RunInfo, status: string) {
 
 /** Shell-level data: bootstrap config, the merged history (runs and conversations) and run starting. */
 export function AppProvider({ config, identity, signOut, children }: { config: Config; identity: Identity; signOut?: () => void; children: ReactNode }) {
+  setLinkScope(identity.email);  // before any child reads the run/report -> conversation links
   const [samples, setSamples] = useState<Sample[]>([]);
   const [runs, setRuns] = useState<RunInfo[]>([]);
   const [inbox, setInbox] = useState<RunInfo[]>([]);

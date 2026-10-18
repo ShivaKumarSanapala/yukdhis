@@ -1,11 +1,18 @@
 // Which assistant conversation belongs to which run or report. Kept in localStorage: the API has no such field.
 const KEY = "yukdhis.threadConversations";
 
+// Conversations belong to a user on the server (another user's id answers "Unknown conversation"), so the run/report
+// links are kept per signed-in user. Without this, signing in as someone else in the same browser reuses the
+// previous user's conversation id for the same run.
+let scope = "";
+export const setLinkScope = (email: string) => { scope = email.trim().toLowerCase(); };
+const key = () => (scope ? `${KEY}:${scope}` : KEY);
+
 function read(): Record<string, string> {
-  try { return JSON.parse(localStorage.getItem(KEY) ?? "{}") as Record<string, string>; } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem(key()) ?? "{}") as Record<string, string>; } catch { return {}; }
 }
 function write(map: Record<string, string>) {
-  try { localStorage.setItem(KEY, JSON.stringify(map)); } catch { /* private mode */ }
+  try { localStorage.setItem(key(), JSON.stringify(map)); } catch { /* private mode */ }
 }
 
 /** Thread keys are run ids or report ids. */
