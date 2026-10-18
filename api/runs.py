@@ -48,6 +48,7 @@ from core.app_store import ACTIVE_RUN_STATUSES, TRIGGER_KINDS, get_app_store
 from core.app_store import now_ms as now  # run timestamps in ms: elapsed times of fast runs stay meaningful
 from core.config import get_settings
 from pipeline.deterministic import EXTRACTION_KEYS, run_pipeline
+from pipeline import stages
 from pipeline.stages import default_as_of
 
 log = logging.getLogger(__name__)
@@ -56,6 +57,8 @@ MAX_ACTIVE_RUNS_PER_USER = max(1, int(os.getenv("MAX_ACTIVE_RUNS_PER_USER", "5")
 POLL_SECONDS = float(os.getenv("RUN_POLL_SECONDS", "1.0"))
 LOCK_TTL_S, HEARTBEAT_S, STALE_AFTER_S = 120, 20, 300
 THINKING_FLUSH_S = 1.5
+ORCHESTRATOR_MAX_TOOL_CALLS = 12   # a normal run needs a handful: one proposal per gap plus finalize
+ORCHESTRATOR_MAX_SECONDS = 240.0
 WATCHER_USER = "watcher"
 ACTIVE = set(ACTIVE_RUN_STATUSES)
 PAUSED = {"AWAITING_REVIEW"}
@@ -423,11 +426,19 @@ async def _agentic(run_id: str, source: dict, user_id: str, as_of: str, local: _
     events = pipeline_runner().run_async(user_id=user_id, session_id=session.id,
                                          new_message=types.Content(role="user", parts=[types.Part(text=prompt)]),
                                          run_config=RunConfig(streaming_mode=StreamingMode.SSE))
+    orchestrator_since, orchestrator_calls, gave_up = None, 0, False
     try:
         async for event in events:
             if local.cancel.is_set():
                 raise RunCancelled()
             stage = AGENT_STAGE.get(event.author, event.author)
+            if stage == "orchestrator":
+                orchestrator_since = orchestrator_since or time.monotonic()
+                orchestrator_calls += len(event.get_function_calls())
+                if (orchestrator_calls > ORCHESTRATOR_MAX_TOOL_CALLS
+                        or time.monotonic() - orchestrator_since > ORCHESTRATOR_MAX_SECONDS):
+                    gave_up = True  # stuck re-checking instead of finalising: stop it and finalise from the results
+                    break
             if stage != current and stage in AGENT_STAGE.values():
                 if store.run_status(run_id) == "CANCEL_REQUESTED":
                     local.cancel.set()
@@ -455,6 +466,12 @@ async def _agentic(run_id: str, source: dict, user_id: str, as_of: str, local: _
     finally:
         await events.aclose()  # same task that iterates it (see module docstring)
     final = await service.get_session(app_name=PIPELINE_APP, user_id=user_id, session_id=session.id)
+    if gave_up and not final.state.get("report_id") and final.state.get("results"):
+        state = dict(final.state)
+        store.add_event(run_id, "orchestrator", "orchestrator_stopped", {
+            "reason": "tool-call or time budget exceeded", "tool_calls": orchestrator_calls})
+        stages.stage_finalize(state, narrative=stages.fallback_narrative(state), mode="agentic")
+        final.state["report_id"] = state["report_id"]
     halted = final.state.get("pipeline_halted")  # the Reader could not read the document: that is the real reason
     if not final.state.get("report_id") and (halted or last_error):
         store.update_run(run_id, current_stage="reader" if halted else last_error[0])
