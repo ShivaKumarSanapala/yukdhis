@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { streamChat } from "./api";
+import { reattachChat, streamChat, type StreamHandlers } from "./api";
 import type { ChatMessage } from "./types";
 
 export interface NodeContext { id: string; type: string; name: string }
@@ -19,15 +19,27 @@ export async function askAssistant(opts: {
 }): Promise<void> {
   const { setMessages } = opts;
   const stamp = Date.now();
-  const draftId = `draft-${stamp}`;
+  setMessages((m) => [...m, { message_id: `local-${stamp}`, role: "user", content: opts.display, status: "complete" }]);
+  await foldInto(setMessages, (handlers) =>
+    streamChat({ text: opts.wire, conversation_id: opts.threadId ? undefined : opts.conversationId, thread_id: opts.threadId,
+      context: opts.reportId ? { report_id: opts.reportId } : undefined }, handlers, opts.signal), opts.onStart);
+}
+
+/** Re-attaches to a reply still being written on the server (the user message is already in the saved conversation). */
+export async function attachAssistant(opts: { conversationId: string; setMessages: Dispatch<SetStateAction<ChatMessage[]>>; signal: AbortSignal }): Promise<void> {
+  await foldInto(opts.setMessages, (handlers) => reattachChat(opts.conversationId, handlers, opts.signal));
+}
+
+async function foldInto(setMessages: Dispatch<SetStateAction<ChatMessage[]>>,
+  open: (handlers: StreamHandlers) => Promise<void>, onStart?: StreamHandlers["onStart"]): Promise<void> {
+  const draftId = `draft-${Date.now()}`;
   setMessages((m) => [...m,
-    { message_id: `local-${stamp}`, role: "user", content: opts.display, status: "complete" },
     { message_id: draftId, role: "assistant", content: "", status: "streaming", trace: { thinking: "", tool_calls: [] } }]);
   const update = (fn: (m: ChatMessage) => ChatMessage) => setMessages((all) => all.map((m) => (m.message_id === draftId ? fn(m) : m)));
   const trace = (m: ChatMessage) => m.trace ?? { thinking: "", tool_calls: [] };
   try {
-    await streamChat({ text: opts.wire, conversation_id: opts.threadId ? undefined : opts.conversationId, thread_id: opts.threadId, context: opts.reportId ? { report_id: opts.reportId } : undefined }, {
-      onStart: opts.onStart,
+    await open({
+      onStart,
       onThinking: (delta) => update((m) => ({ ...m, trace: { ...trace(m), thinking: trace(m).thinking + delta } })),
       onText: (delta) => update((m) => ({ ...m, content: m.content + delta })),
       onToolCall: (call) => update((m) => ({ ...m, trace: { ...trace(m), tool_calls: [...trace(m).tool_calls, { ...call, status: "running" }] } })),
@@ -37,8 +49,8 @@ export async function askAssistant(opts: {
           : [...trace(m).tool_calls, { args: {}, ...result }] },
       })),
       onError: (message) => update((m) => ({ ...m, error: message })),
-      onDone: (d) => update((m) => ({ ...m, message_id: d.message_id, status: d.status })),
-    }, opts.signal);
+      onDone: (d) => update((m) => ({ ...m, message_id: d.message_id || m.message_id, status: d.status })),
+    });
     // A stream that ends without "done" (e.g. the no-LLM error) is not a complete answer.
     update((m) => (m.status === "streaming" ? { ...m, status: m.error ? "error" : "stopped" } : m));
   } catch (e) {

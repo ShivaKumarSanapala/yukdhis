@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { api, followRun } from "../api";
-import { askAssistant, nodeContextLine, type NodeContext } from "../chat-stream";
+import { askAssistant, attachAssistant, nodeContextLine, type NodeContext } from "../chat-stream";
 import type { ChatMessage, ImpactReport, RunEvent, RunInfo, StartedRuns } from "../types";
 import { markWatcherSeen } from "../links";
 import {
@@ -83,12 +83,26 @@ export default function ChatWorkspace() {
     });
   }, [refreshHistory]);
 
+  // A reply keeps being written on the server after you leave the conversation; coming back re-attaches to it and
+  // replays what it has produced so far, then follows it live. When it ends, the saved conversation replaces the draft.
+  const attach = useCallback((cid: string, live: () => boolean) => {
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setStreaming(true);
+    void attachAssistant({ conversationId: cid, setMessages, signal: controller.signal }).then(async () => {
+      if (abortRef.current !== controller) return;  // the reader moved on
+      abortRef.current = null; setStreaming(false);
+      try { const saved = await api.conversation(cid); if (live()) setMessages(saved.messages); } catch { /* keep the streamed draft */ }
+      void refreshHistory();
+    });
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
   // The caller's own conversation about this run or report (the server keeps one per user and thread).
   const loadThread = useCallback((threadId: string, live: () => boolean) => {
     api.threadConversation(threadId).then(({ conversation: c }) => {
-      if (live() && c) { setConvId(c.conversation_id); setMessages(c.messages); }
+      if (live() && c) { setConvId(c.conversation_id); setMessages(c.messages); if (c.active) attach(c.conversation_id, live); }
     }).catch(() => undefined);
-  }, []);
+  }, [attach]);
 
   useEffect(() => {
     if (id && skipLoad.current === id) { skipLoad.current = null; return; }  // our own navigation after a conversation was created
@@ -114,6 +128,7 @@ export default function ChatWorkspace() {
         if (!live) return;
         if (c.thread_id) { navigate(`/chat/${c.thread_id}`, { replace: true }); return; }  // it belongs to a run or report
         setMessages(c.messages); setLoading(false);
+        if (c.active) attach(id, alive);
       })
         .catch((e) => { if (live) { setLoadError((e as Error).message); setLoading(false); } });
     } else {
@@ -255,7 +270,8 @@ export default function ChatWorkspace() {
         if (!threadId && kind === "new") { skipLoad.current = d.conversation_id; navigate(`/chat/${d.conversation_id}`, { replace: true }); }
       },
     });
-    if (abortRef.current === controller) abortRef.current = null;
+    if (abortRef.current !== controller) return;  // you switched conversation: the reply continues on the server
+    abortRef.current = null;
     setStreaming(false);
     void refreshHistory();
   };
@@ -276,7 +292,12 @@ export default function ChatWorkspace() {
       setRun(next.run); void refreshHistory();
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
-  const stop = () => { if (streaming) abortRef.current?.abort(); else void cancelRun(); };
+  // Stop is explicit: leaving the conversation only detaches, the server keeps writing the reply.
+  const stop = () => {
+    if (!streaming) { void cancelRun(); return; }
+    if (convId) void api.stopConversation(convId).catch(() => abortRef.current?.abort());
+    else abortRef.current?.abort();
+  };
 
   const retry = async () => {
     if (!run) return;

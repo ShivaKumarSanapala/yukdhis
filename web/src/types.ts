@@ -84,5 +84,5 @@ export interface ChatMessage {
   /** complete | stopped | error, plus "streaming" while a local draft is live. */
   status: string; created_at?: string; trace?: ChatTrace; error?: string;
 }
-export interface Conversation { conversation_id: string; thread_id?: string | null; title: string; created_at: string; updated_at: string; message_count?: number }
+export interface Conversation { active?: boolean; conversation_id: string; thread_id?: string | null; title: string; created_at: string; updated_at: string; message_count?: number }
 export interface ConversationDetail extends Conversation { messages: ChatMessage[] }

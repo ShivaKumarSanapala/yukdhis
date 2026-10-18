@@ -29,7 +29,8 @@ from pydantic import BaseModel, Field
 
 from api.adk_runtime import ASSISTANT_APP, assistant_runner, memory_service, session_service
 from api.auth import User, current_user, verify_firebase_token, verify_service_caller
-from api.chat import auto_title, build_prompt, single_error, sse_response, stream_turn
+from api.chat import (TurnInProgress, active_turn, auto_title, build_prompt, follow, single_error, sse_response, start_turn,
+                      stop_turn)
 from api.runs import (PAUSED, RUN_STATUSES, TERMINAL, WATCHER_USER, RunLimitExceeded, choose_mode, ensure_capacity,
                       interrupt_local_runs, reap_stale_runs, reject_run, request_cancel, resume_run, sha256_of, start_run)
 from bank_mcp_server.remediation import dispatch, request_dispatch
@@ -616,15 +617,37 @@ async def chat_stream(body: ChatIn, user: User = Depends(current_user)):
         if body.thread_id and not store.link_thread(user.user_id, body.thread_id, conversation["conversation_id"]):
             store.delete_conversation(conversation["conversation_id"], user.user_id)  # lost a race with this user's other tab
             conversation, created = store.thread_conversation(user.user_id, body.thread_id) or conversation, False
-    return sse_response(stream_turn(
-        store=store, runner=assistant_runner(), sessions=session_service(), memory=memory_service(),
-        sanitizer=get_sanitizer(), app_name=ASSISTANT_APP, user_id=user.user_id, conversation=conversation,
-        created=created, question=body.text, prompt=build_prompt(body.text, body.context.report_id if body.context else None)))
+    try:
+        turn = start_turn(
+            store=store, runner=assistant_runner(), sessions=session_service(), memory=memory_service(),
+            sanitizer=get_sanitizer(), app_name=ASSISTANT_APP, user_id=user.user_id, conversation=conversation,
+            created=created, question=body.text, prompt=build_prompt(body.text, body.context.report_id if body.context else None))
+    except TurnInProgress:
+        raise HTTPException(409, "A reply is already being written in this conversation")
+    return sse_response(follow(turn))
+
+
+@app.get("/api/conversations/{conversation_id}/stream")
+async def reattach_conversation(conversation_id: str, user: User = Depends(current_user)):
+    """Re-attach to the reply being written in the background: replays what was produced so far, then follows it live."""
+    _my_conversation(conversation_id, user)
+    turn = active_turn(user.user_id, conversation_id)
+    if turn is None:
+        raise HTTPException(404, "No reply in progress")
+    return sse_response(follow(turn))
+
+
+@app.post("/api/conversations/{conversation_id}/stop")
+async def stop_conversation(conversation_id: str, user: User = Depends(current_user)) -> dict:
+    """Stop the reply being written (the partial answer is kept). Switching away does not stop it."""
+    _my_conversation(conversation_id, user)
+    return {"stopped": stop_turn(user.user_id, conversation_id)}
 
 
 @app.get("/api/conversations")
 def list_conversations(user: User = Depends(current_user)) -> list[dict]:
-    return get_app_store().list_conversations(user.user_id)
+    return [{**c, "active": active_turn(user.user_id, c["conversation_id"]) is not None}
+            for c in get_app_store().list_conversations(user.user_id)]
 
 
 @app.get("/api/threads/{thread_id}/conversation")
@@ -636,13 +659,15 @@ def thread_conversation(thread_id: str, user: User = Depends(current_user)) -> d
     conversation = store.thread_conversation(user.user_id, thread_id)
     if not conversation:
         return {"conversation": None}
-    return {"conversation": {**conversation, "messages": store.chat_messages(conversation["conversation_id"], user.user_id)}}
+    return {"conversation": {**conversation, "active": active_turn(user.user_id, conversation["conversation_id"]) is not None,
+                             "messages": store.chat_messages(conversation["conversation_id"], user.user_id)}}
 
 
 @app.get("/api/conversations/{conversation_id}")
 def get_conversation(conversation_id: str, user: User = Depends(current_user)) -> dict:
     conversation = _my_conversation(conversation_id, user)
-    return {**conversation, "messages": get_app_store().chat_messages(conversation_id, user.user_id)}
+    return {**conversation, "active": active_turn(user.user_id, conversation_id) is not None,
+            "messages": get_app_store().chat_messages(conversation_id, user.user_id)}
 
 
 @app.patch("/api/conversations/{conversation_id}")
