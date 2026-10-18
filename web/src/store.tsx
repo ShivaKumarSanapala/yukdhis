@@ -5,7 +5,7 @@ import { isActive, runStatusMeta, runTitle } from "./run-utils";
 
 export interface Identity { name: string; email: string; initials: string }
 
-export interface StartInput { sampleIds?: string[]; files?: File[]; text?: string; url?: string; reviewRules?: boolean }
+export interface StartInput { sampleIds?: string[]; files?: File[]; text?: string; url?: string }
 
 interface AppState {
   config: Config;

@@ -3,7 +3,6 @@ import Markdown from "./Markdown";
 import MetricStrip from "./MetricStrip";
 import { formatDateTime } from "../format";
 import { OverallBadge } from "./StatusBadges";
-import { exportPdf } from "./PrintHost";
 import {
   inr, isMeasured, overallKey, overallMeta, ruleTitle, unexecutableOf, unresolvedRadii,
 } from "../report-utils";
@@ -55,14 +54,6 @@ export default function ReportView({ report, embedded }: { report: ImpactReport;
   const measured = (report.results ?? []).some((r) => isMeasured(r.status));
   const unassessed = ["INCONCLUSIVE", "UPCOMING", "ANALYTICAL_INSIGHTS"].includes(overallKey(s)) && !(unexecutable.length > 0 && measured);
   const unresolved = unresolvedRadii(report);
-  const radii = (report.blast_radius ?? []).filter((r) => r.scope_status !== "UNRESOLVED");
-  const uniq = <T,>(items: T[]) => [...new Set(items)];
-  const blast = {
-    products: uniq(radii.flatMap((r) => r.products.map((p) => p.name))),
-    processes: uniq(radii.flatMap((r) => r.processes.map((p) => `${p.name} (${p.bian_domain})`))),
-    owners: uniq(radii.flatMap((r) => r.owners.map((o) => o.team))),
-    segments: uniq(radii.flatMap((r) => r.segments.map((x) => x.name))),
-  };
   const kpi = (value: number | string) => (unassessed ? "—" : value);
   return (
     <div className="report">
@@ -75,14 +66,11 @@ export default function ReportView({ report, embedded }: { report: ImpactReport;
           </div>
           <div className="head-side toolbar">
             <div role="status" aria-label="Overall status"><OverallBadge summary={s} large /></div>
-            <div className="buttons no-print">
-              <button className="primary" onClick={() => exportPdf([report])}>Export PDF</button>
-            </div>
           </div>
         </div>
         {overall.hint && <p className={`muted status-hint ${overall.tone}`}>{overall.hint}{unassessed && " Figures below are shown as — because nothing was assessed."}</p>}
         <MetricStrip metrics={[
-          { label: "Rules", value: s.rules, sub: `${s.products_in_scope} products in blast radius` },
+          { label: "Rules", value: s.rules, sub: undefined },
           { label: "Checks with gaps", value: kpi(s.gaps) },
           { label: "Loans with violations", value: kpi(s.loans_with_violations) },
           { label: "Customers affected", value: kpi(s.customers_with_violations) },
@@ -140,24 +128,12 @@ export default function ReportView({ report, embedded }: { report: ImpactReport;
 
       {report.narrative && <div className="card narrative"><h3>Executive summary</h3><Markdown text={report.narrative} /></div>}
 
+      {s.control_gaps.length > 0 && (
       <div className="card">
-        <h3>Blast radius</h3>
-        {!radii.length && <p className="muted">{unresolved.length > 0 ? "No products assessed: scope could not be resolved." : "No blast radius recorded."}</p>}
-        {radii.length > 0 && (
-          <div className="radius">
-            <p><b>Products:</b> {blast.products.join(", ") || "none"}</p>
-            <p><b>Processes:</b> {blast.processes.join(", ") || "none"}</p>
-            <p><b>Owners:</b> {blast.owners.join(", ") || "none"}</p>
-            <p><b>Segments:</b> {blast.segments.join(", ") || "none"}</p>
-          </div>
-        )}
-        {s.control_gaps.length > 0 && (
-          <>
-            <p><b>Control gaps:</b></p>
-            <ul>{s.control_gaps.map((g) => <li key={g}><code>{g}</code></li>)}</ul>
-          </>
-        )}
+        <h3>Control gaps</h3>
+        <ul>{s.control_gaps.map((g) => <li key={g}><code>{g}</code></li>)}</ul>
       </div>
+      )}
 
       <details className="card audit" open>
         <summary><h3>Audit trail</h3></summary>

@@ -1,0 +1,8 @@
+/* Tailwind theme + utilities only (no preflight, so the app's own styles are untouched). Utilities are !important
+   because the app's unlayered element rules (button, h1, ...) would otherwise win over layered utilities. */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) important;
+
+@keyframes lp-pulse { 0%, 100% { opacity: .45 } 50% { opacity: 1 } }
+.lp-pulse-border { animation: lp-pulse 3.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .lp-pulse-border { animation: none; } }

@@ -32,16 +32,13 @@ from api.auth import User, current_user, verify_firebase_token, verify_service_c
 from api.chat import (TurnInProgress, active_turn, auto_title, build_prompt, follow, single_error, sse_response, start_turn,
                       stop_turn)
 from api.runs import (PAUSED, RUN_STATUSES, TERMINAL, WATCHER_USER, RunLimitExceeded, choose_mode, ensure_capacity,
-                      interrupt_local_runs, reap_stale_runs, reject_run, request_cancel, resume_run, sha256_of, start_run)
+                      interrupt_local_runs, reap_stale_runs, request_cancel, sha256_of, start_run)
 from bank_mcp_server.remediation import dispatch, request_dispatch
 from core.app_store import SOURCE_KINDS, get_app_store
 from core.config import DATA_DIR, ROOT, get_settings
-from core.models import ExtractedPolicy, Rule
 from ingestion.documents import DOCAI_TYPES, TEXT_TYPES, archive_to_gcs, document_id_for, guess_mime
-from ingestion.validator import validate_extraction
 from ingestion.watcher import eligible, list_incoming, source_for
 from knowledge_graph.governance import describe_ontology
-from knowledge_graph.mapper import review_rule
 from knowledge_graph.ontology import ontology_summary
 from knowledge_graph.packs import PackError
 from knowledge_graph.store import get_graph_store
@@ -150,7 +147,6 @@ MAX_TEXT_BYTES = 500 * 1024    # pasted circular
 MAX_URL_LENGTH = 2048
 DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 BINARY_SIGNATURES = (b"%PDF", b"PK\x03\x04", b"\x89PNG", b"GIF8", b"\xd0\xcf\x11\xe0")
-EDITABLE_RULE_FIELDS = ("title", "description", "modality", "effective_date", "penalty_risk")
 
 
 def content_problem(content: bytes, mime: str) -> str | None:
@@ -265,7 +261,7 @@ async def create_run(file: UploadFile | None = File(default=None), files: list[U
                      sample_id: str | None = Form(default=None), sample_ids: list[str] | None = Form(default=None),
                      text: str | None = Form(default=None), url: str | None = Form(default=None),
                      mode: str | None = Form(default=None), as_of: str | None = Form(default=None),
-                     review_rules: bool = Form(default=False), user: User = Depends(current_user)) -> dict:
+                     user: User = Depends(current_user)) -> dict:
     """One run per item: each file, each sample, the pasted text and the URL. All items are validated first."""
     _check_as_of(as_of)
     samples = list(dict.fromkeys([s for s in [sample_id, *(sample_ids or [])] if s]))
@@ -288,10 +284,10 @@ async def create_run(file: UploadFile | None = File(default=None), files: list[U
         items.append((source, "text", sha))
     if url and url.strip():
         items.append((await _url_source(url), "url", None))
-    started = [start_run(source, user.user_id, mode, as_of, email=user.email, source_kind=kind, review_rules=review_rules,
+    started = [start_run(source, user.user_id, mode, as_of, email=user.email, source_kind=kind,
                          doc_sha256=sha) for source, kind, sha in items]
     get_app_store().audit(user.email, "run_start", {"runs": [r["run_id"] for r in started], "kinds": [k for _, k, _ in items],
-                                                    "review_rules": review_rules, "as_of": as_of}, "START", {"count": len(started)})
+                                                    "as_of": as_of}, "START", {"count": len(started)})
     return {"run_id": started[0]["run_id"], "mode": started[0]["mode"], "run_ids": [r["run_id"] for r in started],
             "runs": started}
 
@@ -326,73 +322,9 @@ async def cancel_run(run_id: str, user: User = Depends(current_user)) -> dict:
     return {"run_id": run_id, "status": status}
 
 
-class RunReview(BaseModel):
-    decision: Literal["APPROVE", "REJECT"]
-    rules: list[Rule] | None = Field(default=None, max_length=200)
-    comment: str = Field(default="", max_length=1000)
-
-
-def _approved_extraction(extraction: dict, edited: list[Rule] | None) -> tuple[dict, dict]:
-    """Merge reviewer edits into the extracted rules. Rules can be edited (EDITABLE_RULE_FIELDS) or removed, not added;
-    checks, scope and citations stay as extracted so every rule is still grounded in the circular."""
-    original = ExtractedPolicy.model_validate(extraction)
-    if edited is None:
-        return original.model_dump(), {"edited": [], "removed": []}
-    by_id = {r.rule_id: r for r in original.rules}
-    merged, changed, seen = [], [], set()
-    for rule in edited:
-        base = by_id.get(rule.rule_id)
-        if base is None:
-            raise HTTPException(422, f"Unknown rule {rule.rule_id!r}: rules can be edited or removed, not added")
-        if rule.rule_id in seen:
-            raise HTTPException(422, f"Rule {rule.rule_id!r} is listed twice")
-        seen.add(rule.rule_id)
-        if not rule.title.strip():
-            raise HTTPException(422, f"Rule {rule.rule_id!r} needs a title")
-        updates = {f: getattr(rule, f) for f in EDITABLE_RULE_FIELDS if getattr(rule, f) != getattr(base, f)}
-        updates["title"] = rule.title.strip()
-        if any(updates[f] != getattr(base, f) for f in updates):
-            changed.append(rule.rule_id)
-        merged.append(base.model_copy(update=updates))
-    if not merged:
-        raise HTTPException(422, "Approve at least one rule, or reject the run")
-    candidate = ExtractedPolicy(policy=original.policy, rules=merged, unexecutable=original.unexecutable)
-    errors = [i for i in validate_extraction(candidate) if i.severity == "ERROR"]
-    if errors:
-        raise HTTPException(422, "; ".join(f"{i.rule_id or 'policy'} {i.field}: {i.message}" for i in errors)[:1000])
-    return candidate.model_dump(), {"edited": changed, "removed": sorted(set(by_id) - seen)}
-
-
-@app.post("/api/runs/{run_id}/review")
-async def review_run(run_id: str, body: RunReview, user: User = Depends(current_user)) -> dict:
-    """Owner only: approve (optionally with edited or removed rules) and continue, or reject a paused run."""
-    store = get_app_store()
-    run = _my_run(run_id, user)
-    if run["status"] != "AWAITING_REVIEW":
-        raise HTTPException(409, "Run is not awaiting review")
-    if body.decision == "REJECT":
-        if not reject_run(run_id):
-            raise HTTPException(409, "Run is not awaiting review")
-        store.add_event(run_id, "pipeline", "run_rejected", {"by": user.email, "comment": body.comment})
-        store.audit(user.email, "run_review", {"run_id": run_id, "comment": body.comment}, "REJECT", {})
-        return {"run_id": run_id, "status": "REJECTED"}
-    extraction = (run.get("checkpoint") or {}).get("extraction")
-    if not extraction:
-        raise HTTPException(409, "This run has no extracted rules to review")
-    approved, changes = _approved_extraction(extraction, body.rules)
-    if not resume_run(run, approved):
-        raise HTTPException(409, "Run is not awaiting review")
-    store.add_event(run_id, "reader", "rules_reviewed", {"decision": "APPROVE", "by": user.email,
-                                                         "rules": len(approved["rules"]), **changes})
-    store.audit(user.email, "run_review", {"run_id": run_id, "comment": body.comment, **changes}, "APPROVE",
-                {"rules": len(approved["rules"])})
-    return {"run_id": run_id, "status": "QUEUED", "rules": len(approved["rules"]), **changes}
-
-
 class Rerun(BaseModel):
     as_of: str | None = Field(default=None, max_length=10)
     mode: Literal["agentic", "deterministic"] | None = None
-    review_rules: bool = False
 
 
 @app.post("/api/runs/{run_id}/rerun")
@@ -407,7 +339,7 @@ async def rerun(run_id: str, body: Rerun, user: User = Depends(current_user)) ->
     except RunLimitExceeded as error:
         raise HTTPException(429, str(error))
     started = start_run(run["source"], user.user_id, body.mode or run["mode"], body.as_of or run.get("as_of"),
-                        email=user.email, source_kind=run["source_kind"], review_rules=body.review_rules,
+                        email=user.email, source_kind=run["source_kind"],
                         doc_sha256=run.get("doc_sha256"), rerun_of=run_id)
     get_app_store().audit(user.email, "run_rerun", {"run_id": run_id, **body.model_dump()}, "START", started)
     return {**started, "run_ids": [started["run_id"]], "runs": [started]}
@@ -487,28 +419,6 @@ def decide_action(action_id: str, body: Decision, user: User = Depends(current_u
 @app.get("/api/actions/{action_id}/outbox")
 def action_outbox(action_id: str, user: User = Depends(current_user)) -> list[dict]:
     return get_app_store().outbox_for(action_id)
-
-
-class RuleReview(Decision):
-    rule_id: str = Field(max_length=300)
-    report_id: str | None = Field(default=None, max_length=100)  # report whose stored copy of the rule should show the decision
-
-
-@app.post("/api/rules/review")
-def rule_review(body: RuleReview, user: User = Depends(current_user)) -> dict:
-    try:
-        result = review_rule(get_graph_store(), body.rule_id, body.decision, user.email, date.today().isoformat())
-    except KeyError:
-        raise HTTPException(404, "Unknown rule")
-    store = get_app_store()
-    report = store.get_report(body.report_id) if body.report_id else None  # tenant-scoped lookup
-    if report:
-        for rule in report.get("rules", []):
-            if rule.get("rule_id") == body.rule_id:
-                rule["status"] = body.decision
-        store.save_report(report)  # keeps the decision across reloads; decided actions are untouched
-    store.audit(user.email, "rule_review", body.model_dump(), body.decision, result)
-    return result
 
 
 @app.get("/api/audit")

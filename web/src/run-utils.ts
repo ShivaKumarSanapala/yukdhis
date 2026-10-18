@@ -96,7 +96,7 @@ export function stageOutcome(stage: string, events: RunEvent[]): string {
     } else if (stage === "graphrag" && Array.isArray(o.rules)) {
       const products = new Set(o.rules.flatMap((r: Out) => r.products ?? []));
       const gaps = o.rules.reduce((n: number, r: Out) => n + Object.keys(r.control_gaps ?? {}).length, 0);
-      parts.push(`${plural(products.size, "product")} in blast radius${gaps ? `, ${plural(gaps, "control gap")}` : ""}`);
+      parts.push(`${plural(products.size, "product")} in scope${gaps ? `, ${plural(gaps, "control gap")}` : ""}`);
     } else if (stage === "precedent" && Array.isArray(o.prior_reports)) {
       parts.push(`${plural(o.prior_reports.length, "prior report")}, ${plural((o.open_actions ?? []).length, "open action")}`);
     } else if (stage === "data_analyst" && Array.isArray(o.rows)) {
@@ -163,13 +163,6 @@ export function stageTimings(events: RunEvent[]) {
     if (e.stage !== "pipeline") per.set(e.stage, (per.get(e.stage) ?? 0) + dt);
   });
   return { per, total };
-}
-
-/** Rules from the review pause (the run carries them; the event is the fallback). */
-export function extractedRules(run: RunInfo, events: RunEvent[]) {
-  if (run.rules?.length) return run.rules;
-  const event = [...events].reverse().find((e) => e.kind === "rules_extracted");
-  return ((event?.payload as Out | undefined)?.rules ?? []) as NonNullable<RunInfo["rules"]>;
 }
 
 /** Plain-language line for queued / waiting / paused / ended runs. */

@@ -4,7 +4,7 @@ import { runTitle } from "./run-utils";
 export type DotTone = "info live" | "neutral" | "ok" | "bad" | "warn";
 export interface HistoryItem {
   key: string; kind: "run" | "conversation"; id: string; title: string; at: number; to: string;
-  tone?: DotTone; statusLabel?: string; watcher?: boolean; unseen?: boolean;
+  tone?: DotTone; statusLabel?: string; watcher?: boolean; unseen?: boolean; by?: string;
 }
 export type HistoryGroup = { label: string; items: HistoryItem[] };
 
@@ -21,7 +21,7 @@ export function runItem(run: RunInfo, seen: Set<string>): HistoryItem {
   const watcher = run.created_by === "watcher";
   return {
     key: run.run_id, kind: "run", id: run.run_id, title: runTitle(run), at: time(run.updated_at) || time(run.created_at),
-    to: `/chat/${run.run_id}`, tone: dot.tone, statusLabel: dot.label, watcher, unseen: watcher && !seen.has(run.run_id),
+    to: `/chat/${run.run_id}`, tone: dot.tone, statusLabel: dot.label, watcher, unseen: watcher && !seen.has(run.run_id), by: run.created_by ?? undefined,
   };
 }
 export const conversationItem = (c: Conversation): HistoryItem => ({

@@ -31,8 +31,6 @@ interface Props {
   blocked: string;
   notices: string[];
   onDismissNotices: () => void;
-  reviewRules: boolean;
-  onReviewRules: (value: boolean) => void;
   inputRef: RefObject<HTMLTextAreaElement | null>;
   placeholder?: string;
   llmReady: boolean;
@@ -41,7 +39,7 @@ interface Props {
 /** One box for questions and analyses: attachments, intent chip, privacy shield, send or stop. */
 export default function OmniInput(p: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [view, setView] = useState<"menu" | "samples" | "url">("menu");
+  const [view, setView] = useState<"menu" | "url">("menu");
   const [url, setUrl] = useState("");
   const [shield, setShield] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -162,25 +160,7 @@ export default function OmniInput(p: Props) {
             {view === "menu" && (
               <>
                 <button role="menuitem" onClick={() => { fileRef.current?.click(); closeMenu(false); }}><Icon name="attach" size={15} /> Upload file(s)</button>
-                <button role="menuitem" onClick={() => setView("samples")}><Icon name="reports" size={15} /> Sample circular</button>
                 <button role="menuitem" onClick={() => setView("url")}><Icon name="link" size={15} /> From URL</button>
-                <div className="menu-sep" role="separator" />
-                <label className="inline menu-check" role="menuitemcheckbox" aria-checked={p.reviewRules}>
-                  <input type="checkbox" checked={p.reviewRules} onChange={(e) => p.onReviewRules(e.target.checked)} />
-                  <span>Pause to review extracted rules<small className="muted">Advanced: edit rules before they reach the graph.</small></span>
-                </label>
-              </>
-            )}
-            {view === "samples" && (
-              <>
-                <button role="menuitem" className="ghost back-item" onClick={() => setView("menu")}>← Sample circulars</button>
-                <div className="menu-scroll">
-                  {p.samples.map((s) => {
-                    const picked = p.attachments.some((a) => a.kind === "sample" && a.sampleId === s.sample_id);
-                    return <button key={s.sample_id} role="menuitem" disabled={picked} onClick={() => { p.onAddSample(s); closeMenu(); p.inputRef.current?.focus(); }}>{s.title}{picked ? " (added)" : ""}</button>;
-                  })}
-                  {!p.samples.length && <p className="muted pad">No samples on this server.</p>}
-                </div>
               </>
             )}
             {view === "url" && (

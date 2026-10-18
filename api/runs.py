@@ -18,12 +18,6 @@ execute in a worker thread whose event callback raises ``RunCancelled``; the tas
 releasing the document lease. Agentic runs check the flag between ADK events and ``aclose`` the event generator in the
 task that iterates it (closing it elsewhere trips OpenTelemetry's "created in a different Context" error).
 The run ends ``CANCELLED`` with a ``run_cancelled`` event.
-
-Human review (``review_rules``).  In both modes the parse and extract stage functions run first (``stop_after="extract"``)
-and the run pauses as ``AWAITING_REVIEW`` with a ``rules_extracted`` event; the paused state is checkpointed in the
-store (not in memory), so the review can resume on any instance. Approving resumes with the approved rules: the
-deterministic runner skips parse/extract (``preset``); the agentic pipeline gets them through session state and the
-Reader agent is skipped by its ``before_agent_callback``. Rejecting ends the run ``REJECTED``.
 """
 
 from __future__ import annotations
@@ -47,7 +41,7 @@ from api.adk_runtime import PIPELINE_APP, memory_service, pipeline_runner, sessi
 from core.app_store import ACTIVE_RUN_STATUSES, TRIGGER_KINDS, get_app_store
 from core.app_store import now_ms as now  # run timestamps in ms: elapsed times of fast runs stay meaningful
 from core.config import get_settings
-from pipeline.deterministic import EXTRACTION_KEYS, run_pipeline
+from pipeline.deterministic import run_pipeline
 from pipeline import stages
 from pipeline.stages import default_as_of
 
@@ -142,7 +136,7 @@ def _spawn(run_id: str, coro: Any) -> None:
 
 
 def start_run(source: dict, user_id: str, mode: str | None = None, as_of: str | None = None, *, email: str | None = None,
-              source_kind: str | None = None, review_rules: bool = False, doc_sha256: str | None = None,
+              source_kind: str | None = None, doc_sha256: str | None = None,
               rerun_of: str | None = None) -> dict:
     store = get_app_store()
     mode, as_of = choose_mode(mode), as_of or default_as_of()
@@ -152,26 +146,10 @@ def start_run(source: dict, user_id: str, mode: str | None = None, as_of: str | 
     kind = source_kind or TRIGGER_KINDS.get(source.get("trigger") or "", "upload")
     run_id = store.create_run(mode, {k: v for k, v in source.items() if k not in {"path", "doc_sha256"}}, {
         "owner_id": user_id, "created_by": email or user_id, "source_kind": kind, "filename": source.get("filename"),
-        "doc_sha256": doc_sha256 or source.get("doc_sha256"), "as_of": as_of, "review_rules": review_rules,
+        "doc_sha256": doc_sha256 or source.get("doc_sha256"), "as_of": as_of,
         "rerun_of": rerun_of, "source": source})
-    _spawn(run_id, _execute(run_id, source, user_id, mode, as_of, review=review_rules))
+    _spawn(run_id, _execute(run_id, source, user_id, mode, as_of))
     return {"run_id": run_id, "mode": mode, "filename": source.get("filename")}
-
-
-def resume_run(run: dict, extraction: dict) -> bool:
-    """Approve a paused run: continue with the reviewed rules (skipping extraction). False if it is no longer paused."""
-    store = get_app_store()
-    checkpoint = {**(run.get("checkpoint") or {}), "extraction": extraction}
-    if not store.transition_run(run["run_id"], PAUSED, "QUEUED", checkpoint=checkpoint, rules=extraction["rules"],
-                                heartbeat_at=int(time.time()), current_stage=None):
-        return False
-    _spawn(run["run_id"], _execute(run["run_id"], run["source"], run["owner_id"] or WATCHER_USER, run["mode"],
-                                   run.get("as_of") or default_as_of(), preset=checkpoint))
-    return True
-
-
-def reject_run(run_id: str) -> bool:
-    return get_app_store().transition_run(run_id, PAUSED, "REJECTED", finished_at=now(), current_stage=None)
 
 
 def request_cancel(run: dict) -> str:
@@ -300,7 +278,7 @@ def _log(severity: str, event: str, **fields: Any) -> None:
     print(json.dumps({"severity": severity, "event": event, **fields}, default=str), flush=True)
 
 
-async def _execute(run_id: str, source: dict, user_id: str, mode: str, as_of: str, review: bool = False,
+async def _execute(run_id: str, source: dict, user_id: str, mode: str, as_of: str,
                    preset: dict | None = None) -> None:
     store = get_app_store()
     local = _LOCAL.setdefault(run_id, _Local())
@@ -320,11 +298,7 @@ async def _execute(run_id: str, source: dict, user_id: str, mode: str, as_of: st
         if not store.transition_run(run_id, {"QUEUED"}, "RUNNING", started_at=now(), queued_position=None):
             raise RunCancelled()
         store.add_event(run_id, "pipeline", "run_resumed" if preset else "run_started",
-                        {"mode": mode, "as_of": as_of, "document": source.get("filename"), "review_rules": review})
-        if review and not preset:
-            preset = await _pause_for_review(run_id, source, as_of, local)
-            if preset is None:  # paused for review
-                return
+                        {"mode": mode, "as_of": as_of, "document": source.get("filename")})
         if preset and not preset["extraction"]["rules"]:
             # Nothing for the agents to analyse: the deterministic pipeline produces the report (blast radius and
             # evaluation are empty), where the agent tools would fail on their missing inputs.
@@ -397,26 +371,6 @@ async def _deterministic(run_id: str, source: dict, as_of: str, local: _Local, p
         with contextlib.suppress(BaseException):
             await worker
         raise
-
-
-async def _pause_for_review(run_id: str, source: dict, as_of: str, local: _Local) -> dict | None:
-    """Pause after extraction for human review. Returns the checkpoint to continue from when there is nothing to review
-    (a circular with no extractable rules still gets a report); returns None when the run is now paused."""
-    store = get_app_store()
-    state = await _deterministic(run_id, source, as_of, local, stop_after="extract")
-    checkpoint = {k: state[k] for k in EXTRACTION_KEYS if k in state}
-    extraction = state["extraction"]
-    store.add_event(run_id, "reader", "rules_extracted", {
-        "policy": extraction["policy"], "rules": extraction["rules"], "issues": state.get("validation_issues", []),
-        "provenance": state.get("extraction_provenance", {})})
-    if not extraction["rules"]:
-        store.add_event(run_id, "pipeline", "no_rules_to_review", {})
-        return checkpoint
-    if not store.transition_run(run_id, {"RUNNING"}, "AWAITING_REVIEW", checkpoint=checkpoint, rules=extraction["rules"],
-                                current_stage="review"):
-        raise RunCancelled()
-    store.add_event(run_id, "pipeline", "awaiting_review", {"rules": len(extraction["rules"])})
-    return None
 
 
 async def _agentic(run_id: str, source: dict, user_id: str, as_of: str, local: _Local, preset: dict | None = None) -> str | None:

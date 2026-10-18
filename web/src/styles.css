@@ -436,3 +436,4 @@ button.step-head:hover:not(:disabled) { background: var(--hover); }
 @media print { .mermaid { break-inside: avoid; } }
 
 .activity-tools { display: flex; justify-content: flex-end; margin: 0 0 6px; }
+

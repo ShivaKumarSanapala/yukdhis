@@ -1,4 +1,4 @@
-"""Analysis runs: queue and per-user cap, same-document serialization, cancel, human review, new inputs, metadata.
+"""Analysis runs: queue and per-user cap, same-document serialization, cancel, new inputs, metadata.
 
 No network and no LLM: queue/cancel tests swap the deterministic runner for a gated fake; review, text and multi-file
 tests run the real deterministic pipeline on the bundled sample circulars.
@@ -151,7 +151,6 @@ def test_cancel_deterministic_run_and_queued_run_and_404_for_others(monkeypatch,
         app.dependency_overrides[current_user] = lambda: User(user_id="someone-else", email="other@bank.test")
         try:
             assert client.post(f"/api/runs/{running}/cancel").status_code == 404
-            assert client.post(f"/api/runs/{running}/review", json={"decision": "REJECT"}).status_code == 404
             assert client.get(f"/api/runs/{running}").status_code == 200  # same tenant may still read it
         finally:
             app.dependency_overrides.clear()
@@ -175,66 +174,6 @@ def test_cancel_requested_on_another_instance_reaches_the_executor(gated):
         # another instance only writes the shared status; this instance's watcher must notice it
         assert get_app_store().transition_run(run_id, {"RUNNING"}, "CANCEL_REQUESTED")
         assert wait_for(client, run_id)["status"] == "CANCELLED"
-
-
-def _start_review(client):
-    run_id = client.post("/api/runs", data={"sample_id": DOCS, "mode": "deterministic", "review_rules": "true"}).json()["run_id"]
-    run = wait_for(client, run_id)
-    assert run["status"] == "AWAITING_REVIEW", run["error"]
-    return run_id, run
-
-
-def test_review_pause_then_approve_with_edits_then_reject(fast):
-    with TestClient(app) as client:
-        run_id, run = _start_review(client)
-        assert run["review_rules"] and run["report_id"] is None and len(run["rules"]) == 3
-        events = client.get(f"/api/runs/{run_id}").json()["events"]
-        extracted = next(e for e in events if e["kind"] == "rules_extracted")
-        assert len(extracted["payload"]["rules"]) == 3
-        assert not any(e["kind"] == "stage_started" and e["stage"] == "mapper" for e in events)  # paused before mapping
-
-        rules = run["rules"]
-        edited = [{**rules[0], "title": "Release documents within 30 days (reviewed)", "modality": "MUST"},
-                  {**rules[1], "effective_date": "2024-01-01"}]  # rules[2] removed
-        response = client.post(f"/api/runs/{run_id}/review", json={"decision": "APPROVE", "rules": edited})
-        assert response.status_code == 200, response.text
-        assert response.json()["removed"] == [rules[2]["rule_id"]] and len(response.json()["edited"]) == 2
-        assert client.post(f"/api/runs/{run_id}/review", json={"decision": "APPROVE"}).status_code == 409
-
-        done = wait_for(client, run_id, {"SUCCEEDED", "FAILED", "CANCELLED"})
-        assert done["status"] == "SUCCEEDED", done["error"]
-        report = client.get(f"/api/reports/{done['report_id']}").json()
-        assert [r["rule_id"] for r in report["rules"]] == [rules[0]["rule_id"], rules[1]["rule_id"]]
-        assert report["rules"][0]["title"] == "Release documents within 30 days (reviewed)"
-        assert report["rules"][1]["effective_date"] == "2024-01-01"
-        assert report["rules"][0]["checks"] == rules[0]["checks"]  # checks stay as extracted
-        all_kinds = kinds(client, run_id)
-        assert all_kinds.count("run_started") == 1 and "run_resumed" in all_kinds and "rules_reviewed" in all_kinds
-        assert "stage_skipped" in all_kinds
-        seqs = [e["seq"] for e in client.get(f"/api/runs/{run_id}").json()["events"]]
-        assert seqs == sorted(set(seqs))  # the resumed run continues the event sequence
-
-        rejected_id, _ = _start_review(client)
-        response = client.post(f"/api/runs/{rejected_id}/review", json={"decision": "REJECT", "comment": "wrong circular"})
-        assert response.json()["status"] == "REJECTED"
-        rejected = client.get(f"/api/runs/{rejected_id}").json()["run"]
-        assert rejected["status"] == "REJECTED" and rejected["report_id"] is None and rejected["finished_at"]
-
-
-def test_invalid_edited_rules_return_422(fast):
-    with TestClient(app) as client:
-        run_id, run = _start_review(client)
-        rule = run["rules"][0]
-        review = lambda rules: client.post(f"/api/runs/{run_id}/review", json={"decision": "APPROVE", "rules": rules})  # noqa: E731
-        assert review([{**rule, "modality": "SHOULD"}]).status_code == 422          # not a Modality
-        assert review([{**rule, "effective_date": "2024-13-45"}]).status_code == 422  # validator: not an ISO date
-        assert review([{**rule, "rule_id": "rule:invented"}]).status_code == 422     # rules cannot be added
-        assert review([rule, rule]).status_code == 422                               # duplicate
-        assert review([{**rule, "title": "  "}]).status_code == 422
-        assert review([]).status_code == 422
-        assert client.post(f"/api/runs/{run_id}/review", json={"decision": "MAYBE"}).status_code == 422
-        assert client.get(f"/api/runs/{run_id}").json()["run"]["status"] == "AWAITING_REVIEW"
-        assert client.post(f"/api/runs/{run_id}/cancel").json()["status"] == "CANCELLED"  # paused runs cancel at once
 
 
 def test_text_and_url_inputs(monkeypatch, fast):
@@ -378,15 +317,3 @@ def test_reader_is_skipped_when_rules_were_approved():
     assert content is not None and "approved 1 extracted rule" in content.parts[0].text
 
 
-def test_rule_review_updates_graph_and_stored_report(fast):
-    with TestClient(app) as client:
-        run_id, run = _start_review(client)
-        client.post(f"/api/runs/{run_id}/review", json={"decision": "APPROVE"})
-        report_id = wait_for(client, run_id, {"SUCCEEDED", "FAILED", "CANCELLED"})["report_id"]
-        report = client.get(f"/api/reports/{report_id}").json()
-        rule_id = report["rules"][0]["rule_id"]
-        assert report["rules"][0]["status"] == "PENDING_REVIEW"
-        response = client.post("/api/rules/review", json={"rule_id": rule_id, "decision": "APPROVED", "report_id": report_id})
-        assert response.status_code == 200 and response.json()["status"] == "APPROVED"
-        assert client.get(f"/api/reports/{report_id}").json()["rules"][0]["status"] == "APPROVED"
-        assert client.post("/api/rules/review", json={"rule_id": "rule:nope", "decision": "APPROVED"}).status_code == 404

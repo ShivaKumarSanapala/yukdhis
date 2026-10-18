@@ -1,11 +1,12 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 const API_TARGET = process.env.API_TARGET ?? "http://localhost:8080";
 
 // Local dev proxies the API; on Firebase Hosting /api/** is rewritten to Cloud Run.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   // Fonts must stay real files: the CSP (default-src 'self') blocks data: URIs for fonts.
   build: {
     assetsInlineLimit: 0,
