@@ -301,10 +301,15 @@ export default function ChatWorkspace() {
   useEffect(() => {
     const inner = innerRef.current;
     if (!inner) return;
+    let last = inner.offsetHeight;
     const observer = new ResizeObserver(() => {
       const el = feedRef.current;
       if (!el) return;
-      if (pinned.current) el.scrollTop = el.scrollHeight; else if (Date.now() > quiet.current) setFresh(true);
+      const grew = inner.offsetHeight > last;
+      last = inner.offsetHeight;
+      if (pinned.current) el.scrollTop = el.scrollHeight;
+      else if (el.scrollHeight <= el.clientHeight + 80) { pinned.current = true; setFresh(false); }  // nothing to scroll to
+      else if (grew && Date.now() > quiet.current) setFresh(true);  // only new content below counts, not a card collapsing
     });
     observer.observe(inner);
     return () => observer.disconnect();
