@@ -77,6 +77,15 @@ conversation_threads = Table("conversation_threads", metadata,
                              Column("tenant_id", String(64), primary_key=True), Column("user_id", String(128), primary_key=True),
                              Column("thread_id", String(64), primary_key=True), Column("conversation_id", String(64), index=True),
                              Column("created_at", String(40)))
+# Retrieval index over ingested circulars (RAG). ``embedding`` is the portable copy (JSON floats, searched in Python when
+# pgvector is unavailable); on Postgres with pgvector, ``core.circular_index`` adds an ``embedding_vec`` column and an
+# HNSW index beside it.
+circular_chunks = Table("circular_chunks", metadata,
+                        Column("tenant_id", String(64), primary_key=True), Column("chunk_id", String(160), primary_key=True),
+                        Column("document_id", String(64), index=True), Column("title", String(512)),
+                        Column("headings", Text), Column("page_start", Integer), Column("page_end", Integer),
+                        Column("content", Text), Column("embedding", Text), Column("model", String(64)),
+                        Column("source_uri", String(1024)), Column("created_at", String(40)))
 CHAT_STATUSES = {"complete", "stopped", "error"}
 # Run metadata lives beside ``runs`` (not as new columns) so existing databases need no ALTER TABLE; old runs have no row.
 # ``source`` and ``checkpoint`` are server-only: the full source (with local paths) and the paused state for review.

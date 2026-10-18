@@ -184,6 +184,12 @@ flowchart LR
   without an LLM (all 1.0), Gemini against the template with one.
 - `EXTRACTOR_VERSION` (`ingestion/cache.py`) is `2026-10-17.2`, so cached extractions made before unexecutable obligations and
   `capability_description` are extracted again.
+- **Circular text index (RAG).** After parsing, every chunk is sanitized, embedded with `text-embedding-005` and stored in
+  `circular_chunks` (app database). On Cloud SQL the `vector` extension and an HNSW cosine index are used when the app role can
+  create the extension (`CREATE EXTENSION vector`, which may need a `cloudsqlsuperuser` once); otherwise, and on SQLite, the
+  embeddings are kept as JSON and compared in Python. The assistant's `search_circulars` tool returns the closest passages with
+  title, pages and chunk id. Indexing is best effort and idempotent per document; `scripts/index_circulars.py` backfills
+  the archive. It is tenant-scoped and off unless the GCP backend (or `CIRCULAR_INDEX=1`) is set.
 - Known limitations are listed in §12.
 
 ---

@@ -402,6 +402,31 @@ def neighbours(node_id: str, edge_types: str = "", as_of: str = "", direction: s
     return {"node_id": node_id, "as_of": day, "count": len(edges), "edges": edges[:MAX_LIST]}
 
 
+# circular text (RAG) ---------------------------------------------------------------------------------------------
+@_tool
+def search_circulars(query: str, top_k: int = 5, document_id: str = "") -> dict:
+    """Search the full text of the circulars that were ingested, by meaning. Use it for questions about what a circular
+    says (wording, thresholds, exceptions, dates, paragraph numbers) that the extracted rules and reports do not answer.
+    Returns passages with the document title, headings, pages, a similarity score and the chunk id to cite.
+
+    Args:
+        query: what to look for, in natural language.
+        top_k: number of passages (1-10).
+        document_id: restrict to one document (doc-...), from a previous result or a report; empty searches all.
+    """
+    from core import circular_index
+
+    if not query.strip():
+        raise ToolError("query is required")
+    if not circular_index.enabled():
+        raise NotImplementedError("Circular search needs the GCP backend (Vertex AI embeddings).")
+    hits = circular_index.search(query.strip()[:1000], top_k, document_id.strip())
+    for hit in hits:
+        hit["text"] = _clip(hit["text"], 1500)
+    return {"query": query.strip()[:200], "count": len(hits), "passages": hits,
+            **({} if hits else {"note": "No indexed circular matches; the document may not have been indexed yet."})}
+
+
 # governance ------------------------------------------------------------------------------------------------------
 def _policy(ref: str) -> dict:
     for policy in control_library.policies():
