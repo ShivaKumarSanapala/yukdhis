@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 // Screenshots are 1600 x 847 (about 1.89:1); the frame uses the same ratio so nothing is cropped.
 const SLIDES = [
   { src: "/landing/home.jpg", title: "Start from a circular", text: "Pick a sample RBI circular or drop in your own." },
+  { src: "/landing/run.jpg", title: "Follow the agent pipeline", text: "Seven stages run on the live circular. Each shows its result, timing and tool calls." },
   { src: "/landing/graph.jpg", title: "Explore the knowledge graph", text: "Search a product, rule or control and see everything it touches." },
   { src: "/landing/report.jpg", title: "Read the impact report", text: "Counts, exposure and penalties computed in code, with the SQL behind each figure." },
   { src: "/landing/assistant.jpg", title: "Ask follow-up questions", text: "The assistant answers from guarded SQL and the graph, not from guesswork." },
