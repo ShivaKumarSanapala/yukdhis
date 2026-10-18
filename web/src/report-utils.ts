@@ -1,4 +1,4 @@
-import type { Check, ImpactReport, Radius, ReportListItem, Rule, Summary, Unexecutable } from "./types";
+import type { Check, ImpactReport, Radius, Rule, Summary, Unexecutable } from "./types";
 
 /** Tone maps to a pill/status colour class; the text label is always shown as well. */
 export type Tone = "ok" | "bad" | "warn" | "info" | "neutral";
@@ -18,26 +18,6 @@ const CHECK: Record<string, StatusMeta> = {
   NOT_EVALUATED: { label: "NOT EVALUATED", tone: "warn", hint: "This check could not be evaluated. It is not a pass." },
   UPCOMING: { label: "UPCOMING", tone: "info", hint: "The rule takes effect after the analysis date." },
 };
-
-/** Summary CSV for the report list: one row per report (no per-check detail). */
-export function reportListCsv(items: ReportListItem[]): string {
-  const head = ["report_id", "policy", "created_at", "mode", "overall_status", "rules", "checks_with_gaps", "loans_with_violations", "customers_with_violations", "penalty_inr"];
-  const rows = items.map((r) => [r.report_id, r.title, r.created_at, r.mode, overallMeta(r.summary).label, r.summary.rules, r.summary.gaps,
-    r.summary.loans_with_violations, r.summary.customers_with_violations, Math.round(r.summary.statutory_penalty_inr ?? 0)]);
-  return [head, ...rows].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
-}
-
-export function downloadReportList(items: ReportListItem[]) {
-  const blob = new Blob(["\uFEFF", reportListCsv(items)], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "yukdhis-reports-selected.csv";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 const humanise = (value: string) => value.replaceAll("_", " ");
 
@@ -88,80 +68,6 @@ export function unexecutableOf(report: ImpactReport): Unexecutable[] {
 
 export const inr = (n: number) => `₹${Math.round(n ?? 0).toLocaleString("en-IN")}`;
 export const short = (id: string) => id.split(":").pop() ?? id;
-
-// ---------------------------------------------------------------- CSV export
-
-/** RFC 4180 quoting, plus a leading apostrophe on formula-looking text to stop spreadsheet injection. */
-function cell(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  let text = String(value);
-  if (typeof value === "string" && /^[=+\-@\t\r]/.test(text)) text = `'${text}`;
-  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
-}
-
-const CSV_HEADER = [
-  "record_type", "report_id", "policy", "analysis_date", "overall_status",
-  "rule_title", "rule_modality", "scope_status", "check_index", "check_kind", "check_description", "check_status",
-  "in_scope", "violations", "exposure_inr", "penalty_inr", "evidence",
-  "action_workflow", "action_owner", "action_target_count", "action_status",
-  "citation", "reason", "missing_data",
-];
-
-/** One CSV: a CHECK row per check, an ACTION row per remediation action and an UNEXECUTABLE row per obligation that
- * cannot be machine-checked. Excludes approver identities and notice bodies. */
-export function reportCsv(report: ImpactReport): string {
-  const overall = overallMeta(report.summary).label;
-  const base = [report.report_id, report.policy.title, report.as_of, overall];
-  const rows: unknown[][] = [];
-  for (const c of report.results) {
-    const rule = report.rules.find((r) => r.rule_id === c.rule_id);
-    const measured = isMeasured(c.status);
-    rows.push([
-      "CHECK", ...base, rule?.title ?? short(c.rule_id), rule ? modalityOf(rule) : "", radiusFor(report, c.rule_id)?.scope_status ?? "",
-      c.check_index, c.kind, c.description, c.status,
-      measured ? c.in_scope : "", measured ? c.violations : "", measured ? Math.round(c.exposure_inr) : "", measured ? Math.round(c.penalty_inr) : "", c.evidence,
-      "", "", "", "",
-      "", "", "",
-    ]);
-  }
-  for (const a of report.actions) {
-    rows.push([
-      "ACTION", ...base, ruleTitle(report, a.rule_id), "", radiusFor(report, a.rule_id)?.scope_status ?? "",
-      "", "", "", "", "", "", "", "", "",
-      a.workflow_id, a.owner, a.target_count, a.status,
-      "", "", "",
-    ]);
-  }
-  for (const u of unexecutableOf(report)) {
-    rows.push([
-      "UNEXECUTABLE", ...base, "", "", "",
-      "", "", "", "NOT_MACHINE_CHECKABLE", "", "", "", "", "",
-      "", "", "", "",
-      u.citation, u.reason, u.missing_data.join("; "),
-    ]);
-  }
-  return [CSV_HEADER, ...rows].map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
-}
-
-export function downloadCsv(report: ImpactReport) {
-  const blob = new Blob(["\uFEFF", reportCsv(report)], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `yukdhis-${report.report_id}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-/** Print / Save as PDF; the document title becomes the suggested file name. */
-export function printReport(report: ImpactReport) {
-  const previous = document.title;
-  document.title = `Yukdhis ${report.report_id} ${report.policy.title}`;
-  window.addEventListener("afterprint", () => { document.title = previous; }, { once: true });
-  window.print();
-}
 
 // ------------------------------------------------------------ run comparison
 

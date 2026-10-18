@@ -7,7 +7,9 @@ import CompareView from "./CompareView";
 import When from "./When";
 import { OverallBadge } from "./StatusBadges";
 import { EmptyState, Skeleton } from "./Motif";
-import { downloadReportList, inr, overallKey, overallMeta } from "../report-utils";
+import Icon from "./Icons";
+import { exportPdf } from "./PrintHost";
+import { inr, overallKey, overallMeta } from "../report-utils";
 
 const time = (value: string) => { const t = Date.parse(value); return Number.isNaN(t) ? 0 : t; };
 const FILTER_KEY = "yukdhis.reports.filters";
@@ -33,7 +35,7 @@ function SortTh({ k, children, num, f, onSort }: { k: SortKey; children: string;
   );
 }
 
-/** Reports tab: the grid with filters and compare bar, and (at /reports/:id) one report full width. Rows open in the chat workspace. */
+/** Reports tab: the grid with filters and compare bar, and (at /reports/:id) one report full width. Rows open the full report page. */
 export default function ReportsPanel() {
   const { reportId } = useParams();
   const navigate = useNavigate();
@@ -96,7 +98,7 @@ export default function ReportsPanel() {
   const sortBy = (sort: SortKey) => setF((p) => ({ ...p, sort, dir: p.sort === sort && p.dir === "desc" ? "asc" : "desc" }));
   const toggleStatus = (s: string) => set({ statuses: f.statuses.includes(s) ? f.statuses.filter((x) => x !== s) : [...f.statuses, s] });
 
-  const openReport = (id: string) => navigate(`/chat/${encodeURIComponent(id)}`);
+  const openReport = (id: string) => navigate(`/reports/${encodeURIComponent(id)}`);
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 2 ? [p[1], id] : [...p, id]));
   const compare = async () => {
     setBusy(true); setError("");
@@ -107,6 +109,11 @@ export default function ReportsPanel() {
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
 
+  const exportSelected = async () => {
+    setBusy(true); setError("");
+    try { exportPdf(await Promise.all(picked.map((id) => api.report(id)))); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+  };
+
   if (pair) return <section><button className="ghost back no-print" onClick={() => setPair(null)}>← All reports</button><CompareView a={pair[0]} b={pair[1]} /></section>;
   if (reportId && !open && !error) return <div className="card"><Skeleton rows={6} label="Loading report" /></div>;
   if (reportId && error && !open) return <section><button className="ghost back no-print" onClick={() => navigate("/reports")}>← All reports</button><div className="banner error" role="alert">{error}</div></section>;
@@ -115,14 +122,16 @@ export default function ReportsPanel() {
       <section>
         <div className="row between no-print">
           <button className="ghost back" onClick={() => navigate("/reports")}>← All reports</button>
-          <button onClick={() => navigate(`/chat/${encodeURIComponent(open.report_id)}`)}>Open in chat</button>
+          <span className="buttons">
+            <button className="primary" onClick={() => exportPdf([open])}>Export PDF</button>
+            <button className="chat-btn" onClick={() => navigate(`/chat/${encodeURIComponent(open.report_id)}`)}><Icon name="chat" size={14} /> Open in chat</button>
+          </span>
         </div>
         <ReportView report={open} onChange={setOpen} />
       </section>
     );
   }
 
-  const pickedItems = items.filter((r) => picked.includes(r.report_id));
   return (
     <section className="card flush">
       <div className="card-head pad">
@@ -209,7 +218,7 @@ export default function ReportsPanel() {
             {picked.length === 1 ? "1 report selected · select one more to compare" : "2 reports selected"}
           </span>
           <button className="primary" disabled={picked.length !== 2 || busy} onClick={compare}>{busy ? "Loading…" : "Compare diff"}</button>
-          <button onClick={() => downloadReportList(pickedItems)}>Export selected</button>
+          <button disabled={busy} onClick={exportSelected}>Export PDF</button>
           <button className="ghost" onClick={() => setPicked([])}>Deselect</button>
         </div>
       )}

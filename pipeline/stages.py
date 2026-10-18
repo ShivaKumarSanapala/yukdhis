@@ -442,6 +442,9 @@ def fallback_narrative(state: State) -> str:
     gaps = [r for r in results if r.status == "GAP"]
     lines = ["## Summary", "", f"{len(results)} checks were evaluated; {len(gaps)} have gaps.",
              "This summary was generated from the evaluated results because the Orchestrator agent did not finish in time."]
+    radii = [BlastRadius.model_validate(r) for r in state.get("blast_radius", [])]
+    products = sorted({p["name"] for r in radii for p in r.products})
+    lines += ["", "### Blast radius", f"Products: {', '.join(products) or 'none'}.", ""]
     for r in gaps:
         lines.append(f"- {r.description}: {r.violations} of {r.in_scope} in scope"
                      + (f", statutory penalty INR {r.penalty_inr:,.0f}" if r.penalty_inr else "") + ".")
