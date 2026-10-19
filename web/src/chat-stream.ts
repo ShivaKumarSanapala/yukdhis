@@ -37,26 +37,32 @@ async function foldInto(setMessages: Dispatch<SetStateAction<ChatMessage[]>>,
     { message_id: draftId, role: "assistant", content: "", status: "streaming", trace: { thinking: "", tool_calls: [] } }]);
   const update = (fn: (m: ChatMessage) => ChatMessage) => setMessages((all) => all.map((m) => (m.message_id === draftId ? fn(m) : m)));
   const trace = (m: ChatMessage) => m.trace ?? { thinking: "", tool_calls: [] };
+  // The answer is held back while the turn runs and shown in one piece when it is complete. Text written before a
+  // tool call is a preamble (it can say "I cannot find that" before the tool finds it), so it is dropped at each call.
+  let answer = "";
   try {
     await open({
       onStart,
       onThinking: (delta) => update((m) => ({ ...m, trace: { ...trace(m), thinking: trace(m).thinking + delta } })),
-      onText: (delta) => update((m) => ({ ...m, content: m.content + delta })),
-      onToolCall: (call) => update((m) => ({ ...m, trace: { ...trace(m), tool_calls: [...trace(m).tool_calls, { ...call, status: "running" }] } })),
+      onText: (delta) => { answer += delta; },
+      onToolCall: (call) => {
+        answer = "";
+        update((m) => ({ ...m, trace: { ...trace(m), tool_calls: [...trace(m).tool_calls, { ...call, status: "running" }] } }));
+      },
       onToolResult: (result) => update((m) => ({
         ...m, trace: { ...trace(m), tool_calls: trace(m).tool_calls.some((c) => c.id === result.id)
           ? trace(m).tool_calls.map((c) => (c.id === result.id ? { ...c, ...result } : c))
           : [...trace(m).tool_calls, { args: {}, ...result }] },
       })),
       onError: (message) => update((m) => ({ ...m, error: message })),
-      onDone: (d) => update((m) => ({ ...m, message_id: d.message_id || m.message_id, status: d.status })),
+      onDone: (d) => update((m) => ({ ...m, message_id: d.message_id || m.message_id, status: d.status, content: answer.trim() })),
     });
     // A stream that ends without "done" (e.g. the no-LLM error) is not a complete answer.
-    update((m) => (m.status === "streaming" ? { ...m, status: m.error ? "error" : "stopped" } : m));
+    update((m) => (m.status === "streaming" ? { ...m, content: answer.trim(), status: m.error ? "error" : "stopped" } : m));
   } catch (e) {
     const aborted = (e as Error).name === "AbortError";
     update((m) => ({
-      ...m, status: aborted ? "stopped" : "error", error: aborted ? m.error : (e as Error).message,
+      ...m, content: answer.trim(), status: aborted ? "stopped" : "error", error: aborted ? m.error : (e as Error).message,
       trace: { ...trace(m), tool_calls: trace(m).tool_calls.map((c) => (c.status === "running" ? { ...c, status: "cancelled" } : c)) },
     }));
   }

@@ -79,6 +79,9 @@ class TraceTranslator:
     def __init__(self, scrub: Callable[[Any], Any] = lambda value: value, clock: Callable[[], float] = time.monotonic):
         self.scrub, self.clock = scrub, clock
         self.text, self.thinking, self.errors = "", "", []
+        # The answer is the text after the last tool call. Text the model writes before calling a tool (its plan, or
+        # "I cannot find that") is not part of the answer, so it is neither shown nor saved as the answer.
+        self.answer = ""
         self.tools: dict[str, dict] = {}
         self._started: dict[str, float] = {}
         self._streamed = False
@@ -93,6 +96,7 @@ class TraceTranslator:
         self._gap[kind] = False
         if kind == "text":
             self.text += delta
+            self.answer += delta if self.answer else delta.lstrip("\n")  # no separator before the first answer text
         else:
             self.thinking = (self.thinking + delta)[:MAX_THINKING_CHARS]
         return kind, {"delta": delta}
@@ -109,6 +113,7 @@ class TraceTranslator:
         out = [] if self._streamed else self._parts(event)
         self._streamed = False
         for call in event.get_function_calls():
+            self.answer = ""  # text before a tool call is a preamble, not the answer
             call_id = call.id or f"call-{len(self.tools) + 1}"
             entry = {"id": call_id, "name": call.name, "args": clip(self.scrub(call.args or {})), "status": "running"}
             self.tools[call_id], self._started[call_id] = entry, self.clock()
@@ -191,7 +196,7 @@ async def stream_turn(*, store: AppStore, runner: Any, sessions: Any, memory: An
     def persist(status: str) -> dict:
         nonlocal saved
         if saved is None:
-            saved = store.add_chat_message(conversation_id, user_id, "assistant", translator.text,
+            saved = store.add_chat_message(conversation_id, user_id, "assistant", translator.answer,
                                            translator.trace(stopped=status == "stopped"), status)
         return saved
 
