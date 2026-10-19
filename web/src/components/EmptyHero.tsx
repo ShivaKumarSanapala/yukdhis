@@ -10,9 +10,9 @@ const SUGGESTED = [
 ] as const;
 
 export const QUESTIONS = [
-  "Which branches have the most NPA provision shortfall?",
-  "What did we conclude in earlier analyses of the 2026 IRACP amendment directions?",
-  "Which policies and controls are not ready for ECL as of today?",
+  "How many gold loans are above 75% loan-to-value?",
+  "How many active floating-rate loans have not been notified of their rate reset?",
+  "What are the penalty terms for late release of property documents?",
 ];
 
 export function Greeting() {

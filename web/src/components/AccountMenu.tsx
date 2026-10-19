@@ -109,13 +109,6 @@ function MobileSheet({ onClose }: { onClose: () => void }) {
           {identity.email && <p className="m-0 mt-0.5 max-w-full truncate text-sm text-zinc-400">{identity.email}</p>}
         </div>
 
-        {identity.photoURL && (
-          <a href="https://myaccount.google.com/" target="_blank" rel="noreferrer"
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-700 bg-transparent py-3 text-sm font-medium text-zinc-100 no-underline hover:bg-zinc-800">
-            Manage your Google Account
-          </a>
-        )}
-
         {signOut ? (
           <button type="button" onClick={() => { onClose(); signOut(); }}
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-base font-semibold text-zinc-900 shadow-sm hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-indigo-400">
@@ -164,9 +157,6 @@ export function AccountMenu({ railed }: { railed: boolean }) {
             </div>
           </div>
           <div className="mt-1 grid gap-0.5" role="menu">
-            {identity.photoURL && (
-              <a role="menuitem" className={item} href="https://myaccount.google.com/" target="_blank" rel="noreferrer">Manage your Google Account</a>
-            )}
             {signOut ? (
               <>
                 <div className="my-1 border-t border-zinc-200" role="separator" />
