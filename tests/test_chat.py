@@ -304,3 +304,31 @@ def test_reply_keeps_running_after_the_viewer_leaves_and_can_be_reattached_or_st
     assert '"status": "stopped"' in tail[-1]
     assert store.chat_messages(other["conversation_id"], ALICE.user_id)[-1]["status"] == "stopped"
     assert stop_turn(ALICE.user_id, other["conversation_id"]) is False
+
+
+def test_text_before_a_tool_call_is_not_the_saved_answer():
+    """The model's preamble ("I cannot find that") is traced but not stored as the answer; the post-tool text is."""
+    from types import SimpleNamespace as NS
+
+    from api.chat import TraceTranslator
+
+    def text(value):
+        return NS(partial=True, content=NS(parts=[NS(text=value, thought=False)]), get_function_calls=lambda: [],
+                  get_function_responses=lambda: [], error_code=None, error_message=None)
+
+    def call(name):
+        return NS(partial=False, content=NS(parts=[]), get_function_calls=lambda: [NS(id="c1", name=name, args={})],
+                  get_function_responses=lambda: [], error_code=None, error_message=None)
+
+    def response(name):
+        return NS(partial=False, content=None, get_function_calls=lambda: [],
+                  get_function_responses=lambda: [NS(id="c1", name=name, response={"status": "ok"})],
+                  error_code=None, error_message=None)
+
+    translator = TraceTranslator()
+    translator.translate(text("I cannot find that view. "))
+    translator.translate(call("run_safe_sql"))
+    translator.translate(response("run_safe_sql"))
+    translator.translate(text("There are 69 gold loans above 75% LTV."))
+    assert translator.answer == "There are 69 gold loans above 75% LTV."
+    assert "I cannot find that view" in translator.text  # still traced, just not the answer
