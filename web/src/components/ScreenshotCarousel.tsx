@@ -7,6 +7,7 @@ const SLIDES = [
   { src: "/landing/graph.jpg", title: "Explore the knowledge graph", text: "Search a product, rule or control and see everything it touches." },
   { src: "/landing/report.jpg", title: "Read the impact report", text: "Counts, exposure and penalties computed in code, with the SQL behind each figure." },
   { src: "/landing/assistant.jpg", title: "Ask follow-up questions", text: "The assistant answers from guarded SQL and the graph, not from guesswork." },
+  { src: "/landing/privacy.jpg", title: "Check what leaves the bank", text: "Cloud DLP and a Gemma check mask customer identifiers before any text reaches Gemini." },
 ];
 const INTERVAL_MS = 5000;
 
